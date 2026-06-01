@@ -1,0 +1,187 @@
+/* =====================================================================
+   forms.css
+   Estilos de formularios, inputs, selects, botones, modal y login.
+   ===================================================================== */
+
+/* ============================ Botones ============================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-primary { background: var(--color-azul-petroleo); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--color-azul-oscuro); }
+.btn-secondary { background: #fff; color: var(--color-text); border-color: var(--color-border); }
+.btn-secondary:hover:not(:disabled) { background: #f1f5f9; }
+.btn-teal { background: var(--color-teal); color: #fff; }
+.btn-teal:hover:not(:disabled) { background: var(--color-teal-dark); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover:not(:disabled) { background: var(--danger-dark); }
+.btn-ghost { background: transparent; color: var(--color-text-muted); }
+.btn-ghost:hover:not(:disabled) { background: #f1f5f9; }
+.btn-block { width: 100%; }
+.btn-sm { padding: 6px 12px; font-size: 12.5px; }
+
+/* ============================ Form fields ============================ */
+.form-field { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--color-azul-oscuro);
+}
+.form-label .req { color: var(--danger); margin-left: 2px; }
+
+.form-control {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--color-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-teal);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+}
+.form-control.is-invalid { border-color: var(--danger); }
+.field-error { color: var(--danger); font-size: 11.5px; margin-top: 4px; }
+
+.search-input {
+  position: relative;
+  min-width: 240px;
+}
+.search-input input { padding-left: 34px; }
+.search-input .search-icon {
+  position: absolute;
+  left: 11px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+/* Grid de formulario en 2 columnas */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 16px;
+}
+.form-grid .col-span-2 { grid-column: span 2; }
+@media (max-width: 560px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid .col-span-2 { grid-column: span 1; }
+}
+
+/* ============================ Modal ============================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 44, 67, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  z-index: 60;
+  overflow-y: auto;
+}
+.modal {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 560px;
+  animation: fadeIn 0.18s ease-out;
+}
+.modal.modal-lg { max-width: 760px; }
+.modal.modal-sm { max-width: 420px; }
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+.modal-header h3 { font-size: 16px; }
+.modal-close {
+  background: none; border: none; font-size: 22px; cursor: pointer;
+  color: var(--color-text-muted); line-height: 1;
+}
+.modal-body { padding: 20px; }
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border);
+  background: #f8fafc;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.confirm-text { font-size: 14px; color: var(--color-text); }
+.confirm-icon { font-size: 34px; margin-bottom: 8px; }
+
+/* ============================ Login ============================ */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-azul-oscuro) 0%, var(--color-azul-petroleo) 60%, var(--color-teal-dark) 140%);
+  padding: 20px;
+}
+.login-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 400px;
+  padding: 34px 30px;
+  animation: fadeIn 0.25s ease-out;
+}
+.login-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  text-align: center;
+}
+.login-logo img { width: 60px; height: 60px; }
+.login-logo h1 { font-size: 18px; }
+.login-logo p { margin: 0; font-size: 12.5px; color: var(--color-text-muted); }
+.login-footer { margin-top: 18px; text-align: center; font-size: 11.5px; color: var(--color-text-muted); }
+.login-hint {
+  margin-top: 14px;
+  font-size: 11.5px;
+  background: #f1f5f9;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Config form (parámetros) */
+.config-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-azul-oscuro);
+  margin: 4px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
