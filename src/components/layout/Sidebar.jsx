@@ -11,7 +11,7 @@ export function Sidebar({ open, onNavigate }) {
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="sidebar-brand">
-        <img src="/logo.svg" alt="Logo" />
+        <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Logo" />
         <div className="brand-text">
           APP Transporte
           <span>{APP_NAME}</span>

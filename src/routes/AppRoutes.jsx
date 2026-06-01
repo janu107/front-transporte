@@ -1,7 +1,7 @@
 /**
  * AppRoutes.jsx
- * Definición de todas las rutas de la aplicación bajo /transporte.
- * Rutas públicas: login. Rutas privadas: el resto (protegidas por PrivateRoute).
+ * Definicion de todas las rutas internas de la aplicacion.
+ * Rutas publicas: login. Rutas privadas: el resto (protegidas por PrivateRoute).
  */
 import { Routes, Route, Navigate } from 'react-router-dom';
 
@@ -52,8 +52,6 @@ export function AppRoutes() {
     <Routes>
       {/* Redirecciones base */}
       <Route path="/" element={<Navigate to={ROUTES.dashboard} replace />} />
-      <Route path={ROUTES.base} element={<Navigate to={ROUTES.dashboard} replace />} />
-
       {/* Pública */}
       <Route path={ROUTES.login} element={<LoginPage />} />
 

@@ -52,7 +52,7 @@ export default function LoginPage() {
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-logo">
-          <img src="/logo.svg" alt="Logo transporte" />
+          <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Logo transporte" />
           <h1>{APP_NAME}</h1>
           <p>Ingrese sus credenciales para continuar</p>
         </div>
