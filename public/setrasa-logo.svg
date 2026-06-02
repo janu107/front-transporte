@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 150" width="520" height="150" role="img" aria-label="SETRASA">
+  <!-- Montacargas (silueta negra) -->
+  <g fill="#111111">
+    <!-- Techo / guarda de protección -->
+    <rect x="36" y="16" width="84" height="9" rx="2"/>
+    <rect x="40" y="18" width="9" height="42"/>
+    <rect x="107" y="18" width="9" height="34"/>
+    <!-- Cuerpo / chasis -->
+    <path d="M22 64 Q22 50 40 50 L58 50 Q64 50 70 58 L122 58 L122 102 Q122 104 119 104 L26 104 Q22 104 22 99 Z"/>
+    <!-- Asiento -->
+    <path d="M72 58 L72 46 L90 46 L90 58 Z"/>
+    <!-- Mástil -->
+    <rect x="124" y="20" width="11" height="86"/>
+    <rect x="137" y="24" width="6" height="82"/>
+    <!-- Carro y horquillas -->
+    <rect x="140" y="40" width="9" height="62"/>
+    <rect x="140" y="95" width="58" height="8"/>
+  </g>
+  <!-- Ruedas -->
+  <circle cx="54" cy="106" r="23" fill="#111111"/>
+  <circle cx="54" cy="106" r="9" fill="#ffffff"/>
+  <circle cx="114" cy="110" r="17" fill="#111111"/>
+  <circle cx="114" cy="110" r="6" fill="#ffffff"/>
+
+  <!-- Banner rojo -->
+  <rect x="200" y="22" width="300" height="106" rx="6" fill="#c1121f"/>
+  <!-- Pastilla negra con borde blanco -->
+  <rect x="222" y="42" width="256" height="66" rx="33" fill="#111111" stroke="#ffffff" stroke-width="5"/>
+  <!-- Texto SETRASA -->
+  <text x="350" y="87" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="44" font-weight="800" letter-spacing="3" fill="#ffffff">SETRASA</text>
+</svg>
