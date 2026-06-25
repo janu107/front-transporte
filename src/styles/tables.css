@@ -59,7 +59,7 @@
 .icon-btn:active { transform: scale(0.92); }
 .icon-btn.edit:hover { color: var(--color-azul); background: rgba(29, 111, 165, 0.12); }
 .icon-btn.danger:hover { color: var(--danger); background: rgba(220, 38, 38, 0.12); }
-.icon-btn.view:hover { color: var(--color-teal-dark); background: rgba(20, 184, 166, 0.14); }
+.icon-btn.view:hover { color: var(--brand-red-dark); background: rgba(193, 18, 31, 0.12); }
 
 /* Estado vacío */
 .empty-state { text-align: center; padding: 56px 20px; color: var(--color-text-muted); }

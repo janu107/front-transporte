@@ -8,15 +8,16 @@ import PageHeader from '../../components/layout/PageHeader';
 import realApi from '../../api/realApi';
 import { ROUTES } from '../../routes/routePaths';
 
+// Paleta de marca SETRASA: rojos y negros/carbón
 const STAT_DEFS = [
-  { key: 'usuarios', label: 'Usuarios activos', icon: '👤', color: '#1d6fa5', filter: (i) => i.estado === 'ACTIVO' },
-  { key: 'roles', label: 'Roles', icon: '🛡️', color: '#0f3d5c' },
-  { key: 'transportistas', label: 'Transportistas', icon: '🧑‍✈️', color: '#0e9384' },
-  { key: 'pilotos', label: 'Pilotos', icon: '🪪', color: '#14b8a6' },
-  { key: 'camiones', label: 'Camiones', icon: '🚛', color: '#2563eb' },
-  { key: 'polizas', label: 'Pólizas abiertas', icon: '📄', color: '#f59e0b', filter: (i) => i.estado === 'ABIERTA' },
-  { key: 'anticipoProvision', label: 'Anticipos activos', icon: '💰', color: '#16a34a', filter: (i) => i.estado !== 'ANULADA' },
-  { key: 'liquidaciones', label: 'Liquidaciones pendientes', icon: '✅', color: '#dc2626', filter: (i) => i.estado === 'PENDIENTE' },
+  { key: 'usuarios', label: 'Usuarios activos', icon: '👤', color: '#c1121f', filter: (i) => i.estado === 'ACTIVO' },
+  { key: 'roles', label: 'Roles', icon: '🛡️', color: '#1a1a1a' },
+  { key: 'transportistas', label: 'Transportistas', icon: '🧑‍✈️', color: '#9d0e18' },
+  { key: 'pilotos', label: 'Pilotos', icon: '🪪', color: '#3a3a3a' },
+  { key: 'camiones', label: 'Camiones', icon: '🚛', color: '#e8323f' },
+  { key: 'polizas', label: 'Pólizas abiertas', icon: '📄', color: '#7f0d15', filter: (i) => i.estado === 'ABIERTA' },
+  { key: 'anticipoProvision', label: 'Anticipos activos', icon: '💰', color: '#262626', filter: (i) => i.estado !== 'ANULADA' },
+  { key: 'liquidaciones', label: 'Liquidaciones pendientes', icon: '✅', color: '#c1121f', filter: (i) => i.estado === 'PENDIENTE' },
 ];
 
 const QUICK = [
