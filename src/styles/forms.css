@@ -1,195 +1,266 @@
 /* =====================================================================
-   forms.css
-   Estilos de formularios, inputs, selects, botones, modal y login.
+   forms.css — Material Design: botones, text fields, modal y login.
    ===================================================================== */
 
-/* ============================ Botones ============================ */
+/* ============================ Botones (Material) ============================ */
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  padding: 10px 22px;
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
-  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+  transition: box-shadow var(--dur) var(--ease), background var(--dur) var(--ease),
+    transform var(--dur) var(--ease), border-color var(--dur) var(--ease), opacity var(--dur) var(--ease);
 }
-.btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.btn-primary { background: var(--color-azul-petroleo); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--color-azul-oscuro); }
-.btn-secondary { background: #fff; color: var(--color-text); border-color: var(--color-border); }
-.btn-secondary:hover:not(:disabled) { background: #f1f5f9; }
-.btn-teal { background: var(--color-teal); color: #fff; }
-.btn-teal:hover:not(:disabled) { background: var(--color-teal-dark); }
-.btn-danger { background: var(--danger); color: #fff; }
-.btn-danger:hover:not(:disabled) { background: var(--danger-dark); }
-.btn-ghost { background: transparent; color: var(--color-text-muted); }
-.btn-ghost:hover:not(:disabled) { background: #f1f5f9; }
-.btn-block { width: 100%; }
-.btn-sm { padding: 6px 12px; font-size: 12.5px; }
+/* State layer */
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+.btn:hover::before { opacity: 0.12; }
+.btn:active::before { opacity: 0.2; }
+.btn:active { transform: scale(0.98); }
+.btn > * { position: relative; z-index: 1; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.btn:disabled::before { opacity: 0; }
 
-/* ============================ Form fields ============================ */
-.form-field { margin-bottom: 14px; }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: var(--elev-1); }
+.btn-primary:hover:not(:disabled) { box-shadow: var(--elev-2); }
+
+.btn-teal { background: var(--accent); color: #fff; box-shadow: var(--elev-1); }
+.btn-teal:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(20, 184, 166, 0.4); }
+
+.btn-danger { background: var(--danger); color: #fff; box-shadow: var(--elev-1); }
+.btn-danger:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(220, 38, 38, 0.38); }
+
+/* Botones "tonales / outline" no usan overlay blanco */
+.btn-secondary {
+  background: var(--surface);
+  color: var(--color-azul-petroleo);
+  border-color: var(--outline);
+}
+.btn-secondary::before { background: var(--color-azul-petroleo); }
+.btn-secondary:hover:not(:disabled) { border-color: var(--color-azul-petroleo); }
+
+.btn-ghost { background: transparent; color: var(--color-text-muted); }
+.btn-ghost::before { background: var(--color-azul-petroleo); }
+
+.btn-block { width: 100%; }
+.btn-sm { padding: 7px 16px; font-size: 12.5px; }
+.btn-icon { display: inline-flex; font-size: 15px; }
+
+/* ============================ Campos (Material text field) ============================ */
+.form-field { margin-bottom: 16px; }
 .form-label {
   display: block;
   font-size: 12.5px;
   font-weight: 600;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   color: var(--color-azul-oscuro);
+  letter-spacing: 0.01em;
 }
 .form-label .req { color: var(--danger); margin-left: 2px; }
 
 .form-control {
   width: 100%;
-  padding: 9px 11px;
-  border: 1px solid var(--color-border);
+  padding: 11px 14px;
+  border: 1.5px solid var(--outline);
   border-radius: var(--radius-sm);
   font-size: 13.5px;
   font-family: inherit;
-  background: #fff;
+  background: var(--surface);
   color: var(--color-text);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
 }
+.form-control::placeholder { color: #9aabbb; }
+.form-control:hover:not(:disabled):not(:focus) { border-color: #b6c2cf; }
 .form-control:focus {
   outline: none;
-  border-color: var(--color-teal);
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.16);
 }
+.form-control:disabled { background: var(--surface-3); color: var(--color-text-muted); cursor: not-allowed; }
 .form-control.is-invalid { border-color: var(--danger); }
-.field-error { color: var(--danger); font-size: 11.5px; margin-top: 4px; }
+.form-control.is-invalid:focus { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.14); }
+select.form-control { cursor: pointer; }
 
-.search-input {
-  position: relative;
-  min-width: 240px;
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--danger);
+  font-size: 11.5px;
+  margin-top: 5px;
+  font-weight: 500;
 }
-.search-input input { padding-left: 34px; }
+
+.search-input { position: relative; min-width: 280px; }
+.search-input input { padding-left: 40px; border-radius: var(--radius-pill); background: var(--surface); }
 .search-input .search-icon {
   position: absolute;
-  left: 11px; top: 50%;
+  left: 14px; top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 15px;
+  pointer-events: none;
 }
 
-/* Grid de formulario en 2 columnas */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0 16px;
-}
+/* Grid de formulario */
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 18px; }
 .form-grid .col-span-2 { grid-column: span 2; }
 @media (max-width: 560px) {
   .form-grid { grid-template-columns: 1fr; }
   .form-grid .col-span-2 { grid-column: span 1; }
 }
 
-/* ============================ Modal ============================ */
+/* ============================ Modal (Material dialog) ============================ */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 44, 67, 0.5);
+  background: rgba(11, 31, 48, 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 40px 16px;
+  padding: 48px 16px;
   z-index: 60;
   overflow-y: auto;
+  animation: fadeIn 0.2s var(--ease);
 }
 .modal {
-  background: #fff;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-5);
   width: 100%;
-  max-width: 560px;
-  animation: fadeIn 0.18s ease-out;
+  max-width: 580px;
+  animation: scaleIn 0.26s var(--ease);
 }
-.modal.modal-lg { max-width: 760px; }
-.modal.modal-sm { max-width: 420px; }
+.modal.modal-lg { max-width: 780px; }
+.modal.modal-sm { max-width: 440px; }
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--color-border);
 }
-.modal-header h3 { font-size: 16px; }
+.modal-header h3 { font-size: 17px; font-weight: 700; }
 .modal-close {
   background: none; border: none; font-size: 22px; cursor: pointer;
   color: var(--color-text-muted); line-height: 1;
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.modal-body { padding: 20px; }
+.modal-close:hover { background: rgba(15, 61, 92, 0.08); color: var(--color-text); }
+.modal-body { padding: 24px; }
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 20px;
+  gap: 12px;
+  padding: 16px 24px;
   border-top: 1px solid var(--color-border);
-  background: #f8fafc;
-  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--surface-2);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
-.confirm-text { font-size: 14px; color: var(--color-text); }
-.confirm-icon { font-size: 34px; margin-bottom: 8px; }
+.confirm-text { font-size: 14.5px; color: var(--color-text); }
+.confirm-icon { font-size: 38px; margin-bottom: 10px; }
 
 /* ============================ Login ============================ */
 .login-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-azul-oscuro) 0%, var(--color-azul-petroleo) 60%, var(--color-teal-dark) 140%);
   padding: 20px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(20, 184, 166, 0.35) 0%, transparent 45%),
+    radial-gradient(120% 120% at 100% 100%, rgba(193, 18, 31, 0.28) 0%, transparent 45%),
+    linear-gradient(135deg, var(--color-azul-oscuro) 0%, var(--color-azul-petroleo) 70%);
+  overflow: hidden;
 }
+.login-page::before,
+.login-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(8px);
+  opacity: 0.18;
+}
+.login-page::before { width: 320px; height: 320px; background: var(--accent); top: -90px; right: -60px; }
+.login-page::after { width: 260px; height: 260px; background: var(--brand-red); bottom: -80px; left: -50px; }
+
 .login-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.97);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  box-shadow: var(--elev-5);
   width: 100%;
-  max-width: 400px;
-  padding: 34px 30px;
-  animation: fadeIn 0.25s ease-out;
+  max-width: 416px;
+  padding: 38px 34px;
+  animation: scaleIn 0.32s var(--ease);
 }
 .login-logo {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 22px;
+  gap: 8px;
+  margin-bottom: 26px;
   text-align: center;
 }
 .login-logo img { width: 60px; height: 60px; }
-/* Logo de marca (banner ancho): centrado y simétrico */
 .login-logo img.login-brand {
-  width: 260px;
-  max-width: 80%;
+  width: 248px;
+  max-width: 82%;
   height: auto;
-  margin: 0 auto 4px;
+  margin: 0 auto 6px;
   display: block;
+  filter: drop-shadow(0 6px 14px rgba(11, 31, 48, 0.18));
 }
-.login-logo h1 { font-size: 16px; }
+.login-logo h1 { font-size: 16px; font-weight: 700; }
 .login-logo p { margin: 0; font-size: 12.5px; color: var(--color-text-muted); }
-.login-footer { margin-top: 18px; text-align: center; font-size: 11.5px; color: var(--color-text-muted); }
+
+.login-footer { margin-top: 22px; text-align: center; font-size: 11.5px; color: var(--color-text-muted); }
 .login-hint {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: 11.5px;
-  background: #f1f5f9;
+  background: var(--primary-container);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  color: var(--color-text-muted);
+  padding: 10px 12px;
+  color: var(--on-primary-container);
   text-align: center;
 }
+.login-hint strong { color: var(--color-azul-oscuro); }
 
-/* Config form (parámetros) */
+/* Config / parámetros */
 .config-section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-azul-oscuro);
-  margin: 4px 0 12px;
-  padding-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-hover);
+  margin: 8px 0 16px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--color-border);
 }

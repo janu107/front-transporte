@@ -7,7 +7,7 @@
  *          rel.transportistas -> [...]
  */
 import { useState, useEffect } from 'react';
-import mockApi from '../api/mockApi';
+import realApi from '../api/realApi';
 
 export function useRelated(map = {}) {
   const [data, setData] = useState(() =>
@@ -20,7 +20,13 @@ export function useRelated(map = {}) {
     let active = true;
     (async () => {
       const entries = await Promise.all(
-        Object.entries(map).map(async ([alias, recurso]) => [alias, await mockApi.list(recurso)])
+        Object.entries(map).map(async ([alias, recurso]) => {
+          try {
+            return [alias, await realApi.list(recurso)];
+          } catch {
+            return [alias, []];
+          }
+        })
       );
       if (active) {
         setData(Object.fromEntries(entries));

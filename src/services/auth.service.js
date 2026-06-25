@@ -1,47 +1,46 @@
 /**
  * auth.service.js
- * Servicio de autenticación SIMULADA para la fase visual.
- * Valida contra credenciales mock y persiste un token/usuario en localStorage.
- *
- * En la fase backend, este servicio llamará a axiosClient sobre ENDPOINTS.auth.*
- * (ver api/axiosClient.js y api/endpoints.js).
+ * Servicio de autenticación real contra el backend (POST /api/auth/login).
+ * Persiste token y usuario en localStorage; el token se adjunta en cada
+ * petición vía axiosClient (interceptor).
  */
-import { MOCK_CREDENTIALS } from '../utils/constants';
+import axiosClient from '../api/axiosClient';
+import { ENDPOINTS } from '../api/endpoints';
 
 const TOKEN_KEY = 'transporte_token';
 const USER_KEY = 'transporte_user';
 
-const MOCK_USER = {
-  nombre: 'Administrador',
-  usuario: 'admin',
-  rol: 'ADMIN',
-};
-
 export const authService = {
-  /** Inicia sesión validando credenciales simuladas. */
+  /** Inicia sesión. Recibe { usuario, password } desde la pantalla de login. */
   async login({ usuario, password }) {
-    await new Promise((r) => setTimeout(r, 300));
-    if (usuario === MOCK_CREDENTIALS.usuario && password === MOCK_CREDENTIALS.password) {
-      const token = `mock-token-${Date.now()}`;
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_KEY, JSON.stringify(MOCK_USER));
-      return { token, user: MOCK_USER };
-    }
-    throw new Error('Usuario o contraseña incorrectos.');
+    const resp = await axiosClient.post(ENDPOINTS.auth.login, {
+      usuario,
+      contrasena: password,
+    });
+    const payload = resp.data?.data || {};
+    const { token, user } = payload;
+    if (!token) throw new Error('Respuesta de login inválida del servidor.');
+
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    return { token, user };
   },
 
-  /** Cierra la sesión simulada. */
-  logout() {
+  /** Cierra la sesión (borra credenciales locales; notifica al backend de forma opcional). */
+  async logout() {
+    try {
+      await axiosClient.post(ENDPOINTS.auth.logout);
+    } catch {
+      /* logout es local con JWT sin estado */
+    }
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   },
 
-  /** Indica si hay una sesión activa. */
   isAuthenticated() {
     return Boolean(localStorage.getItem(TOKEN_KEY));
   },
 
-  /** Devuelve el usuario actual desde localStorage. */
   getCurrentUser() {
     try {
       return JSON.parse(localStorage.getItem(USER_KEY));

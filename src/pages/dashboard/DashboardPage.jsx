@@ -1,11 +1,11 @@
 /**
  * DashboardPage.jsx
- * Panel principal con tarjetas resumen (datos mock) y accesos rápidos.
+ * Panel principal con tarjetas resumen (datos reales) y accesos rápidos.
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/layout/PageHeader';
-import mockApi from '../../api/mockApi';
+import realApi from '../../api/realApi';
 import { ROUTES } from '../../routes/routePaths';
 
 const STAT_DEFS = [
@@ -36,9 +36,13 @@ export default function DashboardPage() {
     (async () => {
       const entries = await Promise.all(
         STAT_DEFS.map(async (s) => {
-          const list = await mockApi.list(s.key);
-          const count = s.filter ? list.filter(s.filter).length : list.length;
-          return [s.key, count];
+          try {
+            const list = await realApi.list(s.key);
+            const count = s.filter ? list.filter(s.filter).length : list.length;
+            return [s.key, count];
+          } catch {
+            return [s.key, '—'];
+          }
         })
       );
       setStats(Object.fromEntries(entries));

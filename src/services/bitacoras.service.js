@@ -1,22 +1,18 @@
 /**
  * bitacoras.service.js
- * Servicio del módulo Bitácoras / Auditoría. Delega en mockApi en esta fase.
- * Futuro: ENDPOINTS.bitacoras.list con filtros por query.
+ * Servicio del módulo Bitácoras / Auditoría contra el backend real.
+ * El filtrado se realiza en el servidor mediante query params.
  */
-import mockApi from '../api/mockApi';
+import realApi from '../api/realApi';
 
 export const bitacorasService = {
-  /** Lista las bitácoras aplicando filtros simples en memoria. */
+  /** Lista las bitácoras aplicando filtros (modulo, operacion, usuario, fechaInicio, fechaFin). */
   async list(filtros = {}) {
-    const data = await mockApi.list('bitacoras');
-    return data.filter((b) => {
-      if (filtros.modulo && !String(b.modulo).toLowerCase().includes(filtros.modulo.toLowerCase())) return false;
-      if (filtros.operacion && b.operacion !== filtros.operacion) return false;
-      if (filtros.usuario && !String(b.usuario_accion).toLowerCase().includes(filtros.usuario.toLowerCase())) return false;
-      if (filtros.fechaInicio && b.fecha_hora_accion < filtros.fechaInicio) return false;
-      if (filtros.fechaFin && b.fecha_hora_accion > `${filtros.fechaFin} 23:59:59`) return false;
-      return true;
-    });
+    // Limpia parámetros vacíos para no enviarlos
+    const params = Object.fromEntries(
+      Object.entries(filtros).filter(([, v]) => v !== '' && v !== undefined && v !== null)
+    );
+    return realApi.query('bitacoras', params);
   },
 };
 

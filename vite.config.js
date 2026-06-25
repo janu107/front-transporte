@@ -6,7 +6,8 @@ export default defineConfig({
   base: '/setrasa/',
   plugins: [react()],
   server: {
-    port: 5173,
+    port: 5174,
+    strictPort: false,
     open: false,
   },
 });

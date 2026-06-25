@@ -21,7 +21,7 @@ import { validateForm, required, email } from '../../utils/validators';
 const EMPTY = { usuario: '', nombre: '', correo: '', puesto: '', fecha_inicio: '', estado: 'ACTIVO', contrasena: '' };
 
 export default function UsuariosPage() {
-  const { items, loading, message, create, update, patchEstado } = useCrudMock('usuarios');
+  const { items, loading, message, create, update, patchEstado, changePassword } = useCrudMock('usuarios');
   const { term, setTerm, filtered } = useSearch(items, ['usuario', 'nombre', 'correo', 'puesto']);
   const modal = useModal();
   const pwdModal = useModal();
@@ -54,12 +54,17 @@ export default function UsuariosPage() {
 
     setSaving(true);
     try {
-      const payload = { ...values };
-      // No persistimos la contraseña en el mock (no se muestra ni se guarda en tabla).
-      delete payload.contrasena;
-      if (isEdit) await update(modal.data.codigo, payload);
-      else await create({ ...payload, debe_cambiar_pwd: true });
+      if (isEdit) {
+        // En edición no se envía la contraseña (se cambia con la acción dedicada).
+        const { contrasena, ...payload } = values;
+        await update(modal.data.codigo, payload);
+      } else {
+        // Al crear sí se envía la contraseña; el backend la hashea con bcrypt.
+        await create(values);
+      }
       modal.close();
+    } catch {
+      /* el hook muestra el mensaje de error */
     } finally {
       setSaving(false);
     }
@@ -73,9 +78,12 @@ export default function UsuariosPage() {
   const openPwd = (row) => { setPwd(''); setPwdError(''); pwdModal.open(row); };
   const handlePwdSave = async () => {
     if (!pwd) { setPwdError('Ingrese la nueva contraseña'); return; }
-    // En esta fase no se persiste la contraseña (solo confirmación visual).
-    await update(pwdModal.data.codigo, { debe_cambiar_pwd: false });
-    pwdModal.close();
+    try {
+      await changePassword(pwdModal.data.codigo, pwd);
+      pwdModal.close();
+    } catch {
+      setPwdError('No se pudo cambiar la contraseña.');
+    }
   };
 
   const columns = [

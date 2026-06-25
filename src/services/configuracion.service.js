@@ -1,20 +1,19 @@
 /**
  * configuracion.service.js
- * Servicio del módulo Configuración (empresas y parámetros).
- * Delega en mockApi en esta fase; futuro: ENDPOINTS.configuracion.*
+ * Servicio del módulo Configuración (empresas y parámetros) contra el backend real.
  */
-import mockApi from '../api/mockApi';
+import realApi from '../api/realApi';
 
 export const configuracionService = {
   // Empresas
-  listEmpresas: () => mockApi.list('empresas'),
-  createEmpresa: (data) => mockApi.create('empresas', data),
-  updateEmpresa: (id, data) => mockApi.update('empresas', id, data),
-  removeEmpresa: (id) => mockApi.remove('empresas', id),
+  listEmpresas: () => realApi.list('empresas'),
+  createEmpresa: (data) => realApi.create('empresas', data),
+  updateEmpresa: (id, data) => realApi.update('empresas', id, data),
+  removeEmpresa: (id) => realApi.remove('empresas', id),
 
   // Parámetros (fila única)
-  getParametros: () => mockApi.getSingle('parametros'),
-  updateParametros: (data) => mockApi.updateSingle('parametros', data),
+  getParametros: () => realApi.getSingle('parametros'),
+  updateParametros: (data) => realApi.updateSingle('parametros', data),
 };
 
 export default configuracionService;
