@@ -12,6 +12,9 @@ import { ROUTES } from './routePaths';
 import LoginPage from '../pages/auth/LoginPage';
 import DashboardPage from '../pages/dashboard/DashboardPage';
 
+// Control del API
+import ConfirmacionValesPage from '../pages/controlapi/ConfirmacionValesPage';
+
 // Seguridad
 import UsuariosPage from '../pages/seguridad/UsuariosPage';
 import RolesPage from '../pages/seguridad/RolesPage';
@@ -59,6 +62,9 @@ export function AppRoutes() {
       <Route element={<PrivateRoute />}>
         <Route element={<PrivateLayout />}>
           <Route path={ROUTES.dashboard} element={<DashboardPage />} />
+
+          {/* Control del API */}
+          <Route path={ROUTES.confirmacionVales} element={<ConfirmacionValesPage />} />
 
           {/* Seguridad */}
           <Route path={ROUTES.usuarios} element={<UsuariosPage />} />

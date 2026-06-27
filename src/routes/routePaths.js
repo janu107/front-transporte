@@ -9,6 +9,9 @@ export const ROUTES = {
   login: '/login',
   dashboard: '/dashboard',
 
+  // Control del API (Confirmación de Vales)
+  confirmacionVales: '/control-api/confirmacion-vales',
+
   // Seguridad
   usuarios: '/seguridad/usuarios',
   roles: '/seguridad/roles',

@@ -91,6 +91,8 @@ export function CrudPage({
         await create(payload);
       }
       modal.close();
+    } catch {
+      // useCrudMock ya muestra y registra el error; se evita una promesa rechazada sin manejar.
     } finally {
       setSaving(false);
     }

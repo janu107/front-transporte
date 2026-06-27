@@ -11,6 +11,10 @@ export const MENU = [
     items: [{ label: 'Dashboard', path: ROUTES.dashboard, icon: '📊' }],
   },
   {
+    title: 'Control API',
+    items: [{ label: 'Confirmación de Vales', path: ROUTES.confirmacionVales, icon: '⛽' }],
+  },
+  {
     title: 'Seguridad',
     items: [
       { label: 'Usuarios', path: ROUTES.usuarios, icon: '👤' },

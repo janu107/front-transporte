@@ -5,7 +5,7 @@
  *
  * Base configurable por variable de entorno VITE_API_URL.
  */
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 export const ENDPOINTS = {
   // Auth
@@ -66,6 +66,12 @@ export const ENDPOINTS = {
     create: (recurso) => `/procesos/${recurso}`,
     update: (recurso, id) => `/procesos/${recurso}/${id}`,
     remove: (recurso, id) => `/procesos/${recurso}/${id}`,
+  },
+
+  // Control del API (Confirmación de Vales)
+  controlApi: {
+    pendientes: '/control-api/pendientes', // GET
+    confirmar: '/control-api/confirmar', // POST
   },
 
   // Bitácoras
