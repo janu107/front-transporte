@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 // Configuración de Vite para el frontend del Sistema Administrativo de Transporte.
 export default defineConfig({
-  base: '/setrasa/',
+  base: '/transporte/',
   plugins: [react()],
   server: {
     port: 5174,

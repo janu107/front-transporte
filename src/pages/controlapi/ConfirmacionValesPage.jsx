@@ -42,6 +42,8 @@ export default function ConfirmacionValesPage() {
 
   const [message, setMessage] = useState(null); // { type, text }
   const [confirming, setConfirming] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const PAGE_SIZE = 10;
 
   const notify = useCallback((type, text) => {
     setMessage({ type, text });
@@ -54,6 +56,7 @@ export default function ConfirmacionValesPage() {
       const data = await controlApiService.listarPendientes();
       setPendientes(data);
       setLastUpdate(new Date());
+      setPagina(1);
       // Conserva la selección solo si el vale sigue pendiente.
       setSelected((prev) => (prev && data.some((r) => r.api_id === prev.api_id) ? prev : null));
     } catch (e) {
@@ -177,6 +180,10 @@ export default function ConfirmacionValesPage() {
     }
   };
 
+  const totalPaginas = Math.max(1, Math.ceil(pendientes.length / PAGE_SIZE));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const valesPagina = pendientes.slice((paginaActual - 1) * PAGE_SIZE, paginaActual * PAGE_SIZE);
+
   return (
     <div>
       <PageHeader
@@ -243,7 +250,7 @@ export default function ConfirmacionValesPage() {
                   </td>
                 </tr>
               ) : (
-                pendientes.map((row) => {
+                valesPagina.map((row) => {
                   const isSel = selected && selected.api_id === row.api_id;
                   return (
                     <tr
@@ -272,7 +279,28 @@ export default function ConfirmacionValesPage() {
           </table>
         </div>
         {!loading && pendientes.length > 0 && (
-          <div className="table-footer"><span>{pendientes.length} vale(s) pendiente(s)</span></div>
+          <div className="table-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>{pendientes.length} vale(s) pendiente(s)</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                disabled={paginaActual === 1}
+                style={paginaBtnStyle}
+              >
+                ‹ Anterior
+              </button>
+              <span style={{ fontSize: 13, color: '#374151', minWidth: 80, textAlign: 'center' }}>
+                Página {paginaActual} de {totalPaginas}
+              </span>
+              <button
+                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                disabled={paginaActual === totalPaginas}
+                style={paginaBtnStyle}
+              >
+                Siguiente ›
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -369,6 +397,10 @@ export default function ConfirmacionValesPage() {
 
 /* ---- Subcomponentes de presentación ---- */
 const dlStyle = { display: 'grid', gridTemplateColumns: '130px 1fr', rowGap: 8, columnGap: 10, margin: 0 };
+const paginaBtnStyle = {
+  padding: '4px 12px', fontSize: 13, borderRadius: 6, border: '1px solid #d1d5db',
+  background: '#fff', cursor: 'pointer', color: '#374151',
+};
 const resumenStyle = {
   display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 16,
   padding: '12px 14px', background: '#f8f9fb', borderRadius: 8, border: '1px solid #eceef1',
