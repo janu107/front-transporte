@@ -9,7 +9,7 @@ import AppRoutes from './routes/AppRoutes';
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter basename="/setrasa">
+      <BrowserRouter basename="/transporte">
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
