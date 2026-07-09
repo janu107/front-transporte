@@ -229,16 +229,16 @@ export default function ConfirmacionValesPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>No. Mato</th>
-                <th>No. Vale</th>
-                <th>Galones</th>
-                <th>Fecha</th>
-                <th>Nombre Piloto</th>
-                <th>Id Vehículo</th>
-                <th>Id Piloto</th>
-                <th>Manguera</th>
-                <th>Surtidor</th>
-                <th>Estado</th>
+                <th>No. Mato.</th>
+                <th>No. Vale.</th>
+                <th>Galones.</th>
+                <th>Fecha.</th>
+                <th>Nombre Piloto.</th>
+                <th>Id Vehículo.</th>
+                <th>Id Piloto.</th>
+                <th>Manguera.</th>
+                <th>Surtidor.</th>
+                <th>Estado.</th>
               </tr>
             </thead>
             <tbody>
