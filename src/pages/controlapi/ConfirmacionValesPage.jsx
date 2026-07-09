@@ -15,6 +15,7 @@ import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
+import SearchBar from '../../components/common/SearchBar';
 import realApi from '../../api/realApi';
 import controlApiService from '../../services/controlApi.service';
 import { toOptions } from '../../hooks/useRelated';
@@ -44,6 +45,7 @@ export default function ConfirmacionValesPage() {
 
   const [message, setMessage] = useState(null); // { type, text }
   const [confirming, setConfirming] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const [pagina, setPagina] = useState(1);
   const PAGE_SIZE = 10;
 
@@ -192,9 +194,31 @@ export default function ConfirmacionValesPage() {
     }
   };
 
-  const totalPaginas = Math.max(1, Math.ceil(pendientes.length / PAGE_SIZE));
+  // Búsqueda libre sobre TODOS los campos visibles de la tabla (con el mismo
+  // formato que ve el usuario: número, fecha dd/mm/aaaa, estado, etc.).
+  const busquedaNorm = busqueda.trim().toLowerCase();
+  const pendientesFiltrados = useMemo(() => {
+    if (!busquedaNorm) return pendientes;
+    return pendientes.filter((row) => {
+      const campos = [
+        row.api_numero,
+        row.api_num_vale,
+        formatNumber(row.api_cant_galones),
+        formatDate(row.api_fecha),
+        row.api_nombre_piloto,
+        row.api_id_vehiculo,
+        row.api_id_piloto,
+        row.api_manguera,
+        row.api_surtidor,
+        'Pendiente',
+      ];
+      return campos.some((c) => c != null && String(c).toLowerCase().includes(busquedaNorm));
+    });
+  }, [pendientes, busquedaNorm]);
+
+  const totalPaginas = Math.max(1, Math.ceil(pendientesFiltrados.length / PAGE_SIZE));
   const paginaActual = Math.min(pagina, totalPaginas);
-  const valesPagina = pendientes.slice((paginaActual - 1) * PAGE_SIZE, paginaActual * PAGE_SIZE);
+  const valesPagina = pendientesFiltrados.slice((paginaActual - 1) * PAGE_SIZE, paginaActual * PAGE_SIZE);
 
   return (
     <div>
@@ -208,8 +232,15 @@ export default function ConfirmacionValesPage() {
         <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>
       )}
 
-      {/* Barra superior: actualizar / último refresco */}
+      {/* Barra superior: buscador + actualizar / último refresco */}
       <div className="toolbar" style={{ alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 320px', minWidth: 260, maxWidth: 440 }}>
+          <SearchBar
+            value={busqueda}
+            onChange={(v) => { setBusqueda(v); setPagina(1); }}
+            placeholder="Buscar en todos los campos (mato, vale, piloto, placa, fecha...)"
+          />
+        </div>
         <div className="spacer" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {lastUpdate && (
@@ -252,6 +283,12 @@ export default function ConfirmacionValesPage() {
                     No hay vales pendientes en el API.
                   </td>
                 </tr>
+              ) : pendientesFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
+                    No se encontraron vales que coincidan con «{busqueda.trim()}».
+                  </td>
+                </tr>
               ) : (
                 valesPagina.map((row) => {
                   const isSel = selected && selected.api_id === row.api_id;
@@ -283,7 +320,11 @@ export default function ConfirmacionValesPage() {
         </div>
         {!loading && pendientes.length > 0 && (
           <div className="table-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>{pendientes.length} vale(s) pendiente(s)</span>
+            <span>
+              {busquedaNorm
+                ? `${pendientesFiltrados.length} de ${pendientes.length} vale(s)`
+                : `${pendientes.length} vale(s) pendiente(s)`}
+            </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button
                 onClick={() => setPagina((p) => Math.max(1, p - 1))}
