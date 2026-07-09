@@ -14,12 +14,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
+import Modal from '../../components/common/Modal';
 import realApi from '../../api/realApi';
 import controlApiService from '../../services/controlApi.service';
 import { toOptions } from '../../hooks/useRelated';
 import { formatNumber, formatDate, formatCurrency } from '../../utils/formatters';
 
 const REFRESH_MS = 3 * 60 * 1000; // 3 minutos
+const FORM_VACIO = { idTransportista: '', idPiloto: '', idCamion: '', idPoliza: '', idBomba: '', idFactura: '' };
 
 export default function ConfirmacionValesPage() {
   // Datos del API y catálogos
@@ -38,7 +40,7 @@ export default function ConfirmacionValesPage() {
   // Selección y formulario
   const [ubicacionFiltro, setUbicacionFiltro] = useState('');
   const [selected, setSelected] = useState(null);
-  const [form, setForm] = useState({ idTransportista: '', idPiloto: '', idCamion: '', idPoliza: '', idBomba: '', idFactura: '' });
+  const [form, setForm] = useState(FORM_VACIO);
 
   const [message, setMessage] = useState(null); // { type, text }
   const [confirming, setConfirming] = useState(false);
@@ -131,10 +133,19 @@ export default function ConfirmacionValesPage() {
   // Al cambiar la bomba se reinicia la factura (cambian las facturas disponibles).
   const setBomba = (value) => setForm((prev) => ({ ...prev, idBomba: value, idFactura: '' }));
 
+  // Abre el modal con el vale elegido, partiendo de un formulario limpio.
   const seleccionarVale = (row) => {
     setSelected(row);
-    // Reinicia bomba/factura al cambiar de vale (cambia el contexto de ubicación).
-    setForm((prev) => ({ ...prev, idBomba: '', idFactura: '' }));
+    setUbicacionFiltro('');
+    setForm(FORM_VACIO);
+    setMessage(null);
+  };
+
+  // Cierra el modal y descarta la selección/formulario.
+  const cerrarModal = () => {
+    setSelected(null);
+    setUbicacionFiltro('');
+    setForm(FORM_VACIO);
     setMessage(null);
   };
 
@@ -167,9 +178,10 @@ export default function ConfirmacionValesPage() {
         ? `Se generaron 2 registros (cruce de facturas): #${r.det1} y #${r.det2}.`
         : `Se generó el registro #${r.det1}.`;
       notify('success', `${r.mensaje} ${detalle}`);
-      // Limpia y recarga
-      setForm({ idTransportista: '', idPiloto: '', idCamion: '', idPoliza: '', idBomba: '', idFactura: '' });
+      // Limpia y recarga (cierra el modal)
+      setForm(FORM_VACIO);
       setSelected(null);
+      setUbicacionFiltro('');
       await cargarPendientes();
       // Refresca facturas para reflejar el saldo descontado.
       realApi.list('facturasVales').then(setFacturas).catch(() => {});
@@ -191,22 +203,13 @@ export default function ConfirmacionValesPage() {
         description="Control del API · Enlace MATO. Vales pendientes de despacho reportados desde el API."
       />
 
-      {message && (
+      {/* Alerta a nivel de página (solo cuando el modal está cerrado). */}
+      {message && !selected && (
         <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>
       )}
 
-      {/* Barra superior: ubicación + actualizar */}
-      <div className="toolbar" style={{ alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 260 }}>
-          <Select
-            label="Ubicación (predio)"
-            name="ubicacionFiltro"
-            value={ubicacionFiltro}
-            onChange={(e) => { setUbicacionFiltro(e.target.value); setForm((prev) => ({ ...prev, idBomba: '', idFactura: '' })); }}
-            options={ubicacionOptions}
-            placeholder="Seleccione predio..."
-          />
-        </div>
+      {/* Barra superior: actualizar / último refresco */}
+      <div className="toolbar" style={{ alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div className="spacer" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {lastUpdate && (
@@ -304,99 +307,112 @@ export default function ConfirmacionValesPage() {
         )}
       </div>
 
-      {/* Paneles inferiores: Datos MATO + Genera Vale SETRASA */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 18, marginTop: 18 }}>
-        {/* Datos MATO (solo lectura) */}
-        <div className="card">
-          <div className="card-body">
-            <h3 style={{ marginTop: 0, marginBottom: 14 }}>Datos MATO</h3>
-            {!selected ? (
-              <p style={{ color: '#6b7280' }}>Seleccione un vale de la tabla para ver su detalle.</p>
-            ) : (
-              <dl style={dlStyle}>
-                <Dato label="No. Mato" value={selected.api_numero} />
-                <Dato label="No. Vale" value={selected.api_num_vale} />
-                <Dato label="Galones" value={formatNumber(selected.api_cant_galones)} />
-                <Dato label="Fecha" value={formatDate(selected.api_fecha)} />
-                <Dato label="Nombre Piloto" value={selected.api_nombre_piloto} />
-                <Dato label="Placa" value={selected.api_placa} />
-                <Dato label="Licencia" value={selected.api_licencia} />
-                <Dato label="Manguera" value={selected.api_manguera} />
-                <Dato label="Surtidor" value={selected.api_surtidor} />
-                <Dato label="Estado" value="Pendiente" />
-              </dl>
+      {/* Modal de confirmación: se abre al seleccionar un vale de la tabla. */}
+      <Modal
+        isOpen={!!selected}
+        onClose={cerrarModal}
+        size="lg"
+        title={selected ? `Confirmar vale — MATO ${selected.api_numero}` : 'Confirmar vale'}
+        footer={
+          <>
+            <Button variant="secondary" onClick={cerrarModal}>Cancelar</Button>
+            <Button variant="primary" icon="✅" onClick={confirmar} disabled={!puedeConfirmar}>
+              {confirming ? 'Confirmando...' : 'CONFIRMAR'}
+            </Button>
+          </>
+        }
+      >
+        {selected && (
+          <>
+            {/* Alerta de errores de confirmación dentro del modal. */}
+            {message && (
+              <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`} style={{ marginTop: 0 }}>
+                {message.text}
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Genera Vale SETRASA */}
-        <div className="card">
-          <div className="card-body">
-            <h3 style={{ marginTop: 0, marginBottom: 14 }}>Genera Vale SETRASA</h3>
-            <fieldset disabled={!selected} style={{ border: 0, padding: 0, margin: 0 }}>
-              <div className="form-grid">
-                <Select
-                  label="Transportista" name="idTransportista" required
-                  value={form.idTransportista}
-                  onChange={(e) => setField('idTransportista', e.target.value)}
-                  options={transportistaOptions}
-                />
-                <Select
-                  label="Piloto" name="idPiloto" required
-                  value={form.idPiloto}
-                  onChange={(e) => setField('idPiloto', e.target.value)}
-                  options={pilotoOptions}
-                />
-                <Select
-                  label="Camión (placa)" name="idCamion" required
-                  value={form.idCamion}
-                  onChange={(e) => setField('idCamion', e.target.value)}
-                  options={camionOptions}
-                />
-                <Select
-                  label="Póliza" name="idPoliza" required
-                  value={form.idPoliza}
-                  onChange={(e) => setField('idPoliza', e.target.value)}
-                  options={polizaOptions}
-                />
-                <Select
-                  label="Surtidor / Bomba" name="idBomba" required
-                  value={form.idBomba}
-                  onChange={(e) => setBomba(e.target.value)}
-                  options={bombaOptions}
-                  placeholder={ubicacionActiva ? 'Seleccione...' : 'Seleccione ubicación primero'}
-                />
-                <Select
-                  label="Factura / Vale" name="idFactura" required className="col-span-2"
-                  value={form.idFactura}
-                  onChange={(e) => setField('idFactura', e.target.value)}
-                  options={facturaOptions}
-                  placeholder={form.idBomba ? (facturaOptions.length ? 'Seleccione...' : 'Sin factura con saldo') : 'Seleccione bomba primero'}
-                />
-              </div>
+            {/* Datos MATO (solo lectura) */}
+            <h4 style={{ margin: '0 0 12px' }}>Datos MATO</h4>
+            <dl style={dlStyle}>
+              <Dato label="No. Mato" value={selected.api_numero} />
+              <Dato label="No. Vale" value={selected.api_num_vale} />
+              <Dato label="Galones" value={formatNumber(selected.api_cant_galones)} />
+              <Dato label="Fecha" value={formatDate(selected.api_fecha)} />
+              <Dato label="Nombre Piloto" value={selected.api_nombre_piloto} />
+              <Dato label="Placa" value={selected.api_placa} />
+              <Dato label="Licencia" value={selected.api_licencia} />
+              <Dato label="Manguera" value={selected.api_manguera} />
+              <Dato label="Surtidor" value={selected.api_surtidor} />
+              <Dato label="Estado" value="Pendiente" />
+            </dl>
 
-              {/* Resumen galones / precio / total */}
-              <div style={resumenStyle}>
-                <Resumen label="Galones" value={formatNumber(galones)} />
-                <Resumen label="Precio" value={formatCurrency(precio)} />
-                <Resumen label="Total" value={formatCurrency(total)} strong />
-              </div>
+            {/* Genera Vale SETRASA */}
+            <h4 style={{ margin: '22px 0 12px', paddingTop: 18, borderTop: '1px solid #eceef1' }}>
+              Genera Vale SETRASA
+            </h4>
+            <div className="form-grid">
+              <Select
+                label="Ubicación (predio)" name="ubicacionFiltro" required className="col-span-2"
+                value={ubicacionFiltro}
+                onChange={(e) => { setUbicacionFiltro(e.target.value); setForm((prev) => ({ ...prev, idBomba: '', idFactura: '' })); }}
+                options={ubicacionOptions}
+                placeholder="Seleccione predio..."
+              />
+              <Select
+                label="Transportista" name="idTransportista" required
+                value={form.idTransportista}
+                onChange={(e) => setField('idTransportista', e.target.value)}
+                options={transportistaOptions}
+              />
+              <Select
+                label="Piloto" name="idPiloto" required
+                value={form.idPiloto}
+                onChange={(e) => setField('idPiloto', e.target.value)}
+                options={pilotoOptions}
+              />
+              <Select
+                label="Camión (placa)" name="idCamion" required
+                value={form.idCamion}
+                onChange={(e) => setField('idCamion', e.target.value)}
+                options={camionOptions}
+              />
+              <Select
+                label="Póliza" name="idPoliza" required
+                value={form.idPoliza}
+                onChange={(e) => setField('idPoliza', e.target.value)}
+                options={polizaOptions}
+              />
+              <Select
+                label="Surtidor / Bomba" name="idBomba" required
+                value={form.idBomba}
+                onChange={(e) => setBomba(e.target.value)}
+                options={bombaOptions}
+                placeholder={ubicacionActiva ? 'Seleccione...' : 'Seleccione predio primero'}
+              />
+              <Select
+                label="Factura / Vale" name="idFactura" required
+                value={form.idFactura}
+                onChange={(e) => setField('idFactura', e.target.value)}
+                options={facturaOptions}
+                placeholder={form.idBomba ? (facturaOptions.length ? 'Seleccione...' : 'Sin factura con saldo') : 'Seleccione bomba primero'}
+              />
+            </div>
 
-              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button variant="primary" icon="✅" onClick={confirmar} disabled={!puedeConfirmar}>
-                  {confirming ? 'Confirmando...' : 'CONFIRMAR'}
-                </Button>
-              </div>
-            </fieldset>
-          </div>
-        </div>
-      </div>
+            {/* Resumen galones / precio / total */}
+            <div style={resumenStyle}>
+              <Resumen label="Galones" value={formatNumber(galones)} />
+              <Resumen label="Precio" value={formatCurrency(precio)} />
+              <Resumen label="Total" value={formatCurrency(total)} strong />
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }
 
 /* ---- Subcomponentes de presentación ---- */
-const dlStyle = { display: 'grid', gridTemplateColumns: '130px 1fr', rowGap: 8, columnGap: 10, margin: 0 };
+const dlStyle = { display: 'grid', gridTemplateColumns: '110px 1fr 110px 1fr', rowGap: 8, columnGap: 16, margin: 0 };
 const paginaBtnStyle = {
   padding: '4px 12px', fontSize: 13, borderRadius: 6, border: '1px solid #d1d5db',
   background: '#fff', cursor: 'pointer', color: '#374151',
