@@ -37,6 +37,8 @@ const PATHS = {
   anticipoProvision: '/procesos/anticipo-provision',
   detalleFacturas: '/procesos/detalle-facturas',
   liquidaciones: '/procesos/liquidaciones',
+  // Registro de Viajes (Detalle de Póliza / Envíos, con reglas de negocio)
+  viajes: '/viajes',
   // Auditoría
   bitacoras: '/bitacoras',
 };
@@ -84,6 +86,11 @@ export const realApi = {
   // Consultas con query params (p.ej. bitácoras)
   async query(recurso, params = {}) {
     return unwrap(await axiosClient.get(pathOf(recurso), { params }));
+  },
+
+  // Registro de Viajes: resumen (saldo de piezas / viajes realizados / pesos) por póliza.
+  async viajeResumen(idPoliza) {
+    return unwrap(await axiosClient.get(`/viajes/resumen/${idPoliza}`));
   },
 };
 

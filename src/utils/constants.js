@@ -50,6 +50,16 @@ export const ESTADO_OPTIONS_LIQUIDACION = [
   { value: 'ANULADA', label: 'ANULADA' },
 ];
 
+// Registro de Viajes (Detalle de Póliza / Envíos)
+export const TIPO_VIAJE_OPTIONS = [
+  { value: 'Viajes Locales', label: 'Viajes Locales' },
+  { value: 'Carta de Porte', label: 'Carta de Porte' },
+  { value: 'Exportacion', label: 'Exportación' },
+];
+
+// VALOR = PESO (kg) × COEFICIENTE_VALOR_VIAJE  (debe coincidir con el backend).
+export const COEFICIENTE_VALOR_VIAJE = 0.0043;
+
 export const TIPO_LICENCIA_OPTIONS = [
   { value: 'A', label: 'Tipo A' },
   { value: 'B', label: 'Tipo B' },

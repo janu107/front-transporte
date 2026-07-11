@@ -71,7 +71,17 @@ export const ENDPOINTS = {
   // Control del API (Confirmación de Vales)
   controlApi: {
     pendientes: '/control-api/pendientes', // GET
+    asignarUbicacion: (apiId) => `/control-api/pendientes/${apiId}/ubicacion`, // PATCH
     confirmar: '/control-api/confirmar', // POST
+  },
+
+  // Registro de Viajes (Detalle de Póliza / Envíos)
+  viajes: {
+    list: '/viajes', // GET
+    create: '/viajes', // POST
+    update: (id) => `/viajes/${id}`, // PUT
+    estado: (id) => `/viajes/${id}/estado`, // PATCH
+    resumen: (idPoliza) => `/viajes/resumen/${idPoliza}`, // GET
   },
 
   // Bitácoras

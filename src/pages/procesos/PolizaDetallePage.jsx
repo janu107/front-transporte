@@ -1,99 +1,450 @@
 /**
- * PolizaDetallePage.jsx — pro_poliza_detalle (idField: correlativo).
- * Detalle de póliza / envíos. Selects de póliza, transportista, camión, piloto y tarifa.
+ * PolizaDetallePage.jsx — REGISTRO DE VIAJES (Detalle de Póliza / Envíos).
+ * Reproduce la ventana legacy "REGISTRO – VIAJES":
+ *   - Tipo (Viajes Locales / Carta de Porte / Exportación)
+ *   - Póliza ABIERTA  -> muestra pesos, saldo de piezas y viajes realizados
+ *   - Tarifa de embarque
+ *   - Placa (camión) -> Transportista automático (solo lectura) -> Piloto (licencia)
+ *   - No. de TC, Fecha, No. de Piezas, Peso (kg)
+ *   - VALOR calculado = Peso × 0.0043 (solo lectura; el backend lo recalcula)
+ *   - Observaciones
+ *   - Totales: Saldo de Piezas y Viajes Realizados
+ *
+ * Reglas validadas también en el servidor (/viajes): póliza abierta, piloto del
+ * transportista y piezas ≤ saldo disponible de la póliza.
  */
-import CrudPage from '../../components/common/CrudPage';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import PageHeader from '../../components/layout/PageHeader';
+import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
+import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
-import useRelated, { toOptions } from '../../hooks/useRelated';
-import { lookup, formatDate, formatCurrency } from '../../utils/formatters';
-import { validateForm, required, nonNegative } from '../../utils/validators';
-import { ESTADO_OPTIONS_PROCESO } from '../../utils/constants';
+import SearchBar from '../../components/common/SearchBar';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import realApi from '../../api/realApi';
+import { lookup, formatDate, formatNumber, formatCurrency } from '../../utils/formatters';
+import { TIPO_VIAJE_OPTIONS, COEFICIENTE_VALOR_VIAJE } from '../../utils/constants';
+
+const EMPTY = {
+  num_envio: '', tipo: 'Viajes Locales', id_poliza: '', id_tarifa_embarque: '',
+  id_camion: '', num_tc: '', id_piloto: '', fecha: '',
+  cantidad_bultos_piezas: '', peso: '', observaciones: '', estado: 'PENDIENTE',
+};
+
+const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 export default function PolizaDetallePage() {
-  const { polizas = [], transportistas = [], camiones = [], pilotos = [], tarifaEmbarque = [] } = useRelated({
-    polizas: 'polizas',
-    transportistas: 'transportistas',
-    camiones: 'camiones',
-    pilotos: 'pilotos',
-    tarifaEmbarque: 'tarifaEmbarque',
-  });
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState(null);
 
-  const polizaOptions = toOptions(polizas, { value: 'codigo', label: 'nombre_poliza' });
-  const transportistaOptions = toOptions(transportistas, { value: 'codigo', label: 'nombre_comercial' });
-  const camionOptions = toOptions(camiones, { value: 'codigo', label: 'placa' });
-  const pilotoOptions = toOptions(pilotos, { value: 'codigo', labelFn: (p) => `${p.nombres} ${p.apellidos}` });
-  const tarifaOptions = toOptions(tarifaEmbarque);
+  // Catálogos
+  const [polizas, setPolizas] = useState([]);
+  const [camiones, setCamiones] = useState([]);
+  const [transportistas, setTransportistas] = useState([]);
+  const [pilotos, setPilotos] = useState([]);
+  const [tarifas, setTarifas] = useState([]);
 
-  const columns = [
-    { key: 'correlativo', label: 'Corr.' },
-    { key: 'num_envio', label: 'N° Envío' },
-    { key: 'id_poliza', label: 'Póliza', render: (v) => lookup(polizas, v, 'codigo', 'nombre_poliza') },
-    { key: 'id_transportista', label: 'Transportista', render: (v) => lookup(transportistas, v, 'codigo', 'nombre_comercial') },
-    { key: 'fecha', label: 'Fecha', render: (v) => formatDate(v) },
-    { key: 'valor', label: 'Valor', render: (v) => formatCurrency(v) },
-    { key: 'estado', label: 'Estado', render: (v) => <Badge value={v} /> },
-  ];
+  // Modal / formulario
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null); // fila en edición o null
+  const [values, setValues] = useState(EMPTY);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
 
-  const renderForm = ({ values, setField, errors }) => (
-    <div className="form-grid">
-      <Input label="Número de envío" name="num_envio" value={values.num_envio}
-        onChange={(e) => setField('num_envio', e.target.value)} required error={errors.num_envio} />
-      <Select label="Póliza" name="id_poliza" value={values.id_poliza}
-        onChange={(e) => setField('id_poliza', e.target.value)} options={polizaOptions} required error={errors.id_poliza} />
-      <Select label="Transportista" name="id_transportista" value={values.id_transportista}
-        onChange={(e) => setField('id_transportista', e.target.value)} options={transportistaOptions} required error={errors.id_transportista} />
-      <Select label="Camión" name="id_camion" value={values.id_camion}
-        onChange={(e) => setField('id_camion', e.target.value)} options={camionOptions} error={errors.id_camion} />
-      <Select label="Piloto" name="id_piloto" value={values.id_piloto}
-        onChange={(e) => setField('id_piloto', e.target.value)} options={pilotoOptions} error={errors.id_piloto} />
-      <Select label="Tarifa de embarque" name="id_tarifa_embarque" value={values.id_tarifa_embarque}
-        onChange={(e) => setField('id_tarifa_embarque', e.target.value)} options={tarifaOptions} error={errors.id_tarifa_embarque} />
-      <Input label="Fecha" name="fecha" type="date" value={values.fecha}
-        onChange={(e) => setField('fecha', e.target.value)} required error={errors.fecha} />
-      <Input label="Tipo" name="tipo" value={values.tipo}
-        onChange={(e) => setField('tipo', e.target.value)} error={errors.tipo} placeholder="ENVÍO" />
-      <Input label="Cantidad bultos/piezas" name="cantidad_bultos_piezas" type="number" min={0} value={values.cantidad_bultos_piezas}
-        onChange={(e) => setField('cantidad_bultos_piezas', e.target.value)} error={errors.cantidad_bultos_piezas} />
-      <Input label="Peso" name="peso" type="number" min={0} step="0.01" value={values.peso}
-        onChange={(e) => setField('peso', e.target.value)} error={errors.peso} />
-      <Input label="Valor" name="valor" type="number" min={0} step="0.01" value={values.valor}
-        onChange={(e) => setField('valor', e.target.value)} required error={errors.valor} />
-      <Select label="Estado" name="estado" value={values.estado}
-        onChange={(e) => setField('estado', e.target.value)} options={ESTADO_OPTIONS_PROCESO} required error={errors.estado} />
-      <Input className="col-span-2" label="Observaciones" name="observaciones" value={values.observaciones}
-        onChange={(e) => setField('observaciones', e.target.value)} error={errors.observaciones} />
-    </div>
+  // Resumen de la póliza seleccionada (saldo, viajes, pesos)
+  const [resumen, setResumen] = useState(null);
+  const [resumenLoading, setResumenLoading] = useState(false);
+
+  const [confirmRow, setConfirmRow] = useState(null); // fila a anular
+  const [term, setTerm] = useState('');
+
+  const notify = useCallback((type, text) => {
+    setMessage({ type, text });
+    if (type !== 'error') setTimeout(() => setMessage(null), 6000);
+  }, []);
+
+  const cargarViajes = useCallback(async () => {
+    try {
+      setItems(await realApi.list('viajes'));
+    } catch (e) {
+      notify('error', e?.userMessage || 'No se pudieron cargar los viajes.');
+    }
+  }, [notify]);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const [po, ca, tr, pi, ta] = await Promise.all([
+        realApi.list('polizas').catch(() => []),
+        realApi.list('camiones').catch(() => []),
+        realApi.list('transportistas').catch(() => []),
+        realApi.list('pilotos').catch(() => []),
+        realApi.list('tarifaEmbarque').catch(() => []),
+      ]);
+      setPolizas(po); setCamiones(ca); setTransportistas(tr); setPilotos(pi); setTarifas(ta);
+      await cargarViajes();
+      setLoading(false);
+    })();
+  }, [cargarViajes]);
+
+  // ---- Opciones ----
+  const polizaOptions = useMemo(
+    () => polizas
+      .filter((p) => String(p.estado).toUpperCase() === 'ABIERTA')
+      .map((p) => ({ value: p.codigo, label: p.nombre_poliza })),
+    [polizas]
   );
+  const tarifaOptions = useMemo(
+    () => tarifas
+      .filter((t) => String(t.estado).toUpperCase() === 'ACTIVO')
+      .map((t) => ({ value: t.codigo, label: t.descripcion })),
+    [tarifas]
+  );
+  const camionOptions = useMemo(() => camiones.map((c) => ({ value: c.codigo, label: c.placa })), [camiones]);
+
+  const camionSel = useMemo(
+    () => camiones.find((c) => String(c.codigo) === String(values.id_camion)) || null,
+    [camiones, values.id_camion]
+  );
+  const transportistaSel = useMemo(
+    () => (camionSel ? transportistas.find((t) => String(t.codigo) === String(camionSel.id_transportista)) || null : null),
+    [camionSel, transportistas]
+  );
+  const pilotoOptions = useMemo(() => {
+    if (!camionSel) return [];
+    return pilotos
+      .filter((p) => String(p.id_transportista) === String(camionSel.id_transportista))
+      .map((p) => ({ value: p.codigo, label: `${p.licencia || 's/l'} — ${p.nombres} ${p.apellidos || ''}`.trim() }));
+  }, [camionSel, pilotos]);
+
+  // ---- Calculados ----
+  const valorCalc = useMemo(() => Number((num(values.peso) * COEFICIENTE_VALOR_VIAJE).toFixed(2)), [values.peso]);
+
+  // Piezas máximas para ESTE viaje: el saldo ya descuenta todos los viajes;
+  // al editar, se le suma lo que este viaje ya tenía reservado.
+  const piezasMax = useMemo(() => {
+    if (!resumen) return Infinity;
+    const propias = editing ? num(editing.cantidad_bultos_piezas) : 0;
+    return num(resumen.saldo_piezas) + propias;
+  }, [resumen, editing]);
+
+  const piezasLive = num(values.cantidad_bultos_piezas);
+  const saldoDisponible = resumen ? piezasMax : null;
+  const saldoTrasViaje = resumen ? piezasMax - piezasLive : null;
+
+  // ---- Resumen de la póliza ----
+  const cargarResumen = useCallback(async (idPoliza) => {
+    if (!idPoliza) { setResumen(null); return; }
+    setResumenLoading(true);
+    try {
+      setResumen(await realApi.viajeResumen(idPoliza));
+    } catch {
+      setResumen(null);
+    } finally {
+      setResumenLoading(false);
+    }
+  }, []);
+
+  // ---- Handlers de formulario ----
+  const setField = (name, value) => {
+    setValues((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const onChangePoliza = (value) => {
+    setField('id_poliza', value);
+    cargarResumen(value);
+  };
+
+  // Al cambiar el camión (placa) se reinicia el piloto (cambia el transportista).
+  const onChangeCamion = (value) => {
+    setValues((prev) => ({ ...prev, id_camion: value, id_piloto: '' }));
+    setErrors((prev) => ({ ...prev, id_camion: undefined, id_piloto: undefined }));
+  };
+
+  const abrirNuevo = () => {
+    setEditing(null);
+    setValues(EMPTY);
+    setErrors({});
+    setResumen(null);
+    setMessage(null);
+    setModalOpen(true);
+  };
+
+  const abrirEditar = (row) => {
+    setEditing(row);
+    setValues({
+      ...EMPTY,
+      ...row,
+      // normaliza null -> '' para inputs controlados
+      num_envio: row.num_envio ?? '', tipo: row.tipo ?? 'Viajes Locales',
+      id_poliza: row.id_poliza ?? '', id_tarifa_embarque: row.id_tarifa_embarque ?? '',
+      id_camion: row.id_camion ?? '', num_tc: row.num_tc ?? '', id_piloto: row.id_piloto ?? '',
+      fecha: row.fecha ? String(row.fecha).slice(0, 10) : '',
+      cantidad_bultos_piezas: row.cantidad_bultos_piezas ?? '', peso: row.peso ?? '',
+      observaciones: row.observaciones ?? '', estado: row.estado ?? 'PENDIENTE',
+    });
+    setErrors({});
+    setMessage(null);
+    setModalOpen(true);
+    cargarResumen(row.id_poliza);
+  };
+
+  const cerrarModal = () => {
+    setModalOpen(false);
+    setEditing(null);
+    setValues(EMPTY);
+    setErrors({});
+    setResumen(null);
+  };
+
+  const validar = () => {
+    const e = {};
+    if (!values.id_poliza) e.id_poliza = 'Seleccione una póliza';
+    if (!values.id_camion) e.id_camion = 'Seleccione la placa';
+    else if (!transportistaSel) e.id_camion = 'La placa no tiene transportista válido';
+    if (!values.id_piloto) e.id_piloto = 'Seleccione el piloto';
+    if (!values.fecha) e.fecha = 'La fecha es obligatoria';
+    if (piezasLive < 0) e.cantidad_bultos_piezas = 'No puede ser negativo';
+    else if (resumen && piezasLive > piezasMax) {
+      e.cantidad_bultos_piezas = `Excede el saldo disponible (${formatNumber(piezasMax, 0)})`;
+    }
+    if (num(values.peso) < 0) e.peso = 'No puede ser negativo';
+    return e;
+  };
+
+  const guardar = async () => {
+    const e = validar();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const payload = {
+        ...values,
+        id_transportista: camionSel ? camionSel.id_transportista : null,
+        valor: valorCalc,
+      };
+      if (editing) {
+        await realApi.update('viajes', editing.correlativo, payload);
+      } else {
+        await realApi.create('viajes', payload);
+      }
+      notify('success', editing ? 'Viaje actualizado correctamente.' : 'Viaje registrado correctamente.');
+      cerrarModal();
+      await cargarViajes();
+    } catch (err) {
+      // Error de negocio del servidor (saldo, póliza no abierta, etc.)
+      notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo guardar el viaje.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const anular = async () => {
+    const row = confirmRow;
+    setConfirmRow(null);
+    try {
+      await realApi.patchEstado('viajes', row.correlativo, 'ANULADA');
+      notify('success', 'Viaje anulado.');
+      await cargarViajes();
+    } catch (err) {
+      notify('error', err?.userMessage || 'No se pudo anular el viaje.');
+    }
+  };
+
+  // ---- Búsqueda ----
+  const filtrados = useMemo(() => {
+    const q = term.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((r) => {
+      const campos = [
+        r.num_envio, r.tipo, r.num_tc, r.observaciones,
+        lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza'),
+        lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial'),
+        lookup(camiones, r.id_camion, 'codigo', 'placa'),
+      ];
+      return campos.some((c) => c != null && String(c).toLowerCase().includes(q));
+    });
+  }, [items, term, polizas, transportistas, camiones]);
 
   return (
-    <CrudPage
-      title="Detalle de Póliza / Envíos"
-      description="Registro de envíos asociados a las pólizas."
-      newLabel="+ Nuevo envío"
-      recurso="polizaDetalle"
-      idField="correlativo"
-      modalSize="lg"
-      deleteMode="anular"
-      anularEstado="ANULADA"
-      columns={columns}
-      searchFields={['num_envio', 'tipo', 'observaciones']}
-      emptyRecord={{
-        num_envio: '', id_poliza: '', id_transportista: '', id_camion: '', id_piloto: '',
-        id_tarifa_embarque: '', fecha: '', tipo: 'ENVÍO', cantidad_bultos_piezas: 0,
-        peso: 0, valor: 0, estado: 'PENDIENTE', observaciones: '',
-      }}
-      validate={(v) =>
-        validateForm(v, {
-          num_envio: [required('El número de envío es obligatorio')],
-          id_poliza: [required('Seleccione una póliza')],
-          id_transportista: [required('Seleccione un transportista')],
-          fecha: [required('La fecha es obligatoria')],
-          valor: [required('El valor es obligatorio'), nonNegative('No puede ser negativo')],
-        })
-      }
-      renderForm={renderForm}
-    />
+    <div>
+      <PageHeader
+        title="Registro de Viajes"
+        description="Detalle de póliza / envíos. Registra viajes por póliza y controla el saldo de piezas."
+        actionLabel="+ Nuevo viaje"
+        onAction={abrirNuevo}
+      />
+
+      {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
+
+      <div className="toolbar">
+        <SearchBar value={term} onChange={setTerm} placeholder="Buscar por envío, tipo, TC, póliza, transportista o placa..." />
+      </div>
+
+      <div className="table-wrapper">
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Corr.</th>
+                <th>N° Envío</th>
+                <th>Tipo</th>
+                <th>Póliza</th>
+                <th>Transportista</th>
+                <th>Placa</th>
+                <th>Fecha</th>
+                <th>Piezas</th>
+                <th>Peso</th>
+                <th>Valor</th>
+                <th>Estado</th>
+                <th style={{ textAlign: 'right' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40 }}>Cargando...</td></tr>
+              ) : filtrados.length === 0 ? (
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>Sin viajes registrados.</td></tr>
+              ) : (
+                filtrados.map((r) => (
+                  <tr key={r.correlativo}>
+                    <td>{r.correlativo}</td>
+                    <td>{r.num_envio || '-'}</td>
+                    <td>{r.tipo || '-'}</td>
+                    <td>{lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza')}</td>
+                    <td>{lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial')}</td>
+                    <td>{lookup(camiones, r.id_camion, 'codigo', 'placa')}</td>
+                    <td>{formatDate(r.fecha)}</td>
+                    <td>{formatNumber(r.cantidad_bultos_piezas, 0)}</td>
+                    <td>{formatNumber(r.peso)}</td>
+                    <td>{formatCurrency(r.valor)}</td>
+                    <td><Badge value={r.estado} /></td>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button style={accionBtn} title="Editar" onClick={() => abrirEditar(r)}>✏️</button>
+                      {String(r.estado).toUpperCase() !== 'ANULADA' && (
+                        <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal Nuevo/Editar viaje (estilo legacy) */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={cerrarModal}
+        size="lg"
+        title={editing ? `Editar viaje #${editing.correlativo}` : 'Nuevo viaje'}
+        footer={
+          <>
+            <Button variant="secondary" onClick={cerrarModal} disabled={saving}>Cancelar</Button>
+            <Button variant="primary" icon="💾" onClick={guardar} disabled={saving}>
+              {saving ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </>
+        }
+      >
+        {/* Datos de la póliza */}
+        <h4 style={secTitle}>Datos de la póliza</h4>
+        <div className="form-grid">
+          <Select label="Tipo de viaje" name="tipo" required value={values.tipo}
+            onChange={(e) => setField('tipo', e.target.value)} options={TIPO_VIAJE_OPTIONS} placeholder="Seleccione tipo..." />
+          <Select label="Póliza (ABIERTA)" name="id_poliza" required value={values.id_poliza}
+            onChange={(e) => onChangePoliza(e.target.value)} options={polizaOptions} error={errors.id_poliza}
+            placeholder={polizaOptions.length ? 'Seleccione póliza...' : 'No hay pólizas abiertas'} />
+          <Select label="Tarifa de embarque" name="id_tarifa_embarque" value={values.id_tarifa_embarque}
+            onChange={(e) => setField('id_tarifa_embarque', e.target.value)} options={tarifaOptions} placeholder="Seleccione tarifa..." />
+          <ReadOnly label="Pesos de la póliza"
+            value={resumen ? `${formatNumber(resumen.peso_total)} · ${formatNumber(resumen.cantidad_piezas, 0)} pzs` : (resumenLoading ? 'Cargando...' : '—')} />
+        </div>
+
+        {/* Transportista */}
+        <h4 style={secTitle}>Transportista</h4>
+        <div className="form-grid">
+          <Select label="Placa (camión)" name="id_camion" required value={values.id_camion}
+            onChange={(e) => onChangeCamion(e.target.value)} options={camionOptions} error={errors.id_camion}
+            placeholder="Seleccione placa..." />
+          <Input label="No. de TC" name="num_tc" value={values.num_tc}
+            onChange={(e) => setField('num_tc', e.target.value)} placeholder="Tarjeta de circulación" />
+          <ReadOnly label="Transportista"
+            value={transportistaSel ? transportistaSel.nombre_comercial : (camionSel ? '—' : 'Seleccione placa')}
+            invalid={Boolean(values.id_camion) && !transportistaSel} />
+          <Select label="Piloto (licencia)" name="id_piloto" required value={values.id_piloto}
+            onChange={(e) => setField('id_piloto', e.target.value)} options={pilotoOptions} error={errors.id_piloto}
+            disabled={!camionSel}
+            placeholder={!camionSel ? 'Seleccione placa primero' : (pilotoOptions.length ? 'Seleccione licencia...' : 'Sin pilotos del transportista')} />
+        </div>
+
+        {/* Datos del envío */}
+        <h4 style={secTitle}>Datos del envío</h4>
+        <div className="form-grid">
+          <Input label="Número de envío" name="num_envio" value={values.num_envio}
+            onChange={(e) => setField('num_envio', e.target.value)} />
+          <Input label="Fecha de envío" name="fecha" type="date" required value={values.fecha}
+            onChange={(e) => setField('fecha', e.target.value)} error={errors.fecha} />
+          <Input label="No. de piezas" name="cantidad_bultos_piezas" type="number" min={0} value={values.cantidad_bultos_piezas}
+            onChange={(e) => setField('cantidad_bultos_piezas', e.target.value)} error={errors.cantidad_bultos_piezas} />
+          <Input label="Peso (kilogramos)" name="peso" type="number" min={0} step="0.01" value={values.peso}
+            onChange={(e) => setField('peso', e.target.value)} error={errors.peso} />
+          <ReadOnly label="Valor (Peso × 0.0043)" value={formatCurrency(valorCalc)} strong />
+          <Input className="col-span-2" label="Observaciones" name="observaciones" value={values.observaciones}
+            onChange={(e) => setField('observaciones', e.target.value)} />
+        </div>
+
+        {/* Totales (como en el legacy) */}
+        <div style={totalesBox}>
+          <Total label="Saldo de piezas" value={saldoDisponible == null ? '—' : formatNumber(saldoTrasViaje, 0)}
+            hint={saldoDisponible == null ? 'Seleccione póliza' : `disponible: ${formatNumber(saldoDisponible, 0)}`} />
+          <Total label="Viajes realizados" value={resumen ? formatNumber(resumen.viajes_realizados, 0) : '—'} />
+        </div>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={Boolean(confirmRow)}
+        onClose={() => setConfirmRow(null)}
+        onConfirm={anular}
+        title="Anular viaje"
+        confirmText="Anular"
+        message="¿Está seguro de anular este viaje? Su estado cambiará a ANULADA y liberará las piezas en la póliza."
+      />
+    </div>
+  );
+}
+
+/* ---- estilos / subcomponentes ---- */
+const secTitle = { margin: '18px 0 10px', fontSize: 14, fontWeight: 700, color: '#374151' };
+const accionBtn = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 6px' };
+const totalesBox = {
+  display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 18,
+  padding: '12px 14px', background: '#f8f9fb', borderRadius: 8, border: '1px solid #eceef1',
+};
+
+function ReadOnly({ label, value, invalid, strong }) {
+  return (
+    <div className="form-field">
+      <label className="form-label">{label}</label>
+      <input
+        className={`form-control ${invalid ? 'is-invalid' : ''}`}
+        value={value ?? '-'} readOnly disabled
+        style={{ background: '#f3f4f6', cursor: 'not-allowed', fontWeight: strong ? 700 : undefined, color: strong ? '#c1121f' : undefined }}
+      />
+    </div>
+  );
+}
+
+function Total({ label, value, hint }) {
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: '#6b7280' }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>{value}</div>
+      {hint && <div style={{ fontSize: 11, color: '#9ca3af' }}>{hint}</div>}
+    </div>
   );
 }

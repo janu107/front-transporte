@@ -16,6 +16,19 @@ export const controlApiService = {
   },
 
   /**
+   * Asigna (o limpia) el predio/ubicación de un vale.
+   * @param {number} apiId
+   * @param {number|null} idUbicacion  cat_ubicacion_bomba.codigo (o '' / null para limpiar)
+   */
+  async asignarUbicacion(apiId, idUbicacion) {
+    return unwrap(
+      await axiosClient.patch(ENDPOINTS.controlApi.asignarUbicacion(apiId), {
+        id_ubicacion: idUbicacion === '' ? null : idUbicacion,
+      })
+    );
+  },
+
+  /**
    * Confirma un despacho ejecutando sp_confirmar_despacho_api.
    * @param {object} payload { api_id, id_piloto, id_camion, id_transportista, id_producto, id_bomba }
    * @returns {Promise<{det1, det2, hubo_cruce, mensaje}>}
