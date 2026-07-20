@@ -39,6 +39,8 @@ const PATHS = {
   liquidaciones: '/procesos/liquidaciones',
   // Registro de Viajes (Detalle de Póliza / Envíos, con reglas de negocio)
   viajes: '/viajes',
+  // Anticipos / Provisión
+  anticipos: '/anticipos',
   // Auditoría
   bitacoras: '/bitacoras',
 };
@@ -91,6 +93,11 @@ export const realApi = {
   // Registro de Viajes: resumen (saldo de piezas / viajes realizados / pesos) por póliza.
   async viajeResumen(idPoliza) {
     return unwrap(await axiosClient.get(`/viajes/resumen/${idPoliza}`));
+  },
+
+  // Registro de Viajes: valida piezas vs saldo y calcula el valor (M2).
+  async viajeValidar(body) {
+    return unwrap(await axiosClient.post('/viajes/validar', body));
   },
 };
 

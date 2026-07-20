@@ -45,6 +45,11 @@ export default function ConfirmacionValesPage() {
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(FORM_VACIO);
 
+  // [M3.1] Predio activo: selector global arriba de la tabla (contexto/preselección).
+  const [predioActivo, setPredioActivo] = useState('');
+  // [M4.2] Placa escrita a mano cuando el vale es "LLAVE MAESTRA".
+  const [placaManual, setPlacaManual] = useState('');
+
   const [message, setMessage] = useState(null); // { type, text }
   const [confirming, setConfirming] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -103,12 +108,16 @@ export default function ConfirmacionValesPage() {
     [polizas]
   );
 
-  // Camión que corresponde a la placa del vale seleccionado.
+  // [M4.2] Si el vale viene de "LLAVE MAESTRA", la placa es editable a mano.
+  const esLlaveMaestra = /^\s*LLAVE\s*MAESTRA/i.test(selected?.api_nombre_piloto || '');
+  const placaEfectiva = esLlaveMaestra ? placaManual : (selected?.api_placa || '');
+
+  // Camión que corresponde a la placa efectiva (del vale o la escrita a mano).
   const camionSel = useMemo(() => {
-    if (!selected) return null;
-    const placa = normPlaca(selected.api_placa);
+    const placa = normPlaca(placaEfectiva);
+    if (!placa) return null;
     return camiones.find((c) => normPlaca(c.placa) === placa) || null;
-  }, [selected, camiones]);
+  }, [placaEfectiva, camiones]);
 
   // Transportista del camión (solo lectura).
   const transportistaSel = useMemo(
@@ -150,37 +159,24 @@ export default function ConfirmacionValesPage() {
   // ---- Handlers ----
   const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
 
-  // Nombre de un predio por código (para el estado optimista).
+  // Nombre de un predio por código.
   const nombrePredio = useCallback(
     (codigo) => ubicaciones.find((u) => String(u.codigo) === String(codigo))?.descripcion || null,
     [ubicaciones]
   );
 
-  // [CAMBIO 1] Asigna/limpia el predio de un vale directamente en la tabla.
-  const asignarPredio = async (row, value) => {
-    const prevId = row.api_id_ubicacion ?? null;
-    const nuevoId = value === '' ? null : Number(value);
-    // Optimista: actualiza la fila en memoria antes de la respuesta.
-    setPendientes((list) => list.map((r) =>
-      r.api_id === row.api_id
-        ? { ...r, api_id_ubicacion: nuevoId, api_ubicacion_nombre: nombrePredio(nuevoId) }
-        : r));
-    try {
-      await controlApiService.asignarUbicacion(row.api_id, value);
-    } catch (e) {
-      // Revierte si el backend falla.
-      setPendientes((list) => list.map((r) =>
-        r.api_id === row.api_id
-          ? { ...r, api_id_ubicacion: prevId, api_ubicacion_nombre: nombrePredio(prevId) }
-          : r));
-      notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo asignar el predio.');
-    }
-  };
+  // Predio que se muestra en cada fila: si hay predio activo (selector global) se
+  // preselecciona para todos los registros visibles; si no, se muestra el propio del vale.
+  const predioDeFila = useCallback(
+    (row) => (predioActivo ? nombrePredio(predioActivo) : (row.api_ubicacion_nombre || null)),
+    [predioActivo, nombrePredio]
+  );
 
   // Abre el modal con el vale elegido, partiendo de un formulario limpio.
   const seleccionarVale = (row) => {
     setSelected(row);
     setForm(FORM_VACIO);
+    setPlacaManual(row.api_placa || '');
     setMessage(null);
   };
 
@@ -188,6 +184,7 @@ export default function ConfirmacionValesPage() {
   const cerrarModal = () => {
     setSelected(null);
     setForm(FORM_VACIO);
+    setPlacaManual('');
     setMessage(null);
   };
 
@@ -214,10 +211,11 @@ export default function ConfirmacionValesPage() {
         id_poliza: Number(form.idPoliza),
       };
       const r = await controlApiService.confirmar(payload);
-      const detalle = r.hubo_cruce
-        ? `Se generaron 2 registros (cruce de facturas): #${r.det1} y #${r.det2}.`
-        : `Se generó el registro #${r.det1}.`;
-      notify('success', `${r.mensaje} ${detalle}`);
+      // [M1] Respuesta del servicio externo (confirma + PDF + correo).
+      const correoTxt = r.correo_enviado
+        ? ` Correo enviado a ${r.correo || 'transportista'}.`
+        : (r.correo_error ? ` (Correo NO enviado: ${r.correo_error})` : '');
+      notify('success', `${r.mensaje || 'Despacho confirmado.'}${correoTxt}`);
       // Limpia y recarga (cierra el modal)
       setForm(FORM_VACIO);
       setSelected(null);
@@ -239,20 +237,17 @@ export default function ConfirmacionValesPage() {
     return pendientes.filter((row) => {
       const campos = [
         row.api_numero,
-        row.api_num_vale,
         formatNumber(row.api_cant_galones),
         formatDate(row.api_fecha),
         row.api_nombre_piloto,
-        row.api_id_vehiculo,
-        row.api_id_piloto,
-        row.api_manguera,
+        row.api_placa,           // PLACA
         row.api_surtidor,
-        row.api_ubicacion_nombre, // PREDIO
+        predioDeFila(row),       // PREDIO
         'Pendiente',
       ];
       return campos.some((c) => c != null && String(c).toLowerCase().includes(busquedaNorm));
     });
-  }, [pendientes, busquedaNorm]);
+  }, [pendientes, busquedaNorm, predioDeFila]);
 
   // Reinicia a la página 1 cuando cambia el filtro o la lista.
   useEffect(() => { setPagina(1); }, [busquedaNorm, pendientes.length]);
@@ -261,7 +256,7 @@ export default function ConfirmacionValesPage() {
   const paginaActual = Math.min(pagina, totalPaginas);
   const valesPagina = pendientesFiltrados.slice((paginaActual - 1) * PAGE_SIZE, paginaActual * PAGE_SIZE);
 
-  const COLS = 11;
+  const COLS = 8;
 
   return (
     <div>
@@ -275,13 +270,27 @@ export default function ConfirmacionValesPage() {
         <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>
       )}
 
+      {/* [M3.1] Selector global de predio (arriba de la tabla). */}
+      <div className="toolbar" style={{ alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 8 }}>
+        <div style={{ minWidth: 260 }}>
+          <Select
+            label="Ubicación (predio)"
+            name="predioActivo"
+            value={predioActivo}
+            onChange={(e) => setPredioActivo(e.target.value)}
+            options={ubicaciones.map((u) => ({ value: u.codigo, label: u.descripcion }))}
+            placeholder="Todos los predios"
+          />
+        </div>
+      </div>
+
       {/* Barra superior: buscador + actualizar / último refresco */}
       <div className="toolbar" style={{ alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 320px', minWidth: 260, maxWidth: 440 }}>
           <SearchBar
             value={busqueda}
             onChange={(v) => { setBusqueda(v); setPagina(1); }}
-            placeholder="Buscar en todos los campos (mato, vale, piloto, placa, predio...)"
+            placeholder="Buscar (mato, galones, piloto, placa, predio...)"
           />
         </div>
         <div className="spacer" />
@@ -304,13 +313,10 @@ export default function ConfirmacionValesPage() {
             <thead>
               <tr>
                 <th>No. Mato</th>
-                <th>No. Vale</th>
                 <th>Galones</th>
                 <th>Fecha</th>
                 <th>Nombre Piloto</th>
-                <th>Id Vehículo</th>
-                <th>Id Piloto</th>
-                <th>Manguera</th>
+                <th>Placa</th>
                 <th>Surtidor</th>
                 <th>Predio</th>
                 <th>Estado</th>
@@ -346,29 +352,13 @@ export default function ConfirmacionValesPage() {
                       }}
                     >
                       <td style={{ fontWeight: 600 }}>{row.api_numero}</td>
-                      <td>{row.api_num_vale}</td>
                       <td>{formatNumber(row.api_cant_galones)}</td>
                       <td>{formatDate(row.api_fecha)}</td>
                       <td>{row.api_nombre_piloto || '-'}</td>
-                      <td>{row.api_id_vehiculo || '-'}</td>
-                      <td>{row.api_id_piloto || '-'}</td>
-                      <td>{row.api_manguera ?? '-'}</td>
+                      <td>{row.api_placa || '-'}</td>
                       <td>{row.api_surtidor ?? '-'}</td>
-                      {/* [CAMBIO 1] Predio asignable por fila (no abre el modal). */}
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <select
-                          value={row.api_id_ubicacion ?? ''}
-                          onChange={(e) => asignarPredio(row, e.target.value)}
-                          className="form-control"
-                          style={{ minWidth: 160, padding: '4px 8px', fontSize: 13 }}
-                          title="Asignar predio"
-                        >
-                          <option value="">— Sin predio —</option>
-                          {ubicaciones.map((u) => (
-                            <option key={u.codigo} value={u.codigo}>{u.descripcion}</option>
-                          ))}
-                        </select>
-                      </td>
+                      {/* [M3.1] Predio: preseleccionado por el selector global (o el propio del vale). */}
+                      <td>{predioDeFila(row) || '—'}</td>
                       <td><span className="badge badge-pendiente">Pendiente</span></td>
                     </tr>
                   );
@@ -431,8 +421,8 @@ export default function ConfirmacionValesPage() {
               </div>
             )}
 
-            {/* Datos MATO (solo lectura) */}
-            <h4 style={{ margin: '0 0 12px' }}>Datos MATO</h4>
+            {/* Datos MATO (solo lectura, compacto) */}
+            <h4 style={{ margin: '0 0 8px', fontSize: 14 }}>Datos MATO</h4>
             <dl style={dlStyle}>
               <Dato label="No. Mato" value={selected.api_numero} />
               <Dato label="No. Vale" value={selected.api_num_vale} />
@@ -447,7 +437,7 @@ export default function ConfirmacionValesPage() {
             </dl>
 
             {/* Genera Vale SETRASA — cascada */}
-            <h4 style={{ margin: '22px 0 12px', paddingTop: 18, borderTop: '1px solid #eceef1' }}>
+            <h4 style={{ margin: '14px 0 10px', paddingTop: 12, borderTop: '1px solid #eceef1', fontSize: 14 }}>
               Genera Vale SETRASA
             </h4>
             <div className="form-grid">
@@ -459,8 +449,23 @@ export default function ConfirmacionValesPage() {
                 placeholder={polizaOptions.length ? 'Seleccione póliza ABIERTA...' : 'No hay pólizas abiertas'}
               />
 
-              {/* Placa (del vale) + Transportista (auto, solo lectura) */}
-              <ReadOnlyField label="Camión (placa)" value={selected.api_placa || '—'} />
+              {/* Placa: del vale (solo lectura) o editable si es LLAVE MAESTRA [M4.2] */}
+              {esLlaveMaestra ? (
+                <div className="form-field">
+                  <label className="form-label">
+                    Camión (placa) <span className="req">*</span>
+                    <span style={{ color: '#c1121f', fontSize: 11, marginLeft: 6 }}>LLAVE MAESTRA · editable</span>
+                  </label>
+                  <input
+                    className={`form-control ${placaEfectiva && !camionSel ? 'is-invalid' : ''}`}
+                    value={placaManual}
+                    onChange={(e) => setPlacaManual(e.target.value)}
+                    placeholder="Escriba la placa..."
+                  />
+                </div>
+              ) : (
+                <ReadOnlyField label="Camión (placa)" value={selected.api_placa || '—'} />
+              )}
               <ReadOnlyField
                 label="Transportista"
                 value={placaValida ? transportistaSel.nombre_comercial : (camionSel ? '—' : 'Placa no registrada')}
@@ -507,7 +512,7 @@ export default function ConfirmacionValesPage() {
 }
 
 /* ---- Subcomponentes de presentación ---- */
-const dlStyle = { display: 'grid', gridTemplateColumns: '110px 1fr 110px 1fr', rowGap: 8, columnGap: 16, margin: 0 };
+const dlStyle = { display: 'grid', gridTemplateColumns: '84px 1fr 84px 1fr', rowGap: 3, columnGap: 12, margin: 0, fontSize: 12.5 };
 const paginaBtnStyle = {
   padding: '4px 12px', fontSize: 13, borderRadius: 6, border: '1px solid #d1d5db',
   background: '#fff', cursor: 'pointer', color: '#374151',
@@ -520,8 +525,8 @@ const resumenStyle = {
 function Dato({ label, value }) {
   return (
     <>
-      <dt style={{ color: '#6b7280', fontSize: 13 }}>{label}</dt>
-      <dd style={{ margin: 0, fontWeight: 500 }}>{value ?? '-'}</dd>
+      <dt style={{ color: '#6b7280', fontSize: 11.5 }}>{label}</dt>
+      <dd style={{ margin: 0, fontWeight: 600, fontSize: 12.5 }}>{value ?? '-'}</dd>
     </>
   );
 }

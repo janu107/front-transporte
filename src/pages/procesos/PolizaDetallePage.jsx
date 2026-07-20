@@ -24,7 +24,8 @@ import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import realApi from '../../api/realApi';
 import { lookup, formatDate, formatNumber, formatCurrency } from '../../utils/formatters';
-import { TIPO_VIAJE_OPTIONS, COEFICIENTE_VALOR_VIAJE } from '../../utils/constants';
+import { TIPO_VIAJE_OPTIONS } from '../../utils/constants';
+import { imprimirCartaPorte } from '../../utils/impresionDocs';
 
 const EMPTY = {
   num_envio: '', tipo: 'Viajes Locales', id_poliza: '', id_tarifa_embarque: '',
@@ -56,6 +57,10 @@ export default function PolizaDetallePage() {
   // Resumen de la póliza seleccionada (saldo, viajes, pesos)
   const [resumen, setResumen] = useState(null);
   const [resumenLoading, setResumenLoading] = useState(false);
+
+  // [M2] Resultado del backend al validar/calcular (saldo restante + valor).
+  const [calc, setCalc] = useState(null);       // { saldo_piezas, valor, mensaje }
+  const [calcMsg, setCalcMsg] = useState(null);  // { type, text }
 
   const [confirmRow, setConfirmRow] = useState(null); // fila a anular
   const [term, setTerm] = useState('');
@@ -120,7 +125,8 @@ export default function PolizaDetallePage() {
   }, [camionSel, pilotos]);
 
   // ---- Calculados ----
-  const valorCalc = useMemo(() => Number((num(values.peso) * COEFICIENTE_VALOR_VIAJE).toFixed(2)), [values.peso]);
+  // El valor lo calcula el backend (peso × 0.022046 × tarifa) vía validarEnvio.
+  const valorMostrar = calc ? calc.valor : (editing ? num(editing.valor) : 0);
 
   // Piezas máximas para ESTE viaje: el saldo ya descuenta todos los viajes;
   // al editar, se le suma lo que este viaje ya tenía reservado.
@@ -155,7 +161,45 @@ export default function PolizaDetallePage() {
 
   const onChangePoliza = (value) => {
     setField('id_poliza', value);
+    setCalc(null); setCalcMsg(null);
     cargarResumen(value);
+  };
+
+  // [M2] Valida piezas vs saldo y calcula el valor en el backend (se llama onBlur).
+  const validarEnvio = useCallback(async () => {
+    if (!values.id_poliza || !values.id_tarifa_embarque
+        || values.cantidad_bultos_piezas === '' || values.peso === '') return;
+    try {
+      const r = await realApi.viajeValidar({
+        id_poliza: values.id_poliza,
+        id_tarifa_embarque: values.id_tarifa_embarque,
+        cantidad_piezas: values.cantidad_bultos_piezas,
+        peso_kg: values.peso,
+      });
+      setCalc(r);
+      setCalcMsg({ type: 'ok', text: r.mensaje });
+      setErrors((p) => ({ ...p, cantidad_bultos_piezas: undefined }));
+    } catch (e) {
+      setCalc(null);
+      setCalcMsg({ type: 'error', text: e?.userMessage || e?.response?.data?.mensaje || e?.response?.data?.message || 'No se pudo validar el envío.' });
+    }
+  }, [values.id_poliza, values.id_tarifa_embarque, values.cantidad_bultos_piezas, values.peso]);
+
+  // Datos para la Carta de Porte a partir de una fila de viaje.
+  const datosCarta = (r) => {
+    const p = pilotos.find((x) => String(x.codigo) === String(r.id_piloto));
+    return {
+      numero: r.num_envio,
+      fecha: r.fecha,
+      predioOrigen: lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial'),
+      destino: lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza'),
+      piloto: p ? `${p.nombres} ${p.apellidos || ''}`.trim() : '',
+      placa: lookup(camiones, r.id_camion, 'codigo', 'placa'),
+      cantidad: r.cantidad_bultos_piezas,
+      tc: r.num_tc,
+      contiene: r.observaciones,
+      poliza: lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza'),
+    };
   };
 
   // Al cambiar el camión (placa) se reinicia el piloto (cambia el transportista).
@@ -169,6 +213,7 @@ export default function PolizaDetallePage() {
     setValues(EMPTY);
     setErrors({});
     setResumen(null);
+    setCalc(null); setCalcMsg(null);
     setMessage(null);
     setModalOpen(true);
   };
@@ -187,6 +232,7 @@ export default function PolizaDetallePage() {
       observaciones: row.observaciones ?? '', estado: row.estado ?? 'PENDIENTE',
     });
     setErrors({});
+    setCalc(null); setCalcMsg(null);
     setMessage(null);
     setModalOpen(true);
     cargarResumen(row.id_poliza);
@@ -198,6 +244,7 @@ export default function PolizaDetallePage() {
     setValues(EMPTY);
     setErrors({});
     setResumen(null);
+    setCalc(null); setCalcMsg(null);
   };
 
   const validar = () => {
@@ -224,14 +271,18 @@ export default function PolizaDetallePage() {
       const payload = {
         ...values,
         id_transportista: camionSel ? camionSel.id_transportista : null,
-        valor: valorCalc,
+        valor: valorMostrar,
       };
+      let saved;
       if (editing) {
-        await realApi.update('viajes', editing.correlativo, payload);
+        saved = await realApi.update('viajes', editing.correlativo, payload);
       } else {
-        await realApi.create('viajes', payload);
+        saved = await realApi.create('viajes', payload);
       }
-      notify('success', editing ? 'Viaje actualizado correctamente.' : 'Viaje registrado correctamente.');
+      // [M5.3] Muestra el correlativo asignado por el servidor.
+      notify('success', editing
+        ? 'Viaje actualizado correctamente.'
+        : `Viaje registrado. No. de envío asignado: ${saved?.num_envio || '(ver listado)'}`);
       cerrarModal();
       await cargarViajes();
     } catch (err) {
@@ -323,6 +374,7 @@ export default function PolizaDetallePage() {
                     <td>{formatCurrency(r.valor)}</td>
                     <td><Badge value={r.estado} /></td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button style={accionBtn} title="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}>🖨️</button>
                       <button style={accionBtn} title="Editar" onClick={() => abrirEditar(r)}>✏️</button>
                       {String(r.estado).toUpperCase() !== 'ANULADA' && (
                         <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
@@ -354,13 +406,28 @@ export default function PolizaDetallePage() {
         {/* Datos de la póliza */}
         <h4 style={secTitle}>Datos de la póliza</h4>
         <div className="form-grid">
-          <Select label="Tipo de viaje" name="tipo" required value={values.tipo}
-            onChange={(e) => setField('tipo', e.target.value)} options={TIPO_VIAJE_OPTIONS} placeholder="Seleccione tipo..." />
+          {/* [M5.2] Tipo de viaje como chips: se ve como multiselect pero es selección única. */}
+          <div className="form-field col-span-2">
+            <label className="form-label">Tipo de viaje <span className="req">*</span></label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {TIPO_VIAJE_OPTIONS.map((opt) => (
+                <button
+                  type="button"
+                  key={opt.value}
+                  onClick={() => setField('tipo', opt.value)}
+                  style={chipStyle(values.tipo === opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <Select label="Póliza (ABIERTA)" name="id_poliza" required value={values.id_poliza}
             onChange={(e) => onChangePoliza(e.target.value)} options={polizaOptions} error={errors.id_poliza}
             placeholder={polizaOptions.length ? 'Seleccione póliza...' : 'No hay pólizas abiertas'} />
           <Select label="Tarifa de embarque" name="id_tarifa_embarque" value={values.id_tarifa_embarque}
-            onChange={(e) => setField('id_tarifa_embarque', e.target.value)} options={tarifaOptions} placeholder="Seleccione tarifa..." />
+            onChange={(e) => { setField('id_tarifa_embarque', e.target.value); setCalc(null); setCalcMsg(null); }}
+            options={tarifaOptions} placeholder="Seleccione tarifa..." />
           <ReadOnly label="Pesos de la póliza"
             value={resumen ? `${formatNumber(resumen.peso_total)} · ${formatNumber(resumen.cantidad_piezas, 0)} pzs` : (resumenLoading ? 'Cargando...' : '—')} />
         </div>
@@ -385,18 +452,26 @@ export default function PolizaDetallePage() {
         {/* Datos del envío */}
         <h4 style={secTitle}>Datos del envío</h4>
         <div className="form-grid">
-          <Input label="Número de envío" name="num_envio" value={values.num_envio}
-            onChange={(e) => setField('num_envio', e.target.value)} />
+          {/* [M5.3] Número de envío: solo lectura, se asigna al guardar (correlativo AÑO+00000). */}
+          <ReadOnly label="Número de envío"
+            value={values.num_envio || '(se asigna al guardar)'} />
           <Input label="Fecha de envío" name="fecha" type="date" required value={values.fecha}
             onChange={(e) => setField('fecha', e.target.value)} error={errors.fecha} />
           <Input label="No. de piezas" name="cantidad_bultos_piezas" type="number" min={0} value={values.cantidad_bultos_piezas}
-            onChange={(e) => setField('cantidad_bultos_piezas', e.target.value)} error={errors.cantidad_bultos_piezas} />
+            onChange={(e) => setField('cantidad_bultos_piezas', e.target.value)} onBlur={validarEnvio} error={errors.cantidad_bultos_piezas} />
           <Input label="Peso (kilogramos)" name="peso" type="number" min={0} step="0.01" value={values.peso}
-            onChange={(e) => setField('peso', e.target.value)} error={errors.peso} />
-          <ReadOnly label="Valor (Peso × 0.0043)" value={formatCurrency(valorCalc)} strong />
+            onChange={(e) => setField('peso', e.target.value)} onBlur={validarEnvio} error={errors.peso} />
+          <ReadOnly label="Valor (Peso × 0.022046 × tarifa)" value={formatCurrency(valorMostrar)} strong />
           <Input className="col-span-2" label="Observaciones" name="observaciones" value={values.observaciones}
             onChange={(e) => setField('observaciones', e.target.value)} />
         </div>
+
+        {/* [M2] Mensaje del cálculo/validación del servidor. */}
+        {calcMsg && (
+          <div className={`alert alert-${calcMsg.type === 'error' ? 'error' : 'success'}`} style={{ marginTop: 10 }}>
+            {calcMsg.text}
+          </div>
+        )}
 
         {/* Totales (como en el legacy) */}
         <div style={totalesBox}>
@@ -419,12 +494,25 @@ export default function PolizaDetallePage() {
 }
 
 /* ---- estilos / subcomponentes ---- */
-const secTitle = { margin: '18px 0 10px', fontSize: 14, fontWeight: 700, color: '#374151' };
+// [M5.1] Espaciado compacto para que el formulario quepa sin scroll.
+const secTitle = { margin: '10px 0 6px', fontSize: 13, fontWeight: 700, color: '#374151' };
 const accionBtn = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 6px' };
 const totalesBox = {
-  display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 18,
-  padding: '12px 14px', background: '#f8f9fb', borderRadius: 8, border: '1px solid #eceef1',
+  display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 12,
+  padding: '10px 14px', background: '#f8f9fb', borderRadius: 8, border: '1px solid #eceef1',
 };
+
+// [M5.2] Estilo de chip para el selector de tipo (activo = rojo SETRASA).
+function chipStyle(active) {
+  return {
+    padding: '6px 14px', borderRadius: 999, fontSize: 13, cursor: 'pointer',
+    border: `1px solid ${active ? '#c1121f' : '#d1d5db'}`,
+    background: active ? '#c1121f' : '#fff',
+    color: active ? '#fff' : '#374151',
+    fontWeight: active ? 700 : 500,
+    transition: 'all .15s',
+  };
+}
 
 function ReadOnly({ label, value, invalid, strong }) {
   return (

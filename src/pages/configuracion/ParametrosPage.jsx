@@ -23,9 +23,18 @@ export default function ParametrosPage() {
 
   useEffect(() => {
     (async () => {
-      const data = await configuracionService.getParametros();
-      setValues({ ...EMPTY, ...data });
-      setLoading(false);
+      try {
+        const data = await configuracionService.getParametros();
+        setValues({ ...EMPTY, ...(data || {}) });
+      } catch (e) {
+        // Sin esto, un fallo dejaba la pantalla colgada en "Cargando..." para siempre.
+        setMessage({
+          type: 'error',
+          text: e?.userMessage || e?.response?.data?.message || 'No se pudieron cargar los parámetros. Revise su conexión o vuelva a intentar.',
+        });
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
