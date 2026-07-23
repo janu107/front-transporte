@@ -30,7 +30,7 @@ import { imprimirCartaPorte } from '../../utils/impresionDocs';
 const EMPTY = {
   num_envio: '', tipo: 'Viajes Locales', id_poliza: '', id_tarifa_embarque: '',
   id_camion: '', num_tc: '', id_piloto: '', fecha: '',
-  cantidad_bultos_piezas: '', peso: '', observaciones: '', estado: 'PENDIENTE',
+  cantidad_bultos_piezas: '', peso: '', observaciones: '', estado: 'ACTIVO',
 };
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
@@ -229,7 +229,7 @@ export default function PolizaDetallePage() {
       id_camion: row.id_camion ?? '', num_tc: row.num_tc ?? '', id_piloto: row.id_piloto ?? '',
       fecha: row.fecha ? String(row.fecha).slice(0, 10) : '',
       cantidad_bultos_piezas: row.cantidad_bultos_piezas ?? '', peso: row.peso ?? '',
-      observaciones: row.observaciones ?? '', estado: row.estado ?? 'PENDIENTE',
+      observaciones: row.observaciones ?? '', estado: row.estado ?? 'ACTIVO',
     });
     setErrors({});
     setCalc(null); setCalcMsg(null);
@@ -297,7 +297,7 @@ export default function PolizaDetallePage() {
     const row = confirmRow;
     setConfirmRow(null);
     try {
-      await realApi.patchEstado('viajes', row.correlativo, 'ANULADA');
+      await realApi.patchEstado('viajes', row.correlativo, 'ANULADO');
       notify('success', 'Viaje anulado.');
       await cargarViajes();
     } catch (err) {
@@ -376,7 +376,7 @@ export default function PolizaDetallePage() {
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button style={accionBtn} title="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}>🖨️</button>
                       <button style={accionBtn} title="Editar" onClick={() => abrirEditar(r)}>✏️</button>
-                      {String(r.estado).toUpperCase() !== 'ANULADA' && (
+                      {String(r.estado).toUpperCase() !== 'ANULADO' && (
                         <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                       )}
                     </td>
@@ -487,7 +487,7 @@ export default function PolizaDetallePage() {
         onConfirm={anular}
         title="Anular viaje"
         confirmText="Anular"
-        message="¿Está seguro de anular este viaje? Su estado cambiará a ANULADA y liberará las piezas en la póliza."
+        message="¿Está seguro de anular este viaje? Su estado cambiará a ANULADO y liberará las piezas en la póliza."
       />
     </div>
   );
