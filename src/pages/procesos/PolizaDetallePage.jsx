@@ -53,6 +53,7 @@ export default function PolizaDetallePage() {
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(null); // [4.4] viaje recién guardado (se queda en el modal para imprimir)
 
   // Resumen de la póliza seleccionada (saldo, viajes, pesos)
   const [resumen, setResumen] = useState(null);
@@ -208,12 +209,18 @@ export default function PolizaDetallePage() {
     setErrors((prev) => ({ ...prev, id_camion: undefined, id_piloto: undefined }));
   };
 
-  const abrirNuevo = () => {
+  // Reinicia el formulario a "nuevo" (sin cerrar el modal). Se usa en abrir y en el botón Nuevo.
+  const resetFormulario = () => {
     setEditing(null);
     setValues(EMPTY);
     setErrors({});
     setResumen(null);
     setCalc(null); setCalcMsg(null);
+    setSaved(null);
+  };
+
+  const abrirNuevo = () => {
+    resetFormulario();
     setMessage(null);
     setModalOpen(true);
   };
@@ -233,6 +240,7 @@ export default function PolizaDetallePage() {
     });
     setErrors({});
     setCalc(null); setCalcMsg(null);
+    setSaved(null);
     setMessage(null);
     setModalOpen(true);
     cargarResumen(row.id_poliza);
@@ -240,11 +248,7 @@ export default function PolizaDetallePage() {
 
   const cerrarModal = () => {
     setModalOpen(false);
-    setEditing(null);
-    setValues(EMPTY);
-    setErrors({});
-    setResumen(null);
-    setCalc(null); setCalcMsg(null);
+    resetFormulario();
   };
 
   const validar = () => {
@@ -273,17 +277,14 @@ export default function PolizaDetallePage() {
         id_transportista: camionSel ? camionSel.id_transportista : null,
         valor: valorMostrar,
       };
-      let saved;
+      let res;
       if (editing) {
-        saved = await realApi.update('viajes', editing.correlativo, payload);
+        res = await realApi.update('viajes', editing.correlativo, payload);
       } else {
-        saved = await realApi.create('viajes', payload);
+        res = await realApi.create('viajes', payload);
       }
-      // [M5.3] Muestra el correlativo asignado por el servidor.
-      notify('success', editing
-        ? 'Viaje actualizado correctamente.'
-        : `Viaje registrado. No. de envío asignado: ${saved?.num_envio || '(ver listado)'}`);
-      cerrarModal();
+      // [4.4] NO se cierra el modal: se conserva el resultado para imprimir / presionar Nuevo.
+      setSaved(res);
       await cargarViajes();
     } catch (err) {
       // Error de negocio del servidor (saldo, póliza no abierta, etc.)
@@ -394,15 +395,28 @@ export default function PolizaDetallePage() {
         onClose={cerrarModal}
         size="lg"
         title={editing ? `Editar viaje #${editing.correlativo}` : 'Nuevo viaje'}
-        footer={
+        footer={saved ? (
+          <>
+            <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
+            <Button variant="secondary" icon="🖨️" onClick={() => imprimirCartaPorte(datosCarta(saved))}>Imprimir</Button>
+            <Button variant="primary" icon="➕" onClick={resetFormulario}>Nuevo</Button>
+          </>
+        ) : (
           <>
             <Button variant="secondary" onClick={cerrarModal} disabled={saving}>Cancelar</Button>
             <Button variant="primary" icon="💾" onClick={guardar} disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar'}
             </Button>
           </>
-        }
+        )}
       >
+        {/* [4.4] Confirmación con el correlativo asignado (el modal no se cierra al guardar). */}
+        {saved && (
+          <div className="alert alert-success" style={{ marginTop: 0 }}>
+            ✅ Viaje guardado correctamente. Número de envío: <b>{saved.num_envio}</b>. Puede imprimir la carta o presionar «Nuevo».
+          </div>
+        )}
+
         {/* Datos de la póliza */}
         <h4 style={secTitle}>Datos de la póliza</h4>
         <div className="form-grid">

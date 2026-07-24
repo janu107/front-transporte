@@ -99,6 +99,14 @@ export const realApi = {
   async viajeValidar(body) {
     return unwrap(await axiosClient.post('/viajes/validar', body));
   },
+
+  // Liquidación de pólizas
+  async liquidacionResumen(idPoliza) {
+    return unwrap(await axiosClient.get(`/liquidacion/resumen/${idPoliza}`));
+  },
+  async liquidacionConfirmar(idPoliza) {
+    return unwrap(await axiosClient.post('/liquidacion/confirmar', { id_poliza: idPoliza }));
+  },
 };
 
 export default realApi;

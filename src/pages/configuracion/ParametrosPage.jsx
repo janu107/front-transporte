@@ -12,6 +12,7 @@ import { validateForm, required, email, nonNegative } from '../../utils/validato
 const EMPTY = {
   codigo: 1, nombre_empresa: '', nit: '', telefono: '', correo: '',
   iva: 0, porcentaje_pagos: 0, isr: 0, nombre_administrador: '',
+  valor_galon_combustible: 1.50,
 };
 
 export default function ParametrosPage() {
@@ -52,6 +53,7 @@ export default function ParametrosPage() {
           iva: [nonNegative('El IVA no puede ser negativo')],
           porcentaje_pagos: [nonNegative('No puede ser negativo')],
           isr: [nonNegative('El ISR no puede ser negativo')],
+          valor_galon_combustible: [nonNegative('El valor del galón no puede ser negativo')],
         })
       ).filter(([, v]) => v)
     );
@@ -98,6 +100,10 @@ export default function ParametrosPage() {
               onChange={(e) => setField('isr', e.target.value)} error={errors.isr} />
             <Input label="Nombre del administrador" name="nombre_administrador" value={values.nombre_administrador}
               onChange={(e) => setField('nombre_administrador', e.target.value)} error={errors.nombre_administrador} />
+            {/* Valor del galón: lo usa la Liquidación de pólizas. */}
+            <Input label="Valor del galón de combustible (Q)" name="valor_galon_combustible" type="number" min={0} step="0.01"
+              value={values.valor_galon_combustible}
+              onChange={(e) => setField('valor_galon_combustible', e.target.value)} error={errors.valor_galon_combustible} />
           </div>
 
           <div style={{ marginTop: 16, textAlign: 'right' }}>

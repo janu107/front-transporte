@@ -61,10 +61,10 @@ export default function ConfirmacionValesPage() {
     if (type !== 'error') setTimeout(() => setMessage(null), 6000);
   }, []);
 
-  // ---- Carga de vales pendientes (estado 'P') ----
+  // ---- Carga de vales pendientes (estado 'P'), filtrando por predio en el backend [2.1] ----
   const cargarPendientes = useCallback(async () => {
     try {
-      const data = await controlApiService.listarPendientes();
+      const data = await controlApiService.listarPendientes(predioActivo || undefined);
       setPendientes(data);
       setLastUpdate(new Date());
       // Conserva la selección solo si el vale sigue pendiente.
@@ -72,12 +72,11 @@ export default function ConfirmacionValesPage() {
     } catch (e) {
       notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudieron cargar los vales del API.');
     }
-  }, [notify]);
+  }, [notify, predioActivo]);
 
-  // ---- Carga inicial de catálogos + pendientes ----
+  // ---- Catálogos (una sola vez) ----
   useEffect(() => {
     (async () => {
-      setLoading(true);
       const [ub, fa, tr, pi, ca, po] = await Promise.all([
         realApi.list('ubicacionBomba').catch(() => []),
         realApi.list('facturasVales').catch(() => []),
@@ -88,9 +87,13 @@ export default function ConfirmacionValesPage() {
       ]);
       setUbicaciones(ub); setFacturas(fa);
       setTransportistas(tr); setPilotos(pi); setCamiones(ca); setPolizas(po);
-      await cargarPendientes();
-      setLoading(false);
     })();
+  }, []);
+
+  // ---- Pendientes: carga inicial y recarga al cambiar el predio ----
+  useEffect(() => {
+    setLoading(true);
+    cargarPendientes().finally(() => setLoading(false));
   }, [cargarPendientes]);
 
   // ---- Refresco automático cada 3 minutos ----
@@ -159,18 +162,9 @@ export default function ConfirmacionValesPage() {
   // ---- Handlers ----
   const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
 
-  // Nombre de un predio por código.
-  const nombrePredio = useCallback(
-    (codigo) => ubicaciones.find((u) => String(u.codigo) === String(codigo))?.descripcion || null,
-    [ubicaciones]
-  );
-
-  // Predio que se muestra en cada fila: si hay predio activo (selector global) se
-  // preselecciona para todos los registros visibles; si no, se muestra el propio del vale.
-  const predioDeFila = useCallback(
-    (row) => (predioActivo ? nombrePredio(predioActivo) : (row.api_ubicacion_nombre || null)),
-    [predioActivo, nombrePredio]
-  );
+  // Predio que se muestra en cada fila (el asignado al vale). El filtro por predio
+  // ahora se hace en el backend, así que la columna muestra el predio real del vale.
+  const predioDeFila = useCallback((row) => row.api_ubicacion_nombre || null, []);
 
   // Abre el modal con el vale elegido, partiendo de un formulario limpio.
   const seleccionarVale = (row) => {

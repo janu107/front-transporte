@@ -10,9 +10,14 @@ import { ENDPOINTS } from '../api/endpoints';
 const unwrap = (resp) => (resp.data && 'data' in resp.data ? resp.data.data : resp.data);
 
 export const controlApiService = {
-  /** Lista los vales en estado 'P' (Pendiente) que alimenta combustible-api. */
-  async listarPendientes() {
-    return unwrap(await axiosClient.get(ENDPOINTS.controlApi.pendientes));
+  /**
+   * Lista los vales en estado 'P' (Pendiente). Filtro opcional por predio (se
+   * envía al backend para filtrar en MySQL, no en React).
+   * @param {number|string} [idUbicacion]
+   */
+  async listarPendientes(idUbicacion) {
+    const params = idUbicacion ? { id_ubicacion: idUbicacion } : undefined;
+    return unwrap(await axiosClient.get(ENDPOINTS.controlApi.pendientes, { params }));
   },
 
   /**

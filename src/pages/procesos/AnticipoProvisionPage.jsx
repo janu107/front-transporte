@@ -40,6 +40,7 @@ export default function AnticipoProvisionPage() {
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(null); // [4.4] anticipo recién guardado (se queda en el modal para imprimir)
   const [confirmRow, setConfirmRow] = useState(null);
   const [term, setTerm] = useState('');
 
@@ -100,8 +101,11 @@ export default function AnticipoProvisionPage() {
     setErrors((prev) => ({ ...prev, id_camion: undefined, id_piloto: undefined }));
   };
 
+  const resetFormulario = () => {
+    setEditing(null); setValues(EMPTY); setErrors({}); setSaved(null);
+  };
   const abrirNuevo = () => {
-    setEditing(null); setValues(EMPTY); setErrors({}); setMessage(null); setModalOpen(true);
+    resetFormulario(); setMessage(null); setModalOpen(true);
   };
   const abrirEditar = (row) => {
     setEditing(row);
@@ -112,10 +116,10 @@ export default function AnticipoProvisionPage() {
       fecha: row.fecha ? String(row.fecha).slice(0, 10) : '', valor: row.valor ?? '',
       descripcion: row.descripcion ?? '', estado: row.estado ?? 'ACTIVO',
     });
-    setErrors({}); setMessage(null); setModalOpen(true);
+    setErrors({}); setSaved(null); setMessage(null); setModalOpen(true);
   };
   const cerrarModal = () => {
-    setModalOpen(false); setEditing(null); setValues(EMPTY); setErrors({});
+    setModalOpen(false); resetFormulario();
   };
 
   const validar = () => {
@@ -136,13 +140,11 @@ export default function AnticipoProvisionPage() {
     setSaving(true); setMessage(null);
     try {
       const payload = { ...values, id_transportista: camionSel ? camionSel.id_transportista : null };
-      let saved;
-      if (editing) saved = await realApi.update('anticipos', editing.correlativo, payload);
-      else saved = await realApi.create('anticipos', payload);
-      notify('success', editing
-        ? 'Anticipo actualizado correctamente.'
-        : `Anticipo registrado. No. asignado: ${saved?.num_anticipo || '(ver listado)'}`);
-      cerrarModal();
+      let res;
+      if (editing) res = await realApi.update('anticipos', editing.correlativo, payload);
+      else res = await realApi.create('anticipos', payload);
+      // [4.4] NO se cierra el modal: se conserva el resultado para imprimir / presionar Nuevo.
+      setSaved(res);
       await cargar();
     } catch (err) {
       notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo guardar el anticipo.');
@@ -239,15 +241,28 @@ export default function AnticipoProvisionPage() {
         onClose={cerrarModal}
         size="lg"
         title={editing ? `Editar anticipo #${editing.correlativo}` : 'Nuevo anticipo / provisión'}
-        footer={
+        footer={saved ? (
+          <>
+            <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
+            <Button variant="secondary" icon="🖨️" onClick={() => imprimirValeAnticipo(datosVale(saved))}>Imprimir</Button>
+            <Button variant="primary" icon="➕" onClick={resetFormulario}>Nuevo</Button>
+          </>
+        ) : (
           <>
             <Button variant="secondary" onClick={cerrarModal} disabled={saving}>Cancelar</Button>
             <Button variant="primary" icon="💾" onClick={guardar} disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar'}
             </Button>
           </>
-        }
+        )}
       >
+        {/* [4.4] Confirmación con el correlativo (el modal no se cierra al guardar). */}
+        {saved && (
+          <div className="alert alert-success" style={{ marginTop: 0, marginBottom: 12 }}>
+            ✅ Anticipo guardado correctamente. Número de anticipo: <b>{saved.num_anticipo}</b>. Puede imprimir el vale o presionar «Nuevo».
+          </div>
+        )}
+
         <div className="form-grid">
           {/* Número de anticipo: solo lectura, correlativo AÑO+00000 al guardar. */}
           <ReadOnly label="Número de anticipo" value={values.num_anticipo || '(se asigna al guardar)'} />
