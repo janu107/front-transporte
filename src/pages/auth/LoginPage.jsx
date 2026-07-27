@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import Logo from '../../components/common/Logo';
 import { ROUTES } from '../../routes/routePaths';
 import { APP_NAME } from '../../utils/constants';
 import { isEmpty } from '../../utils/validators';
@@ -51,7 +52,7 @@ export default function LoginPage() {
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-logo">
-          <img className="login-brand" src={`${import.meta.env.BASE_URL}setrasa-logo.svg`} alt="SETRASA" />
+          <Logo className="login-brand" />
           <h1>{APP_NAME}</h1>
           <p>Ingrese sus credenciales para continuar</p>
         </div>
