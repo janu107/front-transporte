@@ -190,11 +190,13 @@ export default function PolizaDetallePage() {
   // Datos para la Carta de Porte a partir de una fila de viaje.
   const datosCarta = (r) => {
     const p = pilotos.find((x) => String(x.codigo) === String(r.id_piloto));
+    const tar = tarifas.find((x) => String(x.codigo) === String(r.id_tarifa_embarque));
     return {
       numero: r.num_envio,
       fecha: r.fecha,
-      predioOrigen: lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial'),
-      destino: lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza'),
+      // [P11] origen/destino del embarque salen de la tarifa seleccionada.
+      origen: tar ? tar.origen : '',
+      destino: tar ? tar.destino : '',
       piloto: p ? `${p.nombres} ${p.apellidos || ''}`.trim() : '',
       placa: lookup(camiones, r.id_camion, 'codigo', 'placa'),
       cantidad: r.cantidad_bultos_piezas,
@@ -420,7 +422,7 @@ export default function PolizaDetallePage() {
 
         {/* Datos de la póliza */}
         <h4 style={secTitle}>Datos de la póliza</h4>
-        <div className="form-grid">
+        <div className="form-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
           {/* [M5.2] Tipo de viaje como chips: se ve como multiselect pero es selección única. */}
           <div className="form-field col-span-2">
             <label className="form-label">Tipo de viaje <span className="req">*</span></label>
@@ -449,7 +451,7 @@ export default function PolizaDetallePage() {
 
         {/* Transportista */}
         <h4 style={secTitle}>Transportista</h4>
-        <div className="form-grid">
+        <div className="form-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
           <SearchableSelect label="Placa (camión)" name="id_camion" required value={values.id_camion}
             onChange={(v) => onChangeCamion(v)} options={camionOptions} error={errors.id_camion}
             placeholder="Buscar placa..." />
@@ -466,7 +468,7 @@ export default function PolizaDetallePage() {
 
         {/* Datos del envío */}
         <h4 style={secTitle}>Datos del envío</h4>
-        <div className="form-grid">
+        <div className="form-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
           {/* [M5.3] Número de envío: solo lectura, se asigna al guardar (correlativo AÑO+00000). */}
           <ReadOnly label="Número de envío"
             value={values.num_envio || '(se asigna al guardar)'} />

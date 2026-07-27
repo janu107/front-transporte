@@ -32,7 +32,9 @@ export default function CamionesPage() {
       newLabel="+ Nuevo camión"
       recurso="camiones"
       columns={columns}
-      searchFields={['codigo', 'placa', 'marca', 'color', 'anio']}
+      searchFields={['codigo', 'placa', 'marca', 'color', 'anio',
+        (r) => lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial'),
+        (r) => lookup(tipoCamion, r.id_tipo_camion)]}
       emptyRecord={{ placa: '', id_transportista: '', id_tipo_camion: '', marca: '', color: '', anio: '' }}
       validate={(v) =>
         validateForm(v, {

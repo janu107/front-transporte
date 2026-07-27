@@ -30,7 +30,8 @@ export default function PilotosPage() {
       recurso="pilotos"
       modalSize="lg"
       columns={columns}
-      searchFields={['codigo', 'nombres', 'apellidos', 'licencia', 'estado']}
+      searchFields={['codigo', 'nombres', 'apellidos', 'licencia', 'estado',
+        (r) => lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial')]}
       emptyRecord={{ nombres: '', apellidos: '', id_transportista: '', licencia: '', tipo_licencia: '', fecha_vigencia: '', direccion: '', telefono: '', estado: 'ACTIVO' }}
       validate={(v) =>
         validateForm(v, {

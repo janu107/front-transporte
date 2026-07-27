@@ -24,6 +24,11 @@ function fechaEnLetras(fecha, ciudad = 'ESCUINTLA') {
   const p = partesFecha(fecha);
   return `${ciudad}, ${p.dia} de ${p.mesNombre} del ${p.anio}`;
 }
+// Fecha y hora de impresión: DD/MM/YYYY HH:mm:ss
+function fechaHoraImpresion() {
+  const p = partesFecha(new Date());
+  return `${p.dia}/${p.mes}/${p.anio} ${new Date().toLocaleTimeString('es-GT', { hour12: false })}`;
+}
 const q = (n) => `Q ${Number(n || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** Abre una ventana nueva, escribe el documento y lanza la impresión. */
@@ -48,37 +53,36 @@ function imprimir(titulo, estilos, cuerpo) {
   w.document.close();
 }
 
-/* ============================ CARTA DE PORTE (M6) ============================ */
-// datos: { numero, fecha, predioOrigen, destino, piloto, placa, cantidad, tc,
-//          contiene, poliza }
+/* ============================ CARTA DE PORTE (P11) ============================ */
+// datos: { numero, fecha, origen, destino, piloto, placa, cantidad, tc, contiene, poliza }
+// [P11b] Tamaño carta: Original + Duplicado 1 en la página 1, Duplicado 2 en la página 2.
+// [P11e/f] "Señor" y "Para ser transportado de" = ORIGEN;  [P11g] "A" = DESTINO.
 export function imprimirCartaPorte(datos) {
   const estilos = `
-    @page { size: 8.5in 5.5in; margin: 0.3in; }
-    .carta { width: 100%; border: 2px solid #000; padding: 8px 10px; page-break-after: always; }
-    .carta:last-child { page-break-after: auto; }
+    @page { size: 8.5in 11in; margin: 0.35in; }
+    .carta { border: 2px solid #000; padding: 14px 16px; margin-bottom: 16px; min-height: 4.55in; box-sizing: border-box; }
+    .carta.brk { page-break-after: always; margin-bottom: 0; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; }
-    .marca { font-weight: 800; font-size: 22px; letter-spacing: 1px; }
-    .predio { font-size: 9px; max-width: 260px; }
+    .predio { font-size: 10px; max-width: 300px; margin-top: 4px; }
     .titulo { text-align: right; }
-    .titulo h1 { margin: 0; font-size: 20px; }
-    .num { color: #c1121f; font-weight: 800; font-size: 16px; }
-    table.dma { border-collapse: collapse; margin-top: 4px; }
-    table.dma td, table.dma th { border: 1px solid #000; padding: 1px 8px; font-size: 10px; text-align: center; }
-    .fila { display: flex; gap: 8px; margin-top: 6px; font-size: 11px; }
-    .campo { border-bottom: 1px solid #000; flex: 1; padding: 0 4px; min-height: 15px; }
+    .titulo h1 { margin: 0; font-size: 22px; }
+    .num { color: #c1121f; font-weight: 800; font-size: 18px; }
+    table.dma { border-collapse: collapse; margin-top: 4px; margin-left: auto; }
+    table.dma td, table.dma th { border: 1px solid #000; padding: 2px 12px; font-size: 11px; text-align: center; }
+    .fila { display: flex; gap: 10px; margin-top: 14px; font-size: 12px; align-items: flex-end; }
+    .campo { border-bottom: 1px solid #000; flex: 1; padding: 0 4px 2px; min-height: 18px; }
     .lbl { font-weight: 700; white-space: nowrap; }
-    .pie { display: flex; justify-content: space-between; margin-top: 14px; font-size: 10px; text-align: center; }
-    .firma { border-top: 1px solid #000; padding-top: 2px; width: 30%; }
-    .imp { border: 1px solid #000; padding: 3px 6px; font-size: 8px; width: 40%; }
-    .copia { font-style: italic; font-weight: 700; font-size: 11px; margin-top: 4px; }
+    .pie { display: flex; justify-content: space-between; margin-top: 40px; font-size: 10px; text-align: center; gap: 14px; }
+    .firma { border-top: 1px solid #000; padding-top: 3px; width: 30%; }
+    .imp { border: 1px solid #000; padding: 4px 6px; font-size: 8px; width: 42%; }
+    .copia { font-style: italic; font-weight: 700; font-size: 12px; margin-top: 8px; }
   `;
-  const copias = ['ORIGINAL', 'DUPLICADO 1', 'DUPLICADO 2'];
   const p = partesFecha(datos.fecha);
-  const carta = (etiqueta) => `
-    <div class="carta">
+  const carta = (etiqueta, brk) => `
+    <div class="carta ${brk ? 'brk' : ''}">
       <div class="cab">
         <div>
-          <img class="marca" src="${logoAbsUrl()}" alt="SETRASA" style="height:34px;width:auto" />
+          <img src="${logoAbsUrl()}" alt="SETRASA" style="height:38px;width:auto" />
           <div class="predio"><b>PREDIO:</b> Km 60 antigua carretera Puerto San José, Escuintla<br/>PBX: 7963-9898 Fax: 7889-5199</div>
         </div>
         <div class="titulo">
@@ -88,7 +92,7 @@ export function imprimirCartaPorte(datos) {
             <tr><td>${p.dia}</td><td>${p.mesNombre}</td><td>${p.anio}</td></tr></table>
         </div>
       </div>
-      <div class="fila"><span class="lbl">Señor:</span><span class="campo">${esc(datos.destino)}</span></div>
+      <div class="fila"><span class="lbl">Señor:</span><span class="campo">${esc(datos.origen)}</span></div>
       <div class="fila">
         <span class="lbl">Sírvase entregar al Piloto Señor:</span><span class="campo">${esc(datos.piloto)}</span>
         <span class="lbl">Vehículo Placas No.:</span><span class="campo">${esc(datos.placa)}</span>
@@ -98,7 +102,7 @@ export function imprimirCartaPorte(datos) {
         <span class="lbl">TC:</span><span class="campo">${esc(datos.tc)}</span>
       </div>
       <div class="fila"><span class="lbl">Dice Contener:</span><span class="campo">${esc(datos.contiene)}</span></div>
-      <div class="fila"><span class="lbl">Para ser transportado(as) de:</span><span class="campo">${esc(datos.predioOrigen)}</span></div>
+      <div class="fila"><span class="lbl">Para ser transportado(as) de:</span><span class="campo">${esc(datos.origen)}</span></div>
       <div class="fila"><span class="lbl">A:</span><span class="campo">${esc(datos.destino)}</span></div>
       <div class="fila"><span class="lbl">Póliza o Guía No.:</span><span class="campo">${esc(datos.poliza)}</span></div>
       <div class="pie">
@@ -111,46 +115,52 @@ export function imprimirCartaPorte(datos) {
         <div class="imp"><b>IMPORTANTE:</b> Todas las mercaderías viajan por su cuenta y riesgo, por lo que sugerimos asegurarlas con la Aseguradora de su confianza.</div>
       </div>
     </div>`;
-  imprimir(`Carta de Porte ${datos.numero || ''}`, estilos, copias.map(carta).join(''));
+  // Página 1: ORIGINAL + DUPLICADO 1 (con salto tras el 2do). Página 2: DUPLICADO 2.
+  const cuerpo = carta('ORIGINAL', false) + carta('DUPLICADO 1', true) + carta('DUPLICADO 2', false);
+  imprimir(`Carta de Porte ${datos.numero || ''}`, estilos, cuerpo);
 }
 
-/* ============================ VALE DE ANTICIPO (M7) ============================ */
-// datos: { numero, fecha, poliza, placa, transportista, concepto, factura, total }
+/* ============================ VALE DE ANTICIPO (P13) ============================ */
+// datos: { numero, fecha, poliza, placa, transportista, piloto, tipo, descripcion, factura, total }
+// [P13b] En el cuadro del total: tipo de anticipo + descripción + total.
+// [P13f] Impreso: DD/MM/YYYY HH:mm:ss.  [P13g] Nombre/Firma = piloto.
 export function imprimirValeAnticipo(datos) {
   const estilos = `
     @page { size: 11in 8.5in; margin: 0.4in; }
     .hoja { display: flex; flex-wrap: wrap; gap: 0; }
-    .vale { width: 50%; padding: 10px 14px; border-right: 1px dashed #555; border-bottom: 1px dashed #555; font-size: 11px; }
+    .vale { width: 50%; padding: 12px 16px; border-right: 1px dashed #555; border-bottom: 1px dashed #555; font-size: 11px; }
     .vale .cab { display: flex; justify-content: space-between; align-items: flex-start; }
-    .marca { font-weight: 800; font-size: 16px; }
     .valeno { text-align: right; }
     .valeno .n { font-size: 16px; font-weight: 800; }
-    .row { display: flex; justify-content: space-between; margin-top: 4px; }
-    .caja { border: 1px solid #000; margin-top: 8px; padding: 6px; min-height: 70px; }
-    .total { text-align: right; font-weight: 800; margin-top: 6px; }
-    .firma { border-top: 1px solid #000; margin-top: 26px; padding-top: 2px; text-align: center; width: 60%; }
-    .copia { font-size: 9px; color: #444; margin-top: 4px; }
+    .row { display: flex; justify-content: space-between; margin-top: 10px; }
+    .lnk { margin-top: 8px; }
+    .caja { border: 1px solid #000; margin-top: 12px; padding: 8px; min-height: 80px; }
+    .caja .tipo { font-weight: 700; }
+    .caja .desc { margin-top: 4px; }
+    .total { text-align: right; font-weight: 800; margin-top: 10px; font-size: 13px; }
+    .firma { border-top: 1px solid #000; margin-top: 34px; padding-top: 3px; text-align: center; width: 70%; }
+    .copia { font-size: 9px; color: #444; margin-top: 6px; }
   `;
   const copias = ['ORIGINAL CLIENTE', 'CONTABILIDAD', 'COPIA'];
-  const fImp = partesFecha(new Date());
+  const impreso = fechaHoraImpresion();
   const vale = (etiqueta) => `
     <div class="vale">
       <div class="cab">
-        <img class="marca" src="${logoAbsUrl()}" alt="SETRASA" style="height:34px;width:auto" />
+        <img src="${logoAbsUrl()}" alt="SETRASA" style="height:34px;width:auto" />
         <div class="valeno">VALE NO. <span class="n">${esc(datos.numero)}</span><br/>
-          <span style="font-size:8px">Impreso: ${fImp.dia}/${fImp.mes}/${fImp.anio}</span></div>
+          <span style="font-size:8px">Impreso: ${impreso}</span></div>
       </div>
       <div class="row"><span><b>Póliza:</b> ${esc(datos.poliza)}</span><span><b>Placa:</b> ${esc(datos.placa)}</span></div>
-      <div><b>Transporte:</b> ${esc(datos.transportista)}</div>
+      <div class="lnk"><b>Transporte:</b> ${esc(datos.transportista)}</div>
       <div class="caja">
-        <div>${esc(datos.concepto || 'ABONO DE FLETES')}</div>
+        <div class="tipo">${esc(datos.tipo || 'ABONO DE FLETES')}</div>
+        <div class="desc">${esc(datos.descripcion || '')}</div>
         ${datos.factura ? `<div>FACTURA No. ${esc(datos.factura)}</div>` : ''}
         <div class="total">TOTAL Q: ${q(datos.total)}</div>
       </div>
-      <div style="margin-top:6px">${esc(fechaEnLetras(datos.fecha))}</div>
-      <div style="margin-top:2px">SETRASA</div>
-      <div>${esc(datos.transportista)}</div>
-      <div class="firma">NOMBRE / FIRMA</div>
+      <div style="margin-top:10px">${esc(fechaEnLetras(datos.fecha))}</div>
+      <div style="margin-top:4px">SETRASA</div>
+      <div class="firma">${esc(datos.piloto || '')}<br/>NOMBRE / FIRMA</div>
       <div class="copia">${etiqueta}</div>
     </div>`;
   imprimir(`Vale de Anticipo ${datos.numero || ''}`, estilos, `<div class="hoja">${copias.map(vale).join('')}</div>`);

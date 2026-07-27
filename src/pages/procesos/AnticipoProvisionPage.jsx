@@ -161,15 +161,20 @@ export default function AnticipoProvisionPage() {
     } catch (err) { notify('error', err?.userMessage || 'No se pudo anular.'); }
   };
 
-  const datosVale = (r) => ({
-    numero: r.num_anticipo,
-    fecha: r.fecha,
-    poliza: lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza'),
-    placa: lookup(camiones, r.id_camion, 'codigo', 'placa'),
-    transportista: lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial'),
-    concepto: r.descripcion || 'ABONO DE FLETES',
-    total: r.valor,
-  });
+  const datosVale = (r) => {
+    const p = pilotos.find((x) => String(x.codigo) === String(r.id_piloto));
+    return {
+      numero: r.num_anticipo,
+      fecha: r.fecha,
+      poliza: lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza'),
+      placa: lookup(camiones, r.id_camion, 'codigo', 'placa'),
+      transportista: lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial'),
+      piloto: p ? `${p.nombres} ${p.apellidos || ''}`.trim() : '',
+      tipo: lookup(tipos, r.id_tipo_anticipo_provision), // nombre del tipo de anticipo
+      descripcion: r.descripcion || '',
+      total: r.valor,
+    };
+  };
 
   const filtrados = useMemo(() => {
     const q = term.trim().toLowerCase();
