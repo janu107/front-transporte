@@ -18,6 +18,7 @@ import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
+import SearchableSelect from '../../components/common/SearchableSelect';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import SearchBar from '../../components/common/SearchBar';
@@ -105,7 +106,7 @@ export default function PolizaDetallePage() {
   const tarifaOptions = useMemo(
     () => tarifas
       .filter((t) => String(t.estado).toUpperCase() === 'ACTIVO')
-      .map((t) => ({ value: t.codigo, label: t.descripcion })),
+      .map((t) => ({ value: t.codigo, label: `${t.codigo} · ${t.origen || '—'} → ${t.destino || '—'} · Q${t.valor}` })),
     [tarifas]
   );
   const camionOptions = useMemo(() => camiones.map((c) => ({ value: c.codigo, label: c.placa })), [camiones]);
@@ -439,9 +440,9 @@ export default function PolizaDetallePage() {
           <Select label="Póliza (ABIERTA)" name="id_poliza" required value={values.id_poliza}
             onChange={(e) => onChangePoliza(e.target.value)} options={polizaOptions} error={errors.id_poliza}
             placeholder={polizaOptions.length ? 'Seleccione póliza...' : 'No hay pólizas abiertas'} />
-          <Select label="Tarifa de embarque" name="id_tarifa_embarque" value={values.id_tarifa_embarque}
-            onChange={(e) => { setField('id_tarifa_embarque', e.target.value); setCalc(null); setCalcMsg(null); }}
-            options={tarifaOptions} placeholder="Seleccione tarifa..." />
+          <SearchableSelect label="Tarifa de embarque" name="id_tarifa_embarque" value={values.id_tarifa_embarque}
+            onChange={(v) => { setField('id_tarifa_embarque', v); setCalc(null); setCalcMsg(null); }}
+            options={tarifaOptions} placeholder="Buscar tarifa (código, origen, destino)..." />
           <ReadOnly label="Pesos de la póliza"
             value={resumen ? `${formatNumber(resumen.peso_total)} · ${formatNumber(resumen.cantidad_piezas, 0)} pzs` : (resumenLoading ? 'Cargando...' : '—')} />
         </div>
@@ -449,18 +450,18 @@ export default function PolizaDetallePage() {
         {/* Transportista */}
         <h4 style={secTitle}>Transportista</h4>
         <div className="form-grid">
-          <Select label="Placa (camión)" name="id_camion" required value={values.id_camion}
-            onChange={(e) => onChangeCamion(e.target.value)} options={camionOptions} error={errors.id_camion}
-            placeholder="Seleccione placa..." />
+          <SearchableSelect label="Placa (camión)" name="id_camion" required value={values.id_camion}
+            onChange={(v) => onChangeCamion(v)} options={camionOptions} error={errors.id_camion}
+            placeholder="Buscar placa..." />
           <Input label="No. de TC" name="num_tc" value={values.num_tc}
             onChange={(e) => setField('num_tc', e.target.value)} placeholder="Tarjeta de circulación" />
           <ReadOnly label="Transportista"
             value={transportistaSel ? transportistaSel.nombre_comercial : (camionSel ? '—' : 'Seleccione placa')}
             invalid={Boolean(values.id_camion) && !transportistaSel} />
-          <Select label="Piloto (licencia)" name="id_piloto" required value={values.id_piloto}
-            onChange={(e) => setField('id_piloto', e.target.value)} options={pilotoOptions} error={errors.id_piloto}
+          <SearchableSelect label="Piloto (licencia)" name="id_piloto" required value={values.id_piloto}
+            onChange={(v) => setField('id_piloto', v)} options={pilotoOptions} error={errors.id_piloto}
             disabled={!camionSel}
-            placeholder={!camionSel ? 'Seleccione placa primero' : (pilotoOptions.length ? 'Seleccione licencia...' : 'Sin pilotos del transportista')} />
+            placeholder={!camionSel ? 'Seleccione placa primero' : (pilotoOptions.length ? 'Buscar licencia o nombre...' : 'Sin pilotos del transportista')} />
         </div>
 
         {/* Datos del envío */}
@@ -475,7 +476,7 @@ export default function PolizaDetallePage() {
             onChange={(e) => setField('cantidad_bultos_piezas', e.target.value)} onBlur={validarEnvio} error={errors.cantidad_bultos_piezas} />
           <Input label="Peso (kilogramos)" name="peso" type="number" min={0} step="0.01" value={values.peso}
             onChange={(e) => setField('peso', e.target.value)} onBlur={validarEnvio} error={errors.peso} />
-          <ReadOnly label="Valor (Peso × 0.022046 × tarifa)" value={formatCurrency(valorMostrar)} strong />
+          <ReadOnly label="Valor" value={formatCurrency(valorMostrar)} strong />
           <Input className="col-span-2" label="Observaciones" name="observaciones" value={values.observaciones}
             onChange={(e) => setField('observaciones', e.target.value)} />
         </div>

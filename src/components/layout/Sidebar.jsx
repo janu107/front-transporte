@@ -6,14 +6,15 @@
 import { NavLink } from 'react-router-dom';
 import { MENU } from '../../data/menuItems';
 import { APP_NAME } from '../../utils/constants';
+import Logo from '../common/Logo';
 
 export function Sidebar({ open, onNavigate }) {
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="sidebar-brand">
-        <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Logo" />
+        <Logo height={38} />
         <div className="brand-text">
-          APP Transporte
+          SETRASA
           <span>{APP_NAME}</span>
         </div>
       </div>

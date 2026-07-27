@@ -58,7 +58,12 @@ export const MENU = [
       { label: 'Anticipos / Provisión', path: ROUTES.anticipoProvision, icon: '💰' },
       { label: 'Detalle de Facturas', path: ROUTES.detalleFacturas, icon: '📋' },
       { label: 'Liquidaciones', path: ROUTES.liquidaciones, icon: '✅' },
+      { label: 'Historial Liquidaciones', path: ROUTES.historialLiquidaciones, icon: '📚' },
     ],
+  },
+  {
+    title: 'Reportes',
+    items: [{ label: 'Reporte de Diesel', path: ROUTES.reporteDiesel, icon: '⛽' }],
   },
   {
     title: 'Auditoría',

@@ -24,7 +24,7 @@ export default function TransportistasPage() {
       newLabel="+ Nuevo transportista"
       recurso="transportistas"
       columns={columns}
-      searchFields={['nombre_comercial', 'nit', 'nombres', 'apellidos']}
+      searchFields={['codigo', 'nombre_comercial', 'nit', 'nombres', 'apellidos']}
       emptyRecord={{ nombre_comercial: '', nit: '', nombres: '', apellidos: '', direccion: '', telefono: '', correo: '', impuesto: 0, estado: 'ACTIVO' }}
       validate={(v) =>
         validateForm(v, {

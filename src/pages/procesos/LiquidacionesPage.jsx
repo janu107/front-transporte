@@ -10,6 +10,7 @@ import Select from '../../components/common/Select';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import realApi from '../../api/realApi';
 import { formatCurrency, formatNumber } from '../../utils/formatters';
+import { imprimirLiquidacion } from '../../utils/impresionDocs';
 
 export default function LiquidacionesPage() {
   const [polizas, setPolizas] = useState([]);
@@ -18,6 +19,7 @@ export default function LiquidacionesPage() {
   const [cargandoResumen, setCargandoResumen] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmado, setConfirmado] = useState(null); // datos para imprimir la liquidación
   const [message, setMessage] = useState(null);
 
   const notify = useCallback((type, text) => {
@@ -44,6 +46,7 @@ export default function LiquidacionesPage() {
   const onChangePoliza = (value) => {
     setIdPoliza(value);
     setResumen(null);
+    setConfirmado(null);
     setMessage(null);
   };
 
@@ -70,7 +73,10 @@ export default function LiquidacionesPage() {
     try {
       const r = await realApi.liquidacionConfirmar(idPoliza);
       notify('success', r.mensaje || 'Liquidación confirmada.');
-      // La póliza quedó cerrada: limpiar y recargar la lista de abiertas.
+      // [P16a] Guarda los datos para imprimir la liquidación recién confirmada.
+      const nombrePol = polizas.find((p) => String(p.codigo) === String(idPoliza))?.nombre_poliza || '';
+      setConfirmado({ poliza: nombrePol, fecha: new Date().toISOString().slice(0, 10), transportistas: resumen || [], total_liquido: r.total_liquido });
+      // La póliza quedó cerrada: limpiar el resumen y recargar abiertas.
       setResumen(null);
       setIdPoliza('');
       await cargarPolizas();
@@ -96,6 +102,14 @@ export default function LiquidacionesPage() {
       />
 
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
+
+      {/* [P16a] Botón de imprimir la liquidación recién confirmada */}
+      {confirmado && (
+        <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span>Liquidación de <b>{confirmado.poliza}</b> confirmada. Puede imprimirla.</span>
+          <Button variant="secondary" icon="🖨️" onClick={() => imprimirLiquidacion(confirmado)}>Imprimir liquidación</Button>
+        </div>
+      )}
 
       {/* Selector de póliza + acciones */}
       <div className="toolbar" style={{ alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>

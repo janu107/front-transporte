@@ -1,7 +1,6 @@
 /**
  * LoginPage.jsx
- * Pantalla de login visual con autenticación simulada (localStorage).
- * Credenciales: admin / Admin123!
+ * Pantalla de inicio de sesión. Autentica contra el backend real (POST /auth/login).
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -65,7 +64,7 @@ export default function LoginPage() {
           value={values.usuario}
           onChange={(e) => setField('usuario', e.target.value)}
           error={errors.usuario}
-          placeholder="admin"
+          placeholder="Usuario"
           autoFocus
         />
         <Input
@@ -82,9 +81,6 @@ export default function LoginPage() {
           {loading ? 'Ingresando...' : 'Ingresar'}
         </Button>
 
-        <div className="login-hint">
-          Credenciales de prueba: <strong>admin</strong> / <strong>Admin123!</strong>
-        </div>
         <div className="login-footer">© {new Date().getFullYear()} APP Transporte</div>
       </form>
     </div>

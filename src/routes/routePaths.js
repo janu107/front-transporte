@@ -42,6 +42,10 @@ export const ROUTES = {
   anticipoProvision: '/procesos/anticipo-provision',
   detalleFacturas: '/procesos/detalle-facturas',
   liquidaciones: '/procesos/liquidaciones',
+  historialLiquidaciones: '/procesos/historial-liquidaciones',
+
+  // Reportes
+  reporteDiesel: '/reportes/reporte-diesel',
 
   // Bitacoras
   bitacoras: '/bitacoras',

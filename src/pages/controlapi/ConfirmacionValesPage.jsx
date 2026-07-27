@@ -61,10 +61,12 @@ export default function ConfirmacionValesPage() {
     if (type !== 'error') setTimeout(() => setMessage(null), 6000);
   }, []);
 
-  // ---- Carga de vales pendientes (estado 'P'), filtrando por predio en el backend [2.1] ----
+  // ---- Carga de vales pendientes (estado 'P') ----
+  // [P3a] El predio NO filtra la lista (los vales del API casi nunca traen predio):
+  // se muestran todos y el predio elegido se usa como etiqueta en la columna.
   const cargarPendientes = useCallback(async () => {
     try {
-      const data = await controlApiService.listarPendientes(predioActivo || undefined);
+      const data = await controlApiService.listarPendientes();
       setPendientes(data);
       setLastUpdate(new Date());
       // Conserva la selección solo si el vale sigue pendiente.
@@ -72,7 +74,7 @@ export default function ConfirmacionValesPage() {
     } catch (e) {
       notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudieron cargar los vales del API.');
     }
-  }, [notify, predioActivo]);
+  }, [notify]);
 
   // ---- Catálogos (una sola vez) ----
   useEffect(() => {
@@ -90,7 +92,7 @@ export default function ConfirmacionValesPage() {
     })();
   }, []);
 
-  // ---- Pendientes: carga inicial y recarga al cambiar el predio ----
+  // ---- Pendientes: carga inicial ----
   useEffect(() => {
     setLoading(true);
     cargarPendientes().finally(() => setLoading(false));
@@ -162,9 +164,14 @@ export default function ConfirmacionValesPage() {
   // ---- Handlers ----
   const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
 
-  // Predio que se muestra en cada fila (el asignado al vale). El filtro por predio
-  // ahora se hace en el backend, así que la columna muestra el predio real del vale.
-  const predioDeFila = useCallback((row) => row.api_ubicacion_nombre || null, []);
+  // [P3a] Nombre del predio elegido en el selector global (etiqueta de contexto).
+  const predioActivoNombre = ubicaciones.find((u) => String(u.codigo) === String(predioActivo))?.descripcion || null;
+  // Predio que se muestra en cada fila: si hay predio elegido, se usa como etiqueta
+  // para todas las filas; si no, se muestra el predio propio del vale.
+  const predioDeFila = useCallback(
+    (row) => (predioActivo ? predioActivoNombre : (row.api_ubicacion_nombre || null)),
+    [predioActivo, predioActivoNombre]
+  );
 
   // Abre el modal con el vale elegido, partiendo de un formulario limpio.
   const seleccionarVale = (row) => {

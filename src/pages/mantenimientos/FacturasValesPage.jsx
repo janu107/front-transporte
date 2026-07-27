@@ -33,7 +33,7 @@ export default function FacturasValesPage() {
       deleteMode="anular"
       anularEstado="ANULADA"
       columns={columns}
-      searchFields={['factura', 'descripcion_compra']}
+      searchFields={['codigo', 'factura', 'descripcion_compra', 'fecha', 'saldo', 'estado']}
       emptyRecord={{ factura: '', id_producto: '', id_bomba: '', descripcion_compra: '', fecha: '', unidades: 0, precio: 0, saldo: 0, estado: 'PENDIENTE' }}
       validate={(v) =>
         validateForm(v, {

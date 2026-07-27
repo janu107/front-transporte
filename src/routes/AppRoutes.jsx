@@ -45,6 +45,10 @@ import PolizaDetallePage from '../pages/procesos/PolizaDetallePage';
 import AnticipoProvisionPage from '../pages/procesos/AnticipoProvisionPage';
 import DetalleFacturasPage from '../pages/procesos/DetalleFacturasPage';
 import LiquidacionesPage from '../pages/procesos/LiquidacionesPage';
+import HistorialLiquidacionesPage from '../pages/procesos/HistorialLiquidacionesPage';
+
+// Reportes
+import ReporteDieselPage from '../pages/reportes/ReporteDieselPage';
 
 // Bitácoras y errores
 import BitacorasPage from '../pages/bitacoras/BitacorasPage';
@@ -96,6 +100,10 @@ export function AppRoutes() {
           <Route path={ROUTES.anticipoProvision} element={<AnticipoProvisionPage />} />
           <Route path={ROUTES.detalleFacturas} element={<DetalleFacturasPage />} />
           <Route path={ROUTES.liquidaciones} element={<LiquidacionesPage />} />
+          <Route path={ROUTES.historialLiquidaciones} element={<HistorialLiquidacionesPage />} />
+
+          {/* Reportes */}
+          <Route path={ROUTES.reporteDiesel} element={<ReporteDieselPage />} />
 
           {/* Auditoría */}
           <Route path={ROUTES.bitacoras} element={<BitacorasPage />} />

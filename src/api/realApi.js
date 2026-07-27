@@ -41,6 +41,8 @@ const PATHS = {
   viajes: '/viajes',
   // Anticipos / Provisión
   anticipos: '/anticipos',
+  // Detalle de Factura (vales de combustible manuales, con saldo transaccional)
+  detalleFactura: '/detalle-factura',
   // Auditoría
   bitacoras: '/bitacoras',
 };
@@ -106,6 +108,17 @@ export const realApi = {
   },
   async liquidacionConfirmar(idPoliza) {
     return unwrap(await axiosClient.post('/liquidacion/confirmar', { id_poliza: idPoliza }));
+  },
+  async liquidacionHistorial(params = {}) {
+    return unwrap(await axiosClient.get('/liquidacion/historial', { params }));
+  },
+  async liquidacionDetalle(idPoliza) {
+    return unwrap(await axiosClient.get(`/liquidacion/detalle/${idPoliza}`));
+  },
+
+  // Reporte de diesel por factura
+  async reporteDiesel(params = {}) {
+    return unwrap(await axiosClient.get('/reportes/diesel', { params }));
   },
 };
 

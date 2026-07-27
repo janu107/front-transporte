@@ -9,6 +9,7 @@ import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
+import SearchableSelect from '../../components/common/SearchableSelect';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import SearchBar from '../../components/common/SearchBar';
@@ -270,20 +271,20 @@ export default function AnticipoProvisionPage() {
             onChange={(e) => setField('id_poliza', e.target.value)} options={polizaOptions} error={errors.id_poliza}
             placeholder={polizaOptions.length ? 'Seleccione póliza...' : 'No hay pólizas abiertas'} />
 
-          <Select label="Placa (camión)" name="id_camion" required value={values.id_camion}
-            onChange={(e) => onChangeCamion(e.target.value)} options={camionOptions} error={errors.id_camion}
-            placeholder="Seleccione placa..." />
+          <SearchableSelect label="Placa (camión)" name="id_camion" required value={values.id_camion}
+            onChange={(v) => onChangeCamion(v)} options={camionOptions} error={errors.id_camion}
+            placeholder="Buscar placa..." />
           <ReadOnly label="Transportista"
             value={transportistaSel ? transportistaSel.nombre_comercial : (camionSel ? '—' : 'Seleccione placa')}
             invalid={Boolean(values.id_camion) && !transportistaSel} />
 
-          <Select label="Piloto (licencia)" name="id_piloto" required value={values.id_piloto}
-            onChange={(e) => setField('id_piloto', e.target.value)} options={pilotoOptions} error={errors.id_piloto}
+          <SearchableSelect label="Piloto (licencia)" name="id_piloto" required value={values.id_piloto}
+            onChange={(v) => setField('id_piloto', v)} options={pilotoOptions} error={errors.id_piloto}
             disabled={!camionSel}
-            placeholder={!camionSel ? 'Seleccione placa primero' : (pilotoOptions.length ? 'Seleccione licencia...' : 'Sin pilotos del transportista')} />
-          <Select label="Tipo anticipo / provisión" name="id_tipo_anticipo_provision" required value={values.id_tipo_anticipo_provision}
-            onChange={(e) => setField('id_tipo_anticipo_provision', e.target.value)} options={tipoOptions} error={errors.id_tipo_anticipo_provision}
-            placeholder="Seleccione tipo..." />
+            placeholder={!camionSel ? 'Seleccione placa primero' : (pilotoOptions.length ? 'Buscar licencia o nombre...' : 'Sin pilotos del transportista')} />
+          <SearchableSelect label="Tipo anticipo / provisión" name="id_tipo_anticipo_provision" required value={values.id_tipo_anticipo_provision}
+            onChange={(v) => setField('id_tipo_anticipo_provision', v)} options={tipoOptions} error={errors.id_tipo_anticipo_provision}
+            placeholder="Buscar tipo..." />
 
           <Input label="Fecha" name="fecha" type="date" required value={values.fecha}
             onChange={(e) => setField('fecha', e.target.value)} error={errors.fecha} />

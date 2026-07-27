@@ -67,10 +67,4 @@ export const TIPO_LICENCIA_OPTIONS = [
   { value: 'M', label: 'Tipo M' },
 ];
 
-// Credenciales simuladas para el login (solo fase visual).
-export const MOCK_CREDENTIALS = {
-  usuario: 'admin',
-  password: 'Admin123!',
-};
-
 export const APP_NAME = 'Sistema Administrativo de Transporte';
