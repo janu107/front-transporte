@@ -75,15 +75,10 @@ export default function LiquidacionesPage() {
     try {
       const r = await realApi.liquidacionConfirmar(idPoliza);
       notify('success', r.mensaje || 'Liquidación confirmada.');
-      // [P16a] Guarda los datos para imprimir la liquidación recién confirmada.
+      // [P16a / v5 §2] Guarda la póliza recién confirmada para reimprimir el
+      // reporte detallado (se pide al backend, que ya tiene los montos guardados).
       const nombrePol = polizas.find((p) => String(p.codigo) === String(idPoliza))?.nombre_poliza || '';
-      setConfirmado({
-        poliza: nombrePol,
-        fecha: new Date().toISOString().slice(0, 10),
-        usuario: user?.nombre || user?.usuario || '',
-        transportistas: resumen || [],
-        total_liquido: r.total_liquido,
-      });
+      setConfirmado({ idPoliza, poliza: nombrePol });
       // La póliza quedó cerrada: limpiar el resumen y recargar abiertas.
       setResumen(null);
       setIdPoliza('');
@@ -92,6 +87,16 @@ export default function LiquidacionesPage() {
       notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo confirmar la liquidación.');
     } finally {
       setConfirmando(false);
+    }
+  };
+
+  // Imprime la liquidación recién confirmada pidiendo el reporte detallado al backend.
+  const imprimirConfirmada = async () => {
+    try {
+      const data = await realApi.liquidacionReporte(confirmado.idPoliza);
+      imprimirLiquidacion(data, user?.nombre || user?.usuario || '');
+    } catch (e) {
+      notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo generar la liquidación para imprimir.');
     }
   };
 
@@ -115,7 +120,7 @@ export default function LiquidacionesPage() {
       {confirmado && (
         <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span>Liquidación de <b>{confirmado.poliza}</b> confirmada. Puede imprimirla.</span>
-          <Button variant="secondary" icon="🖨️" onClick={() => imprimirLiquidacion(confirmado)}>Imprimir liquidación</Button>
+          <Button variant="secondary" icon="🖨️" onClick={imprimirConfirmada}>Imprimir liquidación</Button>
         </div>
       )}
 

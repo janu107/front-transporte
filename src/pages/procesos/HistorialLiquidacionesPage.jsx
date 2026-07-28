@@ -46,24 +46,13 @@ export default function HistorialLiquidacionesPage() {
   const setField = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const limpiar = () => setF({ id_poliza: '', id_transportista: '', num_liquidacion: '', fecha_ini: '', fecha_fin: '' });
 
-  const reimprimir = async (idPoliza, nombrePoliza) => {
+  const reimprimir = async (idPoliza) => {
     try {
-      const d = await realApi.liquidacionDetalle(idPoliza);
-      // Reimpresión: usa tal cual los valores ORIGINALES guardados en pro_liquidaciones
-      // (no se recalcula nada, para no alterar el resultado histórico).
-      const trans = (d.transportistas || []).map((r) => ({
-        nombre: r.nombre_comercial, nit: r.nit,
-        cantidad_viajes: r.cantidad_viajes, valor_viajes: r.valor_viajes,
-        valor_anticipos: r.valor_anticipos, valor_combustible: r.valor_vales,
-        valor_aceite: r.valor_aceite, valor_administrativo: r.valor_administrativo,
-        sobregiro_anterior: r.sobregiro_anterior, liquido: r.valor_liquidacion,
-      }));
-      const total = trans.reduce((s, t) => s + Number(t.liquido || 0), 0);
-      const usuarioConfirmo = d.transportistas?.[0]?.usuario_graba || '';
-      imprimirLiquidacion({
-        poliza: nombrePoliza, fecha: d.poliza?.fecha_liquidacion, usuario: usuarioConfirmo,
-        transportistas: trans, total_liquido: total,
-      });
+      // Reimpresión: el reporte usa los valores ORIGINALES guardados en
+      // pro_liquidaciones (no se recalcula nada). El detalle sale de las tablas
+      // fuente (inmutables una vez la póliza está cerrada).
+      const data = await realApi.liquidacionReporte(idPoliza);
+      imprimirLiquidacion(data);
     } catch (e) {
       notify('error', e?.userMessage || 'No se pudo reimprimir.');
     }
@@ -115,7 +104,7 @@ export default function HistorialLiquidacionesPage() {
                   <td><Badge value={r.estado} /></td>
                   <td style={{ textAlign: 'right' }}>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
-                      title="Reimprimir liquidación de la póliza" onClick={() => reimprimir(r.id_poliza, r.nombre_poliza)}>🖨️</button>
+                      title="Reimprimir liquidación de la póliza" onClick={() => reimprimir(r.id_poliza)}>🖨️</button>
                   </td>
                 </tr>
               ))}

@@ -118,6 +118,10 @@ export const realApi = {
   async liquidacionDetalle(idPoliza) {
     return unwrap(await axiosClient.get(`/liquidacion/detalle/${idPoliza}`));
   },
+  // [v5 §2] Reporte detallado de liquidación (viajes + descuentos + totales por transportista).
+  async liquidacionReporte(idPoliza) {
+    return unwrap(await axiosClient.get(`/liquidacion/reporte/${idPoliza}`));
+  },
 
   // Reporte de diesel por factura
   async reporteDiesel(params = {}) {

@@ -31,6 +31,9 @@ function fechaHoraImpresion() {
 }
 const q = (n) => `Q ${Number(n || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const formatNum = (n) => Number(n || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// [v5] "Terminal" no existe como concepto en el sistema (es web); se muestra un
+// texto fijo en el encabezado de los reportes, junto al usuario, como pidió el cliente.
+const TERMINAL = 'WEB';
 
 /** Abre una ventana nueva, escribe el documento y lanza la impresión. */
 function imprimir(titulo, estilos, cuerpo) {
@@ -189,7 +192,7 @@ export function imprimirReporteGenerico(titulo, columnas, filas, usuario = '') {
         <img src="${logoAbsUrl()}" style="height:36px"/>
         <div class="tit">SETRASA S.A.<br/><span style="font-size:11px">${esc(titulo)}</span></div>
       </div>
-      <div class="meta">Usuario: ${esc(usuario)}<br/>Impreso: ${fechaHoraImpresion()}</div>
+      <div class="meta">Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>Impreso: ${fechaHoraImpresion()}</div>
     </div>
     <table>
       <thead><tr>${columnas.map((c) => `<th>${esc(c.label)}</th>`).join('')}</tr></thead>
@@ -223,13 +226,15 @@ export function imprimirReporteArrastre(data, filtros = {}, usuario = '') {
     <div class="grp-tit">${esc(g.descripcion)}</div>
     <table>
       <thead><tr><th>C. Porte</th><th>Fecha</th><th>Piloto</th><th>Placa</th>
-        <th class="n">Piezas</th><th class="n">Peso qq</th><th class="n">Peso kg</th></tr></thead>
+        <th class="n">Bultos</th><th class="n">Saldo bultos</th>
+        <th class="n">Peso qq</th><th class="n">Peso kg</th><th class="n">Saldo kg</th></tr></thead>
       <tbody>${g.filas.map((f) => `<tr>
           <td>${esc(f.num_envio)}</td><td>${esc(f.fecha ? String(f.fecha).slice(0, 10) : '')}</td>
           <td>${esc(f.piloto)}</td><td>${esc(f.placa)}</td>
-          <td class="n">${f.piezas}</td><td class="n">${f.peso_qq}</td><td class="n">${formatNum(f.peso_kg)}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="4">Total del punto</td><td class="n">${g.total_piezas}</td>
-        <td class="n">${g.total_peso_qq}</td><td class="n">${formatNum(g.total_peso_kg)}</td></tr></tfoot>
+          <td class="n">${f.piezas}</td><td class="n">${formatNum(f.saldo_bultos)}</td>
+          <td class="n">${f.peso_qq}</td><td class="n">${formatNum(f.peso_kg)}</td><td class="n">${formatNum(f.saldo_kg)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="4">Total del punto</td><td class="n">${g.total_piezas}</td><td></td>
+        <td class="n">${g.total_peso_qq}</td><td class="n">${formatNum(g.total_peso_kg)}</td><td></td></tr></tfoot>
     </table>`).join('') || '<p style="padding:16px;text-align:center">Sin viajes en el rango consultado.</p>';
   const cuerpo = `
     <div class="cab">
@@ -241,7 +246,7 @@ export function imprimirReporteArrastre(data, filtros = {}, usuario = '') {
         Póliza: ${esc(data.poliza?.nombre_poliza)} (${esc(data.poliza?.estado)})<br/>
         ${data.punto_embarque ? `Punto: ${esc(data.punto_embarque.descripcion)}<br/>` : ''}
         Del ${esc(filtros.fecha_inicio || '')} al ${esc(filtros.fecha_fin || '')}<br/>
-        Usuario: ${esc(usuario)} · Impreso: ${fechaHoraImpresion()}
+        Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>Impreso: ${fechaHoraImpresion()}
       </div>
     </div>
     <div class="resumen">
@@ -299,7 +304,7 @@ export function imprimirReporteViajesPoliza(data, usuario = '') {
       </div>
       <div class="meta">
         Póliza: ${esc(data.poliza?.nombre_poliza)}<br/>
-        Usuario: ${esc(usuario)} · Impreso: ${fechaHoraImpresion()}
+        Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>Impreso: ${fechaHoraImpresion()}
       </div>
     </div>
     ${gruposHtml}
@@ -364,7 +369,7 @@ export function imprimirReporteDiesel(data, filtros = {}, usuario = '') {
       <div style="display:flex;gap:8px;align-items:center"><img src="${logoAbsUrl()}" style="height:36px"/><div class="tit">SETRASA S.A.<br/><span style="font-size:11px">Reporte de DIESEL por Factura</span></div></div>
       <div class="meta">
         Del ${esc(filtros.fecha_ini || '')} al ${esc(filtros.fecha_fin || '')}<br/>
-        Usuario: ${esc(usuario)}<br/>
+        Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>
         Impreso: ${fechaHoraImpresion()}
       </div>
     </div>
@@ -381,63 +386,117 @@ export function imprimirReporteDiesel(data, filtros = {}, usuario = '') {
   imprimir('Reporte de Diesel por Factura', estilos, cuerpo);
 }
 
-/* ========================= LIQUIDACIÓN (P17) ========================= */
-// datos: { poliza, fecha, usuario, transportistas:[{nombre,nit,cantidad_viajes,valor_viajes,
-//          valor_combustible,valor_anticipos,valor_aceite,valor_administrativo,
-//          sobregiro_anterior,liquido}], total_liquido }
-export function imprimirLiquidacion(datos) {
+/* ========================= LIQUIDACIÓN (P17 / v5 §2) ========================= */
+// datos (de GET /liquidacion/reporte/:id): { poliza:{nombre_poliza,fecha_liquidacion},
+//   usuario, transportistas:[{ nit, nombre, viajes:[...], anticipos:[...], combustible:[...],
+//   administrativos:[...], aceite:[...], totales:{...} }] }
+// Formato detallado del PDF: por cada transportista con movimientos, el detalle de
+// sus viajes + secciones de descuentos + bloque de totales. Tamaño carta.
+export function imprimirLiquidacion(datos, usuarioActual = '', terminal = 'WEB') {
   const estilos = `
     @page { size: 8.5in 11in; margin: 0.5in; }
+    .transp { page-break-after: always; }
+    .transp:last-child { page-break-after: auto; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; }
-    .tit { font-size: 16px; font-weight: 800; color: #c1121f; }
-    .sub { font-size: 12px; }
-    table.liq { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
-    table.liq th, table.liq td { border: 1px solid #000; padding: 4px 5px; }
-    table.liq th { background: #1f3d5c; color: #fff; }
-    td.n { text-align: right; }
-    tr.tot td { font-weight: 800; background: #f0f0f0; }
-    .neg { color: #c1121f; }
+    .tit { font-size: 15px; font-weight: 800; color: #c1121f; }
+    .sub { font-size: 11px; }
+    .meta { font-size: 9px; text-align: right; color: #222; }
+    .tname { font-weight: 800; font-size: 12px; margin: 8px 0 4px; background: #1f3d5c; color: #fff; padding: 3px 6px; }
+    .sec { font-weight: 700; font-size: 10px; margin: 8px 0 2px; color: #1f3d5c; }
+    table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    th { background: #e5e7eb; padding: 2px 5px; text-align: left; }
+    td { padding: 2px 5px; border-bottom: 1px solid #ddd; }
+    .n { text-align: right; }
+    tfoot td { font-weight: 700; }
     thead { display: table-header-group; }
     tr { page-break-inside: avoid; }
+    .tot { margin-top: 10px; margin-left: auto; width: 46%; font-size: 10px; border: 1px solid #000; }
+    .tot td { padding: 3px 8px; border-bottom: 1px solid #ccc; }
+    .tot .g { font-weight: 800; background: #f0f0f0; }
+    .neg { color: #c1121f; }
+    .viajes-tot { text-align: right; font-size: 10px; margin-top: 6px; }
   `;
-  const fils = (datos.transportistas || []).map((t) => `
-    <tr>
-      <td>${esc(t.nit)}</td>
-      <td>${esc(t.nombre)}</td>
-      <td class="n">${Number(t.cantidad_viajes || 0)}</td>
-      <td class="n">${q(t.valor_viajes)}</td>
-      <td class="n">${q(t.valor_anticipos)}</td>
-      <td class="n">${q(t.valor_combustible)}</td>
-      <td class="n">${q(t.valor_aceite)}</td>
-      <td class="n">${q(t.valor_administrativo)}</td>
-      <td class="n">${q(t.sobregiro_anterior)}</td>
-      <td class="n ${Number(t.liquido) < 0 ? 'neg' : ''}">${q(t.liquido)}</td>
-    </tr>`).join('');
-  const cuerpo = `
-    <div class="cab">
-      <div style="display:flex;gap:10px;align-items:center">
-        <img src="${logoAbsUrl()}" alt="SETRASA" style="height:40px" />
-        <div><div class="tit">SETRASA S.A.</div><div class="sub">Liquidación a Transportistas</div></div>
+  const fecha = datos.poliza?.fecha_liquidacion;
+  const usuario = datos.usuario || usuarioActual || '';
+
+  const seccionDescuento = (titulo, filas, cols) => {
+    if (!filas || !filas.length) return '';
+    return `<div class="sec">${esc(titulo)}</div>
+      <table><thead><tr>${cols.map((c) => `<th class="${c.n ? 'n' : ''}">${esc(c.label)}</th>`).join('')}</tr></thead>
+      <tbody>${filas.map((f) => `<tr>${cols.map((c) => `<td class="${c.n ? 'n' : ''}">${c.get(f)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  };
+
+  const bloques = (datos.transportistas || []).map((t) => {
+    const to = t.totales || {};
+    const viajesHtml = `
+      <div class="sec">VIAJES</div>
+      <table>
+        <thead><tr><th>C. Porte</th><th>Fecha</th><th>Piloto</th><th>Placa</th>
+          <th class="n">Peso qq</th><th class="n">Total pago</th><th>Embarque</th><th>Destino</th></tr></thead>
+        <tbody>${(t.viajes || []).map((v) => `<tr>
+          <td>${esc(v.c_porte)}</td><td>${esc(v.fecha ? String(v.fecha).slice(0, 10) : '')}</td>
+          <td>${esc(v.piloto)}</td><td>${esc(v.placa)}</td>
+          <td class="n">${formatNum(v.peso_qq)}</td><td class="n">${q(v.total_pago)}</td>
+          <td>${esc(v.embarque)}</td><td>${esc(v.destino)}</td></tr>`).join('')
+        || '<tr><td colspan="8" style="text-align:center">Sin viajes.</td></tr>'}</tbody>
+      </table>
+      <div class="viajes-tot">Total viajes efectuados: <b>${to.total_viajes || 0}</b></div>`;
+
+    const antHtml = seccionDescuento('DESCUENTO DE ANTICIPOS', t.anticipos, [
+      { label: 'No.', get: (f) => esc(f.num) },
+      { label: 'Fecha', get: (f) => esc(f.fecha ? String(f.fecha).slice(0, 10) : '') },
+      { label: 'Descripción', get: (f) => esc(f.descripcion) },
+      { label: 'Valor', n: true, get: (f) => q(f.valor) },
+    ]);
+    const combHtml = seccionDescuento('DESCUENTO DE COMBUSTIBLE', t.combustible, [
+      { label: 'Vale', get: (f) => esc(f.num_vale) },
+      { label: 'Fecha', get: (f) => esc(f.fecha ? String(f.fecha).slice(0, 10) : '') },
+      { label: 'Galones', n: true, get: (f) => formatNum(f.galones) },
+      { label: 'Q/galón', n: true, get: (f) => q(f.valor_galon) },
+      { label: 'Subtotal', n: true, get: (f) => q(f.subtotal) },
+    ]);
+    const admHtml = seccionDescuento('DESCUENTOS ADMINISTRATIVOS', t.administrativos, [
+      { label: 'Fecha', get: (f) => esc(f.fecha ? String(f.fecha).slice(0, 10) : '') },
+      { label: 'Descripción', get: (f) => esc(f.descripcion) },
+      { label: 'Valor', n: true, get: (f) => q(f.valor) },
+    ]);
+    const aceHtml = seccionDescuento('DESCUENTO DE ACEITE', t.aceite, [
+      { label: 'Fecha', get: (f) => esc(f.fecha ? String(f.fecha).slice(0, 10) : '') },
+      { label: 'Descripción', get: (f) => esc(f.descripcion) },
+      { label: 'Valor', n: true, get: (f) => q(f.valor) },
+    ]);
+
+    return `<div class="transp">
+      <div class="cab">
+        <div style="display:flex;gap:10px;align-items:center">
+          <img src="${logoAbsUrl()}" alt="SETRASA" style="height:38px" />
+          <div><div class="tit">SETRASA S.A.</div><div class="sub">Liquidación a Transportistas</div></div>
+        </div>
+        <div class="meta">
+          Póliza: <b>${esc(datos.poliza?.nombre_poliza)}</b><br/>
+          Fecha: ${esc(fecha ? String(fecha).slice(0, 10) : '')}<br/>
+          Usuario: ${esc(usuario)} · Terminal: ${esc(terminal)}<br/>
+          Impreso: ${fechaHoraImpresion()}
+        </div>
       </div>
-      <div class="sub" style="text-align:right">
-        Póliza: <b>${esc(datos.poliza)}</b><br/>
-        Fecha: ${esc(fechaEnLetras(datos.fecha).replace('ESCUINTLA, ', ''))}<br/>
-        Usuario: ${esc(datos.usuario || '')}<br/>
-        Impreso: ${fechaHoraImpresion()}
-      </div>
-    </div>
-    <table class="liq">
-      <thead><tr>
-        <th>NIT</th><th>Transportista</th><th>Viajes</th><th>Valor viajes</th>
-        <th>Anticipos</th><th>Combustible</th><th>Aceite</th><th>Administrativo</th><th>Sobregiro ant.</th><th>Líquido</th>
-      </tr></thead>
-      <tbody>
-        ${fils}
-        <tr class="tot"><td colspan="9" style="text-align:right">TOTAL A PAGAR</td>
-          <td class="n ${Number(datos.total_liquido) < 0 ? 'neg' : ''}">${q(datos.total_liquido)}</td></tr>
-      </tbody>
-    </table>`;
-  imprimir(`Liquidación ${datos.poliza || ''}`, estilos, cuerpo);
+      <div class="tname">TRANSPORTISTA: ${esc(t.nit)} ${esc(t.nombre)}</div>
+      ${viajesHtml}
+      ${antHtml}
+      ${combHtml}
+      ${admHtml}
+      ${aceHtml}
+      <table class="tot">
+        <tr><td>TOTAL A FACTURAR</td><td class="n">${q(to.total_facturar)}</td></tr>
+        <tr><td>(−) Anticipos</td><td class="n">${q(to.total_anticipos)}</td></tr>
+        <tr><td>SUB TOTAL</td><td class="n">${q(to.subtotal)}</td></tr>
+        <tr><td>(−) Suministros</td><td class="n">${q(to.total_suministros)}</td></tr>
+        <tr><td>(−) Saldo negativo</td><td class="n">${q(to.saldo_negativo)}</td></tr>
+        <tr class="g"><td>TOTAL A PAGAR</td><td class="n ${Number(to.total_pagar) < 0 ? 'neg' : ''}">${q(to.total_pagar)}</td></tr>
+      </table>
+    </div>`;
+  }).join('') || '<p style="text-align:center;padding:20px">La póliza no tiene transportistas con movimientos.</p>';
+
+  imprimir(`Liquidación ${datos.poliza?.nombre_poliza || ''}`, estilos, bloques);
 }
 
 /* ========================= VALE DE COMBUSTIBLE (P15) ========================= */

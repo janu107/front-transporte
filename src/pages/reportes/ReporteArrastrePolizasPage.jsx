@@ -133,13 +133,15 @@ export default function ReporteArrastrePolizasPage() {
                     <table className="data-table">
                       <thead>
                         <tr style={{ background: '#1f3d5c' }}>
-                          <th colSpan={7} style={{ color: '#fff' }}>{g.descripcion}</th>
+                          <th colSpan={9} style={{ color: '#fff' }}>{g.descripcion}</th>
                         </tr>
                         <tr>
                           <th>C. Porte</th><th>Fecha</th><th>Piloto</th><th>Placa</th>
-                          <th style={{ textAlign: 'right' }}>Piezas</th>
+                          <th style={{ textAlign: 'right' }}>Bultos</th>
+                          <th style={{ textAlign: 'right' }}>Saldo bultos</th>
                           <th style={{ textAlign: 'right' }}>Peso qq</th>
                           <th style={{ textAlign: 'right' }}>Peso kg</th>
+                          <th style={{ textAlign: 'right' }}>Saldo kg</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -150,8 +152,10 @@ export default function ReporteArrastrePolizasPage() {
                             <td>{fila.piloto}</td>
                             <td>{fila.placa}</td>
                             <td style={{ textAlign: 'right' }}>{fila.piezas}</td>
+                            <td style={{ textAlign: 'right' }}>{formatNumber(fila.saldo_bultos, 0)}</td>
                             <td style={{ textAlign: 'right' }}>{formatNumber(fila.peso_qq)}</td>
                             <td style={{ textAlign: 'right' }}>{formatNumber(fila.peso_kg)}</td>
+                            <td style={{ textAlign: 'right' }}>{formatNumber(fila.saldo_kg)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -159,8 +163,10 @@ export default function ReporteArrastrePolizasPage() {
                         <tr style={{ fontWeight: 700 }}>
                           <td colSpan={4}>Total del punto</td>
                           <td style={{ textAlign: 'right' }}>{g.total_piezas}</td>
+                          <td></td>
                           <td style={{ textAlign: 'right' }}>{formatNumber(g.total_peso_qq)}</td>
                           <td style={{ textAlign: 'right' }}>{formatNumber(g.total_peso_kg)}</td>
+                          <td></td>
                         </tr>
                       </tfoot>
                     </table>
