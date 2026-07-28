@@ -31,7 +31,6 @@ export default function DetalleFacturasPage() {
   const [camiones, setCamiones] = useState([]);
   const [transportistas, setTransportistas] = useState([]);
   const [pilotos, setPilotos] = useState([]);
-  const [bombas, setBombas] = useState([]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [values, setValues] = useState(EMPTY);
@@ -54,15 +53,14 @@ export default function DetalleFacturasPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [fa, po, ca, tr, pi, bo] = await Promise.all([
+      const [fa, po, ca, tr, pi] = await Promise.all([
         realApi.list('facturasVales').catch(() => []),
         realApi.list('polizas').catch(() => []),
         realApi.list('camiones').catch(() => []),
         realApi.list('transportistas').catch(() => []),
         realApi.list('pilotos').catch(() => []),
-        realApi.list('bombas').catch(() => []),
       ]);
-      setFacturas(fa); setPolizas(po); setCamiones(ca); setTransportistas(tr); setPilotos(pi); setBombas(bo);
+      setFacturas(fa); setPolizas(po); setCamiones(ca); setTransportistas(tr); setPilotos(pi);
       await cargar();
       setLoading(false);
     })();
@@ -143,20 +141,16 @@ export default function DetalleFacturasPage() {
     } catch (err) { notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo anular.'); }
   };
 
-  const datosVale = (r) => {
-    const f = facturas.find((x) => String(x.codigo) === String(r.id_factura_vale));
-    const p = pilotos.find((x) => String(x.codigo) === String(r.id_piloto));
-    const t = transportistas.find((x) => String(x.codigo) === String(r.id_transportista));
-    return {
-      numero: r.num_vale, fecha: r.fecha,
-      bomba: f ? lookup(bombas, f.id_bomba, 'codigo', 'descripcion') : '',
-      nitTransportista: t ? t.nit : '',
-      placa: lookup(camiones, r.id_camion, 'codigo', 'placa'),
-      poliza: lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza'),
-      transportista: t ? t.nombre_comercial : '',
-      piloto: p ? `${p.nombres} ${p.apellidos || ''}`.trim() : '',
-      cantidad: r.cantidad, factura: f ? f.factura : '', valor: f ? f.precio : 0, total: r.total,
-    };
+  // [v5] La impresión ya no arma los datos localmente: los pide resueltos y
+  // recalculados en servidor (GET /detalle-factura/:id/impresion), para no
+  // confiar en el total mostrado en pantalla.
+  const imprimirVale = async (correlativo) => {
+    try {
+      const datos = await realApi.detalleFacturaImpresion(correlativo);
+      imprimirValeCombustible(datos);
+    } catch (err) {
+      notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo obtener el vale para imprimir.');
+    }
   };
 
   const filtrados = useMemo(() => {
@@ -206,7 +200,7 @@ export default function DetalleFacturasPage() {
                   <td style={{ textAlign: 'right' }}>{formatCurrency(r.total)}</td>
                   <td><Badge value={r.estado || 'ACTIVO'} /></td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <button style={accionBtn} title="Imprimir vale" onClick={() => imprimirValeCombustible(datosVale(r))}>🖨️</button>
+                    <button style={accionBtn} title="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
                     {String(r.estado).toUpperCase() !== 'ANULADO' && String(r.origen).toUpperCase() === 'M' && (
                       <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                     )}
@@ -226,7 +220,7 @@ export default function DetalleFacturasPage() {
         footer={saved ? (
           <>
             <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirValeCombustible(datosVale(saved))}>Imprimir</Button>
+            <Button variant="secondary" icon="🖨️" onClick={() => imprimirVale(saved.correlativo)}>Imprimir</Button>
             <Button variant="primary" icon="➕" onClick={resetFormulario}>Nuevo</Button>
           </>
         ) : (

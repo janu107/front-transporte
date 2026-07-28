@@ -30,6 +30,7 @@ function fechaHoraImpresion() {
   return `${p.dia}/${p.mes}/${p.anio} ${new Date().toLocaleTimeString('es-GT', { hour12: false })}`;
 }
 const q = (n) => `Q ${Number(n || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const formatNum = (n) => Number(n || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** Abre una ventana nueva, escribe el documento y lanza la impresión. */
 function imprimir(titulo, estilos, cuerpo) {
@@ -166,13 +167,161 @@ export function imprimirValeAnticipo(datos) {
   imprimir(`Vale de Anticipo ${datos.numero || ''}`, estilos, `<div class="hoja">${copias.map(vale).join('')}</div>`);
 }
 
+/* ================= REPORTE GENÉRICO DE CATÁLOGO/MANTENIMIENTO (v5 §4) ================= */
+// columnas: [{ label, get: (row) => texto }]; filas: array de objetos reales.
+export function imprimirReporteGenerico(titulo, columnas, filas, usuario = '') {
+  const estilos = `
+    @page { size: 8.5in 11in; margin: 0.6in; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1f3d5c; padding-bottom: 6px; }
+    .tit { color: #1f3d5c; font-weight: 800; font-size: 15px; }
+    .meta { font-size: 9px; text-align: right; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
+    th { background: #1f3d5c; color: #fff; padding: 4px 6px; text-align: left; }
+    td { padding: 3px 6px; border-bottom: 1px solid #ccc; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    tfoot td { font-weight: 700; padding-top: 8px; border: none; }
+  `;
+  const filasHtml = (filas || []).map((r) => `<tr>${columnas.map((c) => `<td>${esc(c.get(r))}</td>`).join('')}</tr>`).join('');
+  const cuerpo = `
+    <div class="cab">
+      <div style="display:flex;gap:8px;align-items:center">
+        <img src="${logoAbsUrl()}" style="height:36px"/>
+        <div class="tit">SETRASA S.A.<br/><span style="font-size:11px">${esc(titulo)}</span></div>
+      </div>
+      <div class="meta">Usuario: ${esc(usuario)}<br/>Impreso: ${fechaHoraImpresion()}</div>
+    </div>
+    <table>
+      <thead><tr>${columnas.map((c) => `<th>${esc(c.label)}</th>`).join('')}</tr></thead>
+      <tbody>${filasHtml || `<tr><td colspan="${columnas.length}" style="text-align:center;padding:20px">Sin registros.</td></tr>`}</tbody>
+      <tfoot><tr><td colspan="${columnas.length}">Total de registros: ${(filas || []).length}</td></tr></tfoot>
+    </table>`;
+  imprimir(titulo, estilos, cuerpo);
+}
+
+/* ================= ARRASTRE DE PÓLIZAS Y PUNTO DE EMBARQUE (v5 §6) ================= */
+// data: resultado de GET /reportes/arrastre-polizas; filtros: {fecha_inicio,fecha_fin}
+export function imprimirReporteArrastre(data, filtros = {}, usuario = '') {
+  const estilos = `
+    @page { size: 8.5in 11in; margin: 0.6in; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1f3d5c; padding-bottom: 6px; }
+    .tit { color: #1f3d5c; font-weight: 800; font-size: 15px; }
+    .meta { font-size: 9px; text-align: right; color: #333; }
+    .resumen { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 10px 0; font-size: 10px; }
+    .resumen div { border: 1px solid #ccc; border-radius: 4px; padding: 5px 8px; }
+    .grp-tit { background: #6b7a8c; color: #fff; padding: 3px 6px; font-size: 10px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    th { background: #e5e7eb; padding: 3px 5px; text-align: left; }
+    td { padding: 2px 5px; border-bottom: 1px solid #ddd; }
+    .n { text-align: right; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    tfoot td { font-weight: 700; }
+  `;
+  const r = data.resumen || {};
+  const gruposHtml = (data.grupos || []).map((g) => `
+    <div class="grp-tit">${esc(g.descripcion)}</div>
+    <table>
+      <thead><tr><th>C. Porte</th><th>Fecha</th><th>Piloto</th><th>Placa</th>
+        <th class="n">Piezas</th><th class="n">Peso qq</th><th class="n">Peso kg</th></tr></thead>
+      <tbody>${g.filas.map((f) => `<tr>
+          <td>${esc(f.num_envio)}</td><td>${esc(f.fecha ? String(f.fecha).slice(0, 10) : '')}</td>
+          <td>${esc(f.piloto)}</td><td>${esc(f.placa)}</td>
+          <td class="n">${f.piezas}</td><td class="n">${f.peso_qq}</td><td class="n">${formatNum(f.peso_kg)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="4">Total del punto</td><td class="n">${g.total_piezas}</td>
+        <td class="n">${g.total_peso_qq}</td><td class="n">${formatNum(g.total_peso_kg)}</td></tr></tfoot>
+    </table>`).join('') || '<p style="padding:16px;text-align:center">Sin viajes en el rango consultado.</p>';
+  const cuerpo = `
+    <div class="cab">
+      <div style="display:flex;gap:8px;align-items:center">
+        <img src="${logoAbsUrl()}" style="height:36px"/>
+        <div class="tit">SETRASA S.A.<br/><span style="font-size:11px">Arrastre de Pesos/Bultos por Pólizas y Puntos de Embarque</span></div>
+      </div>
+      <div class="meta">
+        Póliza: ${esc(data.poliza?.nombre_poliza)} (${esc(data.poliza?.estado)})<br/>
+        ${data.punto_embarque ? `Punto: ${esc(data.punto_embarque.descripcion)}<br/>` : ''}
+        Del ${esc(filtros.fecha_inicio || '')} al ${esc(filtros.fecha_fin || '')}<br/>
+        Usuario: ${esc(usuario)} · Impreso: ${fechaHoraImpresion()}
+      </div>
+    </div>
+    <div class="resumen">
+      <div><b>Piezas de la póliza:</b> ${formatNum(r.cantidad_piezas_poliza)}<br/><b>Arrastradas:</b> ${formatNum(r.piezas_arrastradas)}<br/><b>Saldo:</b> ${formatNum(r.saldo_piezas)}</div>
+      <div><b>Peso póliza (kg):</b> ${formatNum(r.peso_kilogramos_poliza)}<br/><b>Arrastrado (kg):</b> ${formatNum(r.peso_arrastrado_kg)}<br/><b>Saldo (kg):</b> ${formatNum(r.saldo_peso_kg)}</div>
+      <div><b>Arrastrado (qq):</b> ${formatNum(r.peso_arrastrado_qq)}<br/><b>Total viajes en rango:</b> ${(data.grupos || []).reduce((s, g) => s + g.filas.length, 0)}</div>
+    </div>
+    ${gruposHtml}
+    <table style="margin-top:8px"><tfoot><tr>
+      <td>TOTALES GENERALES (rango consultado)</td>
+      <td class="n">Piezas: ${formatNum(data.totales?.total_piezas)}</td>
+      <td class="n">Peso qq: ${formatNum(data.totales?.total_peso_qq)}</td>
+      <td class="n">Peso kg: ${formatNum(data.totales?.total_peso_kg)}</td>
+    </tr></tfoot></table>`;
+  imprimir('Arrastre de Pólizas y Punto de Embarque', estilos, cuerpo);
+}
+
+/* ========================= VIAJES POR PÓLIZA (v5 §7) ========================= */
+// data: resultado de GET /reportes/viajes-poliza
+export function imprimirReporteViajesPoliza(data, usuario = '') {
+  const estilos = `
+    @page { size: 8.5in 11in; margin: 0.6in; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1f3d5c; padding-bottom: 6px; }
+    .tit { color: #1f3d5c; font-weight: 800; font-size: 15px; }
+    .meta { font-size: 9px; text-align: right; color: #333; }
+    .grp-tit { background: #6b7a8c; color: #fff; padding: 3px 6px; font-size: 10px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    th { background: #e5e7eb; padding: 3px 5px; text-align: left; }
+    td { padding: 2px 5px; border-bottom: 1px solid #ddd; }
+    .n { text-align: right; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    tfoot td { font-weight: 700; }
+  `;
+  const gruposHtml = (data.grupos || []).map((g) => `
+    <div class="grp-tit">${esc(g.transportista)}</div>
+    <table>
+      <thead><tr><th>C. Porte</th><th>Fecha</th><th>Piloto</th><th>Placa</th>
+        <th class="n">Peso qq</th><th class="n">Peso kg</th><th class="n">Total pagado</th><th>Destino</th></tr></thead>
+      <tbody>${g.filas.map((f) => `<tr>
+          <td>${esc(f.num_envio)}</td><td>${esc(f.fecha ? String(f.fecha).slice(0, 10) : '')}</td>
+          <td>${esc(f.piloto)}</td><td>${esc(f.placa)}</td>
+          <td class="n">${f.peso_qq}</td><td class="n">${formatNum(f.peso_kg)}</td>
+          <td class="n">${q(f.valor)}</td><td>${esc(f.destino)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="4">Subtotal (${g.subtotal_viajes} viajes)</td>
+        <td class="n">${g.subtotal_peso_qq}</td><td class="n">${formatNum(g.subtotal_peso_kg)}</td>
+        <td class="n">${q(g.subtotal_pagado)}</td><td></td></tr></tfoot>
+    </table>`).join('') || '<p style="padding:16px;text-align:center">Sin viajes para esta póliza.</p>';
+  const t = data.totales || {};
+  const cuerpo = `
+    <div class="cab">
+      <div style="display:flex;gap:8px;align-items:center">
+        <img src="${logoAbsUrl()}" style="height:36px"/>
+        <div class="tit">SETRASA S.A.<br/><span style="font-size:11px">Reporte de Viajes por Póliza</span></div>
+      </div>
+      <div class="meta">
+        Póliza: ${esc(data.poliza?.nombre_poliza)}<br/>
+        Usuario: ${esc(usuario)} · Impreso: ${fechaHoraImpresion()}
+      </div>
+    </div>
+    ${gruposHtml}
+    <table style="margin-top:8px"><tfoot><tr>
+      <td>TOTALES GENERALES — Viajes: ${t.total_viajes || 0}</td>
+      <td class="n">Peso qq: ${formatNum(t.total_peso_qq)}</td>
+      <td class="n">Peso kg: ${formatNum(t.total_peso_kg)}</td>
+      <td class="n">Total pagado: ${q(t.total_pagado)}</td>
+    </tr></tfoot></table>`;
+  imprimir('Reporte de Viajes por Póliza', estilos, cuerpo);
+}
+
 /* ========================= REPORTE DE DIESEL (P18) ========================= */
-// data: { facturas, detalle, totales }; filtros: { desde, hasta, ... }
-export function imprimirReporteDiesel(data, filtros = {}) {
+// data: { facturas, detalle, totales }; filtros: { fecha_ini, fecha_fin, ... }; usuario: string
+export function imprimirReporteDiesel(data, filtros = {}, usuario = '') {
   const estilos = `
     @page { size: 11in 8.5in; margin: 0.4in; }
-    .cab { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1f3d5c; padding-bottom: 4px; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1f3d5c; padding-bottom: 4px; }
     .tit { color: #1f3d5c; font-weight: 800; font-size: 15px; }
+    .meta { font-size: 9px; text-align: right; color: #333; }
+    .leyenda { display: flex; gap: 16px; align-items: center; font-size: 9px; margin: 6px 0 4px; }
+    .leyenda .sw { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
     table { width: 100%; border-collapse: collapse; }
     .fac th { background: #1f3d5c; color: #fff; font-size: 10px; padding: 3px 5px; text-align: left; }
     .fac td { font-size: 10px; padding: 3px 5px; border-bottom: 1px solid #999; }
@@ -183,6 +332,7 @@ export function imprimirReporteDiesel(data, filtros = {}) {
     .n { text-align: right; }
     .grp { margin-top: 8px; page-break-inside: avoid; }
     tfoot td { font-weight: 800; }
+    thead { display: table-header-group; }
   `;
   const grupos = (data.facturas || []).map((f) => {
     const dets = (data.detalle || []).filter((d) => d.id_factura === f.id_factura);
@@ -212,7 +362,15 @@ export function imprimirReporteDiesel(data, filtros = {}) {
   const cuerpo = `
     <div class="cab">
       <div style="display:flex;gap:8px;align-items:center"><img src="${logoAbsUrl()}" style="height:36px"/><div class="tit">SETRASA S.A.<br/><span style="font-size:11px">Reporte de DIESEL por Factura</span></div></div>
-      <div style="font-size:10px;text-align:right">Del ${esc(filtros.fecha_ini || '')} al ${esc(filtros.fecha_fin || '')}</div>
+      <div class="meta">
+        Del ${esc(filtros.fecha_ini || '')} al ${esc(filtros.fecha_fin || '')}<br/>
+        Usuario: ${esc(usuario)}<br/>
+        Impreso: ${fechaHoraImpresion()}
+      </div>
+    </div>
+    <div class="leyenda">
+      <span><span class="sw" style="background:#15803d"></span>ACT — Póliza activa</span>
+      <span><span class="sw" style="background:#888"></span>LIQ — Póliza liquidada</span>
     </div>
     ${grupos || '<p style="padding:20px;text-align:center">Sin datos para el filtro.</p>'}
     <table style="margin-top:10px"><tfoot><tr>
@@ -225,15 +383,16 @@ export function imprimirReporteDiesel(data, filtros = {}) {
 
 /* ========================= LIQUIDACIÓN (P17) ========================= */
 // datos: { poliza, fecha, usuario, transportistas:[{nombre,nit,cantidad_viajes,valor_viajes,
-//          valor_combustible,valor_anticipos,sobregiro_anterior,liquido}], total_liquido }
+//          valor_combustible,valor_anticipos,valor_aceite,valor_administrativo,
+//          sobregiro_anterior,liquido}], total_liquido }
 export function imprimirLiquidacion(datos) {
   const estilos = `
     @page { size: 8.5in 11in; margin: 0.5in; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; }
     .tit { font-size: 16px; font-weight: 800; color: #c1121f; }
     .sub { font-size: 12px; }
-    table.liq { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-    table.liq th, table.liq td { border: 1px solid #000; padding: 4px 6px; }
+    table.liq { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
+    table.liq th, table.liq td { border: 1px solid #000; padding: 4px 5px; }
     table.liq th { background: #1f3d5c; color: #fff; }
     td.n { text-align: right; }
     tr.tot td { font-weight: 800; background: #f0f0f0; }
@@ -249,6 +408,8 @@ export function imprimirLiquidacion(datos) {
       <td class="n">${q(t.valor_viajes)}</td>
       <td class="n">${q(t.valor_anticipos)}</td>
       <td class="n">${q(t.valor_combustible)}</td>
+      <td class="n">${q(t.valor_aceite)}</td>
+      <td class="n">${q(t.valor_administrativo)}</td>
       <td class="n">${q(t.sobregiro_anterior)}</td>
       <td class="n ${Number(t.liquido) < 0 ? 'neg' : ''}">${q(t.liquido)}</td>
     </tr>`).join('');
@@ -261,17 +422,18 @@ export function imprimirLiquidacion(datos) {
       <div class="sub" style="text-align:right">
         Póliza: <b>${esc(datos.poliza)}</b><br/>
         Fecha: ${esc(fechaEnLetras(datos.fecha).replace('ESCUINTLA, ', ''))}<br/>
-        Usuario: ${esc(datos.usuario || '')}
+        Usuario: ${esc(datos.usuario || '')}<br/>
+        Impreso: ${fechaHoraImpresion()}
       </div>
     </div>
     <table class="liq">
       <thead><tr>
         <th>NIT</th><th>Transportista</th><th>Viajes</th><th>Valor viajes</th>
-        <th>Anticipos</th><th>Combustible</th><th>Sobregiro ant.</th><th>Líquido</th>
+        <th>Anticipos</th><th>Combustible</th><th>Aceite</th><th>Administrativo</th><th>Sobregiro ant.</th><th>Líquido</th>
       </tr></thead>
       <tbody>
         ${fils}
-        <tr class="tot"><td colspan="7" style="text-align:right">TOTAL A PAGAR</td>
+        <tr class="tot"><td colspan="9" style="text-align:right">TOTAL A PAGAR</td>
           <td class="n ${Number(datos.total_liquido) < 0 ? 'neg' : ''}">${q(datos.total_liquido)}</td></tr>
       </tbody>
     </table>`;

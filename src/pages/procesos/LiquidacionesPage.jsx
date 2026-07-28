@@ -9,10 +9,12 @@ import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import realApi from '../../api/realApi';
+import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatNumber } from '../../utils/formatters';
 import { imprimirLiquidacion } from '../../utils/impresionDocs';
 
 export default function LiquidacionesPage() {
+  const { user } = useAuth();
   const [polizas, setPolizas] = useState([]);
   const [idPoliza, setIdPoliza] = useState('');
   const [resumen, setResumen] = useState(null); // null = no consultado; [] = sin movimientos
@@ -75,7 +77,13 @@ export default function LiquidacionesPage() {
       notify('success', r.mensaje || 'Liquidación confirmada.');
       // [P16a] Guarda los datos para imprimir la liquidación recién confirmada.
       const nombrePol = polizas.find((p) => String(p.codigo) === String(idPoliza))?.nombre_poliza || '';
-      setConfirmado({ poliza: nombrePol, fecha: new Date().toISOString().slice(0, 10), transportistas: resumen || [], total_liquido: r.total_liquido });
+      setConfirmado({
+        poliza: nombrePol,
+        fecha: new Date().toISOString().slice(0, 10),
+        usuario: user?.nombre || user?.usuario || '',
+        transportistas: resumen || [],
+        total_liquido: r.total_liquido,
+      });
       // La póliza quedó cerrada: limpiar el resumen y recargar abiertas.
       setResumen(null);
       setIdPoliza('');
@@ -149,6 +157,8 @@ export default function LiquidacionesPage() {
                 <th style={{ textAlign: 'right' }}>Valor viajes</th>
                 <th style={{ textAlign: 'right' }}>Anticipos</th>
                 <th style={{ textAlign: 'right' }}>Combustible</th>
+                <th style={{ textAlign: 'right' }}>Aceite</th>
+                <th style={{ textAlign: 'right' }}>Administrativo</th>
                 <th style={{ textAlign: 'right' }}>Sobregiro ant.</th>
                 <th style={{ textAlign: 'right' }}>Descuentos</th>
                 <th style={{ textAlign: 'right' }}>Líquido</th>
@@ -156,13 +166,13 @@ export default function LiquidacionesPage() {
             </thead>
             <tbody>
               {resumen === null ? (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
                   Seleccione una póliza y presione «Cargar resumen».
                 </td></tr>
               ) : cargandoResumen ? (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40 }}>Cargando...</td></tr>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40 }}>Cargando...</td></tr>
               ) : !hayMovimientos ? (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
                   Esta póliza no tiene movimientos de transportistas.
                 </td></tr>
               ) : (
@@ -177,6 +187,8 @@ export default function LiquidacionesPage() {
                       {formatCurrency(t.valor_combustible)}
                       <div style={{ fontSize: 11, color: '#9ca3af' }}>{formatNumber(t.total_galones)} gal</div>
                     </td>
+                    <td style={{ textAlign: 'right' }}>{formatCurrency(t.valor_aceite)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatCurrency(t.valor_administrativo)}</td>
                     <td style={{ textAlign: 'right' }}>{formatCurrency(t.sobregiro_anterior)}</td>
                     <td style={{ textAlign: 'right' }}>{formatCurrency(t.total_descuentos)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: Number(t.liquido) < 0 ? '#c1121f' : '#15803d' }}>
@@ -189,7 +201,7 @@ export default function LiquidacionesPage() {
             {hayMovimientos && (
               <tfoot>
                 <tr style={{ borderTop: '2px solid #e5e7eb', fontWeight: 700 }}>
-                  <td colSpan={8} style={{ textAlign: 'right' }}>Total líquido a pagar</td>
+                  <td colSpan={10} style={{ textAlign: 'right' }}>Total líquido a pagar</td>
                   <td style={{ textAlign: 'right', color: totalLiquido < 0 ? '#c1121f' : '#15803d' }}>
                     {formatCurrency(totalLiquido)}
                   </td>

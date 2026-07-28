@@ -11,6 +11,7 @@ import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import SearchableSelect from '../../components/common/SearchableSelect';
 import realApi from '../../api/realApi';
+import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters';
 import { imprimirReporteDiesel } from '../../utils/impresionDocs';
 
@@ -26,6 +27,7 @@ const ESTADO_OPTIONS = [
 ];
 
 export default function ReporteDieselPage() {
+  const { user } = useAuth();
   const [f, setF] = useState({ tipo: 'TODO', valor: '', estado_poliza: 'AMBAS', fecha_ini: '', fecha_fin: '' });
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -88,7 +90,7 @@ export default function ReporteDieselPage() {
         <Input label="Desde" name="fecha_ini" type="date" value={f.fecha_ini} onChange={(e) => setField('fecha_ini', e.target.value)} />
         <Input label="Hasta" name="fecha_fin" type="date" value={f.fecha_fin} onChange={(e) => setField('fecha_fin', e.target.value)} />
         <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
-        {data && <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteDiesel(data, f)}>Imprimir</Button>}
+        {data && <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteDiesel(data, f, user?.nombre || user?.usuario || '')}>Imprimir</Button>}
       </div>
 
       {/* Leyenda */}

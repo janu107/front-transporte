@@ -50,6 +50,12 @@ export const ESTADO_OPTIONS_LIQUIDACION = [
   { value: 'ANULADA', label: 'ANULADA' },
 ];
 
+// [v5] Descuentos de aceite / administrativos: solo ACTIVO o ANULADO.
+export const ESTADO_OPTIONS_ACTIVO_ANULADO = [
+  { value: 'ACTIVO', label: 'ACTIVO' },
+  { value: 'ANULADO', label: 'ANULADO' },
+];
+
 // Registro de Viajes (Detalle de Póliza / Envíos)
 export const TIPO_VIAJE_OPTIONS = [
   { value: 'Viajes Locales', label: 'Viajes Locales' },

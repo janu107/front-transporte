@@ -46,9 +46,24 @@ import AnticipoProvisionPage from '../pages/procesos/AnticipoProvisionPage';
 import DetalleFacturasPage from '../pages/procesos/DetalleFacturasPage';
 import LiquidacionesPage from '../pages/procesos/LiquidacionesPage';
 import HistorialLiquidacionesPage from '../pages/procesos/HistorialLiquidacionesPage';
+import DescuentoAceitePage from '../pages/procesos/DescuentoAceitePage';
+import DescuentoAdministrativoPage from '../pages/procesos/DescuentoAdministrativoPage';
 
 // Reportes
 import ReporteDieselPage from '../pages/reportes/ReporteDieselPage';
+import ReporteTipoCamionPage from '../pages/reportes/ReporteTipoCamionPage';
+import ReporteTipoProductoPage from '../pages/reportes/ReporteTipoProductoPage';
+import ReporteTipoAnticipoPage from '../pages/reportes/ReporteTipoAnticipoPage';
+import ReporteUbicacionBombaPage from '../pages/reportes/ReporteUbicacionBombaPage';
+import ReporteProductosPage from '../pages/reportes/ReporteProductosPage';
+import ReporteTarifaEmbarquePage from '../pages/reportes/ReporteTarifaEmbarquePage';
+import ReporteTransportistasPage from '../pages/reportes/ReporteTransportistasPage';
+import ReportePilotosPage from '../pages/reportes/ReportePilotosPage';
+import ReporteCamionesPage from '../pages/reportes/ReporteCamionesPage';
+import ReportePolizasPage from '../pages/reportes/ReportePolizasPage';
+import ReporteFacturasPage from '../pages/reportes/ReporteFacturasPage';
+import ReporteArrastrePolizasPage from '../pages/reportes/ReporteArrastrePolizasPage';
+import ReporteViajesPolizaPage from '../pages/reportes/ReporteViajesPolizaPage';
 
 // Bitácoras y errores
 import BitacorasPage from '../pages/bitacoras/BitacorasPage';
@@ -101,9 +116,24 @@ export function AppRoutes() {
           <Route path={ROUTES.detalleFacturas} element={<DetalleFacturasPage />} />
           <Route path={ROUTES.liquidaciones} element={<LiquidacionesPage />} />
           <Route path={ROUTES.historialLiquidaciones} element={<HistorialLiquidacionesPage />} />
+          <Route path={ROUTES.descuentoAceite} element={<DescuentoAceitePage />} />
+          <Route path={ROUTES.descuentoAdministrativo} element={<DescuentoAdministrativoPage />} />
 
           {/* Reportes */}
           <Route path={ROUTES.reporteDiesel} element={<ReporteDieselPage />} />
+          <Route path={ROUTES.reporteTipoCamion} element={<ReporteTipoCamionPage />} />
+          <Route path={ROUTES.reporteTipoProducto} element={<ReporteTipoProductoPage />} />
+          <Route path={ROUTES.reporteTipoAnticipo} element={<ReporteTipoAnticipoPage />} />
+          <Route path={ROUTES.reporteUbicacionBomba} element={<ReporteUbicacionBombaPage />} />
+          <Route path={ROUTES.reporteProductos} element={<ReporteProductosPage />} />
+          <Route path={ROUTES.reporteTarifaEmbarque} element={<ReporteTarifaEmbarquePage />} />
+          <Route path={ROUTES.reporteTransportistas} element={<ReporteTransportistasPage />} />
+          <Route path={ROUTES.reportePilotos} element={<ReportePilotosPage />} />
+          <Route path={ROUTES.reporteCamiones} element={<ReporteCamionesPage />} />
+          <Route path={ROUTES.reportePolizas} element={<ReportePolizasPage />} />
+          <Route path={ROUTES.reporteFacturas} element={<ReporteFacturasPage />} />
+          <Route path={ROUTES.reporteArrastrePolizas} element={<ReporteArrastrePolizasPage />} />
+          <Route path={ROUTES.reporteViajesPoliza} element={<ReporteViajesPolizaPage />} />
 
           {/* Auditoría */}
           <Route path={ROUTES.bitacoras} element={<BitacorasPage />} />

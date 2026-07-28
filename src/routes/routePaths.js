@@ -43,9 +43,24 @@ export const ROUTES = {
   detalleFacturas: '/procesos/detalle-facturas',
   liquidaciones: '/procesos/liquidaciones',
   historialLiquidaciones: '/procesos/historial-liquidaciones',
+  descuentoAceite: '/procesos/descuento-aceite',
+  descuentoAdministrativo: '/procesos/descuento-administrativo',
 
   // Reportes
   reporteDiesel: '/reportes/reporte-diesel',
+  reporteTipoCamion: '/reportes/tipo-camion',
+  reporteTipoProducto: '/reportes/tipo-producto',
+  reporteTipoAnticipo: '/reportes/tipo-anticipo',
+  reporteUbicacionBomba: '/reportes/ubicacion-bomba',
+  reporteProductos: '/reportes/productos',
+  reporteTarifaEmbarque: '/reportes/tarifa-embarque',
+  reporteTransportistas: '/reportes/transportistas',
+  reportePilotos: '/reportes/pilotos',
+  reporteCamiones: '/reportes/camiones',
+  reportePolizas: '/reportes/polizas',
+  reporteFacturas: '/reportes/facturas',
+  reporteArrastrePolizas: '/reportes/arrastre-polizas',
+  reporteViajesPoliza: '/reportes/viajes-poliza',
 
   // Bitacoras
   bitacoras: '/bitacoras',

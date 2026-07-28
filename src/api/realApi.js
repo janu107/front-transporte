@@ -43,6 +43,9 @@ const PATHS = {
   anticipos: '/anticipos',
   // Detalle de Factura (vales de combustible manuales, con saldo transaccional)
   detalleFactura: '/detalle-factura',
+  // [v5] Descuentos que se restan en la Liquidación
+  descuentoAceite: '/procesos/descuento-aceite',
+  descuentoAdministrativo: '/procesos/descuento-administrativo',
   // Auditoría
   bitacoras: '/bitacoras',
 };
@@ -119,6 +122,29 @@ export const realApi = {
   // Reporte de diesel por factura
   async reporteDiesel(params = {}) {
     return unwrap(await axiosClient.get('/reportes/diesel', { params }));
+  },
+
+  // [v5 §6] Arrastre de pesos/bultos por pólizas y puntos de embarque
+  async reporteArrastrePolizas(params = {}) {
+    return unwrap(await axiosClient.get('/reportes/arrastre-polizas', { params }));
+  },
+
+  // [v5 §7] Reporte de viajes por póliza
+  async reporteViajesPoliza(params = {}) {
+    return unwrap(await axiosClient.get('/reportes/viajes-poliza', { params }));
+  },
+
+  // [v5] Detalle de Factura: datos resueltos en servidor para imprimir el vale.
+  async detalleFacturaImpresion(id) {
+    return unwrap(await axiosClient.get(`/detalle-factura/${id}/impresion`));
+  },
+
+  // [v5] Gráficas del dashboard (agregación en servidor).
+  async dashboardFacturaActivaDiesel() {
+    return unwrap(await axiosClient.get('/dashboard/factura-activa-diesel'));
+  },
+  async dashboardPolizaActivaViajes() {
+    return unwrap(await axiosClient.get('/dashboard/poliza-activa-viajes'));
   },
 };
 
