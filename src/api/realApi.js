@@ -123,6 +123,11 @@ export const realApi = {
     return unwrap(await axiosClient.get(`/liquidacion/reporte/${idPoliza}`));
   },
 
+  // [v6 §3] Historial (tablas his_*): tipo ∈ det-poliza | val-detalle | anticipo-efectivo.
+  async historial(tipo, params = {}) {
+    return unwrap(await axiosClient.get(`/historial/${tipo}`, { params }));
+  },
+
   // Reporte de diesel por factura
   async reporteDiesel(params = {}) {
     return unwrap(await axiosClient.get('/reportes/diesel', { params }));

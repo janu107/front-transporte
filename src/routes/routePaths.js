@@ -62,6 +62,9 @@ export const ROUTES = {
   reporteArrastrePolizas: '/reportes/arrastre-polizas',
   reporteViajesPoliza: '/reportes/viajes-poliza',
 
+  // Historial (tablas his_*)
+  historial: '/historial',
+
   // Bitacoras
   bitacoras: '/bitacoras',
 };

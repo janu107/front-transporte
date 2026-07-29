@@ -3,11 +3,9 @@
  * Panel principal con tarjetas resumen (datos reales) y accesos rápidos.
  */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/layout/PageHeader';
 import BarChart from '../../components/common/BarChart';
 import realApi from '../../api/realApi';
-import { ROUTES } from '../../routes/routePaths';
 import { formatNumber, formatCurrency } from '../../utils/formatters';
 
 // Paleta de marca SETRASA: rojos y negros/carbón
@@ -22,17 +20,7 @@ const STAT_DEFS = [
   { key: 'liquidaciones', label: 'Liquidaciones pendientes', icon: '✅', color: '#c1121f', filter: (i) => i.estado === 'PENDIENTE' },
 ];
 
-const QUICK = [
-  { label: 'Nueva póliza', icon: '📄', path: ROUTES.polizas },
-  { label: 'Nuevo transportista', icon: '🧑‍✈️', path: ROUTES.transportistas },
-  { label: 'Nuevo piloto', icon: '🪪', path: ROUTES.pilotos },
-  { label: 'Nueva liquidación', icon: '✅', path: ROUTES.liquidaciones },
-  { label: 'Catálogos', icon: '📦', path: ROUTES.productos },
-  { label: 'Seguridad', icon: '🔐', path: ROUTES.usuarios },
-];
-
 export default function DashboardPage() {
-  const navigate = useNavigate();
   const [stats, setStats] = useState({});
 
   // [v5 §5] Gráficas: última factura activa de diesel + última póliza activa.
@@ -102,17 +90,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <h2 style={{ fontSize: 16, marginBottom: 12 }}>Accesos rápidos</h2>
-      <div className="quick-grid">
-        {QUICK.map((q) => (
-          <div className="quick-card" key={q.label} onClick={() => navigate(q.path)}>
-            <span className="q-icon">{q.icon}</span>
-            <span>{q.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* [v5 §5] Gráficas: última factura activa de diesel + última póliza activa */}
+      {/* [v5 §5 / v6 §1] Gráficas: última factura activa de diesel + última póliza activa */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginTop: 24 }}>
         <div className="card">
           <div className="card-body">

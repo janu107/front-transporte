@@ -29,6 +29,8 @@ import RowActions from './RowActions';
 import useCrudMock from '../../hooks/useCrudMock';
 import useSearch from '../../hooks/useSearch';
 import useModal from '../../hooks/useModal';
+import useAuth from '../../hooks/useAuth';
+import { imprimirReporteGenerico } from '../../utils/impresionDocs';
 
 export function CrudPage({
   title,
@@ -46,11 +48,23 @@ export function CrudPage({
   deleteMode = 'delete',
   anularEstado = 'ANULADA',
   searchPlaceholder = 'Buscar...',
+  printable = true,
 }) {
   const { items, loading, message, create, update, remove, patchEstado } = useCrudMock(recurso);
   const { term, setTerm, filtered } = useSearch(items, searchFields);
+  const { user } = useAuth();
   const modal = useModal();
   const confirm = useModal();
+
+  // [v6 §2] Imprime el listado actual (filtrado) con el formato de reporte estándar
+  // (logo, usuario/terminal, fecha). Usa las columnas visibles de la tabla.
+  const imprimir = () => {
+    const cols = (columns || []).map((c) => ({
+      label: c.label,
+      get: (row) => (c.print ? c.print(row) : (row[c.key] ?? '')),
+    }));
+    imprimirReporteGenerico(title, cols, filtered, user?.nombre || user?.usuario || '');
+  };
 
   const [values, setValues] = useState(emptyRecord);
   const [errors, setErrors] = useState({});
@@ -114,8 +128,15 @@ export function CrudPage({
 
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
 
-      <div className="toolbar">
-        <SearchBar value={term} onChange={setTerm} placeholder={searchPlaceholder} />
+      <div className="toolbar" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ flex: 1 }}>
+          <SearchBar value={term} onChange={setTerm} placeholder={searchPlaceholder} />
+        </div>
+        {printable && (
+          <Button variant="secondary" icon="🖨️" onClick={imprimir} disabled={loading || !filtered.length}>
+            Imprimir
+          </Button>
+        )}
       </div>
 
       <DataTable

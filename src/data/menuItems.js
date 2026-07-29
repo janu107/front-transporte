@@ -59,8 +59,6 @@ export const MENU = [
       { label: 'Detalle de Facturas', path: ROUTES.detalleFacturas, icon: '📋' },
       { label: 'Liquidaciones', path: ROUTES.liquidaciones, icon: '✅' },
       { label: 'Historial Liquidaciones', path: ROUTES.historialLiquidaciones, icon: '📚' },
-      { label: 'Descuentos de Aceite', path: ROUTES.descuentoAceite, icon: '🛢️' },
-      { label: 'Descuentos Administrativos', path: ROUTES.descuentoAdministrativo, icon: '🗂️' },
     ],
   },
   {
@@ -85,6 +83,10 @@ export const MENU = [
   {
     title: 'Auditoría',
     items: [{ label: 'Bitácoras', path: ROUTES.bitacoras, icon: '🕓' }],
+  },
+  {
+    title: 'Historial',
+    items: [{ label: 'Historial', path: ROUTES.historial, icon: '📜' }],
   },
 ];
 

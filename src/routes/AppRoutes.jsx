@@ -46,8 +46,6 @@ import AnticipoProvisionPage from '../pages/procesos/AnticipoProvisionPage';
 import DetalleFacturasPage from '../pages/procesos/DetalleFacturasPage';
 import LiquidacionesPage from '../pages/procesos/LiquidacionesPage';
 import HistorialLiquidacionesPage from '../pages/procesos/HistorialLiquidacionesPage';
-import DescuentoAceitePage from '../pages/procesos/DescuentoAceitePage';
-import DescuentoAdministrativoPage from '../pages/procesos/DescuentoAdministrativoPage';
 
 // Reportes
 import ReporteDieselPage from '../pages/reportes/ReporteDieselPage';
@@ -64,6 +62,9 @@ import ReportePolizasPage from '../pages/reportes/ReportePolizasPage';
 import ReporteFacturasPage from '../pages/reportes/ReporteFacturasPage';
 import ReporteArrastrePolizasPage from '../pages/reportes/ReporteArrastrePolizasPage';
 import ReporteViajesPolizaPage from '../pages/reportes/ReporteViajesPolizaPage';
+
+// Historial (tablas his_*)
+import HistorialPage from '../pages/historial/HistorialPage';
 
 // Bitácoras y errores
 import BitacorasPage from '../pages/bitacoras/BitacorasPage';
@@ -116,8 +117,6 @@ export function AppRoutes() {
           <Route path={ROUTES.detalleFacturas} element={<DetalleFacturasPage />} />
           <Route path={ROUTES.liquidaciones} element={<LiquidacionesPage />} />
           <Route path={ROUTES.historialLiquidaciones} element={<HistorialLiquidacionesPage />} />
-          <Route path={ROUTES.descuentoAceite} element={<DescuentoAceitePage />} />
-          <Route path={ROUTES.descuentoAdministrativo} element={<DescuentoAdministrativoPage />} />
 
           {/* Reportes */}
           <Route path={ROUTES.reporteDiesel} element={<ReporteDieselPage />} />
@@ -134,6 +133,9 @@ export function AppRoutes() {
           <Route path={ROUTES.reporteFacturas} element={<ReporteFacturasPage />} />
           <Route path={ROUTES.reporteArrastrePolizas} element={<ReporteArrastrePolizasPage />} />
           <Route path={ROUTES.reporteViajesPoliza} element={<ReporteViajesPolizaPage />} />
+
+          {/* Historial (tablas his_*) */}
+          <Route path={ROUTES.historial} element={<HistorialPage />} />
 
           {/* Auditoría */}
           <Route path={ROUTES.bitacoras} element={<BitacorasPage />} />

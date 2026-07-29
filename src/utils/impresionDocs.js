@@ -317,11 +317,13 @@ export function imprimirReporteViajesPoliza(data, usuario = '') {
   imprimir('Reporte de Viajes por Póliza', estilos, cuerpo);
 }
 
-/* ========================= REPORTE DE DIESEL (P18) ========================= */
+/* ========================= REPORTE DE DIESEL (P18 / v6 §6) ========================= */
 // data: { facturas, detalle, totales }; filtros: { fecha_ini, fecha_fin, ... }; usuario: string
+// [v6 §6] Vertical (carta), agrupado por factura, sombrea los vales de pólizas
+// liquidadas. El filtro de estado de póliza (Activa/Liquidada/Ambas) va en la pantalla.
 export function imprimirReporteDiesel(data, filtros = {}, usuario = '') {
   const estilos = `
-    @page { size: 11in 8.5in; margin: 0.4in; }
+    @page { size: 8.5in 11in; margin: 0.5in; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1f3d5c; padding-bottom: 4px; }
     .tit { color: #1f3d5c; font-weight: 800; font-size: 15px; }
     .meta { font-size: 9px; text-align: right; color: #333; }
@@ -497,6 +499,68 @@ export function imprimirLiquidacion(datos, usuarioActual = '', terminal = 'WEB')
   }).join('') || '<p style="text-align:center;padding:20px">La póliza no tiene transportistas con movimientos.</p>';
 
   imprimir(`Liquidación ${datos.poliza?.nombre_poliza || ''}`, estilos, bloques);
+}
+
+/* ============== LIQUIDACIÓN — RESUMEN POR PÓLIZA (v6 §5) ============== */
+// Formato resumen (una fila por transportista) para el Historial de Liquidaciones,
+// como estaba antes del formato detallado. datos: { poliza, fecha, usuario,
+//   transportistas:[{ nit, nombre, cantidad_viajes, valor_viajes, valor_anticipos,
+//   valor_combustible, valor_aceite, valor_administrativo, sobregiro_anterior, liquido }],
+//   total_liquido }
+export function imprimirLiquidacionResumen(datos, terminal = 'WEB') {
+  const estilos = `
+    @page { size: 8.5in 11in; margin: 0.5in; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; }
+    .tit { font-size: 16px; font-weight: 800; color: #c1121f; }
+    .sub { font-size: 12px; }
+    .meta { font-size: 9px; text-align: right; color: #222; }
+    table.liq { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
+    table.liq th, table.liq td { border: 1px solid #000; padding: 4px 5px; }
+    table.liq th { background: #1f3d5c; color: #fff; }
+    td.n { text-align: right; }
+    tr.tot td { font-weight: 800; background: #f0f0f0; }
+    .neg { color: #c1121f; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+  `;
+  const fils = (datos.transportistas || []).map((t) => `
+    <tr>
+      <td>${esc(t.nit)}</td>
+      <td>${esc(t.nombre)}</td>
+      <td class="n">${Number(t.cantidad_viajes || 0)}</td>
+      <td class="n">${q(t.valor_viajes)}</td>
+      <td class="n">${q(t.valor_anticipos)}</td>
+      <td class="n">${q(t.valor_combustible)}</td>
+      <td class="n">${q(t.valor_aceite)}</td>
+      <td class="n">${q(t.valor_administrativo)}</td>
+      <td class="n">${q(t.sobregiro_anterior)}</td>
+      <td class="n ${Number(t.liquido) < 0 ? 'neg' : ''}">${q(t.liquido)}</td>
+    </tr>`).join('');
+  const cuerpo = `
+    <div class="cab">
+      <div style="display:flex;gap:10px;align-items:center">
+        <img src="${logoAbsUrl()}" alt="SETRASA" style="height:40px" />
+        <div><div class="tit">SETRASA S.A.</div><div class="sub">Liquidación a Transportistas (resumen por póliza)</div></div>
+      </div>
+      <div class="meta">
+        Póliza: <b>${esc(datos.poliza)}</b><br/>
+        Fecha: ${esc(datos.fecha ? String(datos.fecha).slice(0, 10) : '')}<br/>
+        Usuario: ${esc(datos.usuario || '')} · Terminal: ${terminal}<br/>
+        Impreso: ${fechaHoraImpresion()}
+      </div>
+    </div>
+    <table class="liq">
+      <thead><tr>
+        <th>NIT</th><th>Transportista</th><th>Viajes</th><th>Valor viajes</th>
+        <th>Anticipos</th><th>Combustible</th><th>Aceite</th><th>Administrativo</th><th>Sobregiro ant.</th><th>Líquido</th>
+      </tr></thead>
+      <tbody>
+        ${fils || '<tr><td colspan="10" style="text-align:center">Sin transportistas.</td></tr>'}
+        <tr class="tot"><td colspan="9" style="text-align:right">TOTAL A PAGAR</td>
+          <td class="n ${Number(datos.total_liquido) < 0 ? 'neg' : ''}">${q(datos.total_liquido)}</td></tr>
+      </tbody>
+    </table>`;
+  imprimir(`Liquidación ${datos.poliza || ''}`, estilos, cuerpo);
 }
 
 /* ========================= VALE DE COMBUSTIBLE (P15) ========================= */
