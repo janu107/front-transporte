@@ -128,6 +128,15 @@ export const realApi = {
     return unwrap(await axiosClient.get(`/historial/${tipo}`, { params }));
   },
 
+  // [v7 §4] Datos del vale de anticipo resueltos en servidor para imprimir.
+  async anticipoImpresion(id) {
+    return unwrap(await axiosClient.get(`/anticipos/${id}/impresion`));
+  },
+  // [v7 §5] Reimpresión de vales de anticipo por número de vale y/o placa.
+  async anticipoReimpresion(params = {}) {
+    return unwrap(await axiosClient.get('/anticipos/reimpresion', { params }));
+  },
+
   // Reporte de diesel por factura
   async reporteDiesel(params = {}) {
     return unwrap(await axiosClient.get('/reportes/diesel', { params }));

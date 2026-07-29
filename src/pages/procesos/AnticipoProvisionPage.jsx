@@ -45,6 +45,12 @@ export default function AnticipoProvisionPage() {
   const [confirmRow, setConfirmRow] = useState(null);
   const [term, setTerm] = useState('');
 
+  // [v7 §5] Reimpresión por vale / placa.
+  const [reimprOpen, setReimprOpen] = useState(false);
+  const [reimprF, setReimprF] = useState({ vale: '', placa: '' });
+  const [reimprRes, setReimprRes] = useState(null);
+  const [reimprLoading, setReimprLoading] = useState(false);
+
   const notify = useCallback((type, text) => {
     setMessage({ type, text });
     if (type !== 'error') setTimeout(() => setMessage(null), 6000);
@@ -161,19 +167,27 @@ export default function AnticipoProvisionPage() {
     } catch (err) { notify('error', err?.userMessage || 'No se pudo anular.'); }
   };
 
-  const datosVale = (r) => {
-    const p = pilotos.find((x) => String(x.codigo) === String(r.id_piloto));
-    return {
-      numero: r.num_anticipo,
-      fecha: r.fecha,
-      poliza: lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza'),
-      placa: lookup(camiones, r.id_camion, 'codigo', 'placa'),
-      transportista: lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial'),
-      piloto: p ? `${p.nombres} ${p.apellidos || ''}`.trim() : '',
-      tipo: lookup(tipos, r.id_tipo_anticipo_provision), // nombre del tipo de anticipo
-      descripcion: r.descripcion || '',
-      total: r.valor,
-    };
+  // [v7 §4] Imprime el vale con los datos RESUELTOS por el servidor (no se componen
+  // en el navegador), evitando desajustes con los catálogos cargados en memoria.
+  const imprimirVale = async (correlativo) => {
+    try {
+      const datos = await realApi.anticipoImpresion(correlativo);
+      imprimirValeAnticipo(datos);
+    } catch (err) {
+      notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo obtener el vale para imprimir.');
+    }
+  };
+
+  // [v7 §5] Reimpresión: busca por número de vale y/o placa (contra el servidor).
+  const buscarReimpresion = async () => {
+    if (!reimprF.vale.trim() && !reimprF.placa.trim()) { notify('error', 'Indique el número de vale o la placa.'); return; }
+    setReimprLoading(true);
+    try {
+      setReimprRes(await realApi.anticipoReimpresion({ vale: reimprF.vale, placa: reimprF.placa }));
+    } catch (err) {
+      setReimprRes([]);
+      notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo realizar la búsqueda.');
+    } finally { setReimprLoading(false); }
   };
 
   const filtrados = useMemo(() => {
@@ -197,8 +211,13 @@ export default function AnticipoProvisionPage() {
       />
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
 
-      <div className="toolbar">
-        <SearchBar value={term} onChange={setTerm} placeholder="Buscar por número, descripción, póliza, transportista o placa..." />
+      <div className="toolbar" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ flex: 1 }}>
+          <SearchBar value={term} onChange={setTerm} placeholder="Buscar por número, descripción, póliza, transportista o placa..." />
+        </div>
+        <Button variant="secondary" icon="🖨️" onClick={() => { setReimprF({ vale: '', placa: '' }); setReimprRes(null); setReimprOpen(true); }}>
+          Reimpresión
+        </Button>
       </div>
 
       <div className="table-wrapper">
@@ -228,7 +247,7 @@ export default function AnticipoProvisionPage() {
                     <td>{formatCurrency(r.valor)}</td>
                     <td><Badge value={r.estado} /></td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button style={accionBtn} title="Imprimir vale" onClick={() => imprimirValeAnticipo(datosVale(r))}>🖨️</button>
+                      <button style={accionBtn} title="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
                       <button style={accionBtn} title="Editar" onClick={() => abrirEditar(r)}>✏️</button>
                       {String(r.estado).toUpperCase() !== 'ANULADO' && (
                         <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
@@ -250,7 +269,7 @@ export default function AnticipoProvisionPage() {
         footer={saved ? (
           <>
             <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirValeAnticipo(datosVale(saved))}>Imprimir</Button>
+            <Button variant="secondary" icon="🖨️" onClick={() => imprimirVale(saved.correlativo)}>Imprimir</Button>
             <Button variant="primary" icon="➕" onClick={resetFormulario}>Nuevo</Button>
           </>
         ) : (
@@ -306,6 +325,62 @@ export default function AnticipoProvisionPage() {
           <Input className="col-span-2" label="Descripción" name="descripcion" value={values.descripcion}
             onChange={(e) => setField('descripcion', e.target.value)} />
         </div>
+      </Modal>
+
+      {/* [v7 §5] Reimpresión de vales por número de vale o placa */}
+      <Modal
+        isOpen={reimprOpen}
+        onClose={() => setReimprOpen(false)}
+        size="lg"
+        title="Reimpresión de vale de anticipo"
+        footer={<Button variant="secondary" onClick={() => setReimprOpen(false)}>Cerrar</Button>}
+      >
+        <div className="form-grid" style={{ alignItems: 'flex-end' }}>
+          <Input label="N° de vale" name="vale" value={reimprF.vale}
+            onChange={(e) => setReimprF((p) => ({ ...p, vale: e.target.value }))}
+            onKeyDown={(e) => { if (e.key === 'Enter') buscarReimpresion(); }} placeholder="Ej. 202600763" />
+          <Input label="Placa" name="placa" value={reimprF.placa}
+            onChange={(e) => setReimprF((p) => ({ ...p, placa: e.target.value }))}
+            onKeyDown={(e) => { if (e.key === 'Enter') buscarReimpresion(); }} placeholder="Ej. 642BRY" />
+          <Button variant="primary" icon="🔍" onClick={buscarReimpresion} disabled={reimprLoading}>
+            {reimprLoading ? 'Buscando...' : 'Buscar'}
+          </Button>
+        </div>
+        <p style={{ fontSize: 12, color: '#9ca3af', margin: '4px 0 12px' }}>Busca por número de vale y/o placa.</p>
+
+        {reimprRes !== null && (
+          <div className="table-wrapper">
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>N° Vale</th><th>Fecha</th><th>Placa</th><th>Transportista</th>
+                    <th>Póliza</th><th style={{ textAlign: 'right' }}>Valor</th><th>Estado</th>
+                    <th style={{ textAlign: 'right' }}>Imprimir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reimprRes.length === 0 ? (
+                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: 24, color: '#6b7280' }}>Sin resultados.</td></tr>
+                  ) : reimprRes.map((r) => (
+                    <tr key={r.correlativo}>
+                      <td>{r.numero}</td>
+                      <td>{formatDate(r.fecha)}</td>
+                      <td>{r.placa}</td>
+                      <td>{r.transportista}</td>
+                      <td>{r.poliza}</td>
+                      <td style={{ textAlign: 'right' }}>{formatCurrency(r.total)}</td>
+                      <td><Badge value={r.estado} /></td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button style={accionBtn} title="Reimprimir vale" onClick={() => imprimirValeAnticipo(r)}>🖨️</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </Modal>
 
       <ConfirmDialog

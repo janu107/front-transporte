@@ -71,6 +71,15 @@ export default function DashboardPage() {
     tooltip: `${t.transportista}: ${t.cantidad_viajes} viaje(s) · ${formatNumber(t.peso_total)} kg · ${formatCurrency(t.valor_total)}`,
   }));
 
+  // [v7 §1] Los indicadores del resumen general también como gráfica (barras 3D),
+  // ordenados de mayor a menor. La etiqueta directa muestra el valor exacto.
+  const statsBars = STAT_DEFS
+    .map((s) => {
+      const n = Number(stats[s.key]);
+      return { label: `${s.icon} ${s.label}`, value: Number.isNaN(n) ? 0 : n, tooltip: `${s.label}: ${Number.isNaN(n) ? '—' : n}` };
+    })
+    .sort((a, b) => b.value - a.value);
+
   return (
     <div>
       <PageHeader
@@ -78,16 +87,13 @@ export default function DashboardPage() {
         description="Resumen general del Sistema Administrativo de Transporte."
       />
 
-      <div className="stats-grid">
-        {STAT_DEFS.map((s) => (
-          <div className="stat-card" key={s.key}>
-            <div className="stat-icon" style={{ background: s.color }}>{s.icon}</div>
-            <div>
-              <div className="stat-value">{stats[s.key] ?? '—'}</div>
-              <div className="stat-label">{s.label}</div>
-            </div>
-          </div>
-        ))}
+      {/* [v7 §1] Resumen general como gráfica de barras 3D */}
+      <div className="card" style={{ marginBottom: 8 }}>
+        <div className="card-body">
+          <h3 style={{ marginTop: 0, marginBottom: 10, fontSize: 14 }}>Resumen general</h3>
+          <BarChart data={statsBars} valueLabel={(v) => formatNumber(v, 0)}
+            emptyMessage="Cargando indicadores..." />
+        </div>
       </div>
 
       {/* [v5 §5 / v6 §1] Gráficas: última factura activa de diesel + última póliza activa */}

@@ -67,17 +67,9 @@ export const MENU = [
       { label: 'Reporte de Diesel', path: ROUTES.reporteDiesel, icon: '⛽' },
       { label: 'Arrastre de Pólizas', path: ROUTES.reporteArrastrePolizas, icon: '📦' },
       { label: 'Viajes por Póliza', path: ROUTES.reporteViajesPoliza, icon: '🚚' },
-      { label: 'Rep. Tipo de Camión', path: ROUTES.reporteTipoCamion, icon: '📄' },
-      { label: 'Rep. Tipo de Producto', path: ROUTES.reporteTipoProducto, icon: '📄' },
-      { label: 'Rep. Tipo de Anticipo', path: ROUTES.reporteTipoAnticipo, icon: '📄' },
-      { label: 'Rep. Ubicación de Bomba', path: ROUTES.reporteUbicacionBomba, icon: '📄' },
-      { label: 'Rep. Productos', path: ROUTES.reporteProductos, icon: '📄' },
-      { label: 'Rep. Tarifas de Embarque', path: ROUTES.reporteTarifaEmbarque, icon: '📄' },
-      { label: 'Rep. Transportistas', path: ROUTES.reporteTransportistas, icon: '📄' },
-      { label: 'Rep. Pilotos', path: ROUTES.reportePilotos, icon: '📄' },
-      { label: 'Rep. Camiones', path: ROUTES.reporteCamiones, icon: '📄' },
-      { label: 'Rep. Pólizas', path: ROUTES.reportePolizas, icon: '📄' },
-      { label: 'Rep. Facturas', path: ROUTES.reporteFacturas, icon: '📄' },
+      // [v7 §2] Los reportes de catálogos/mantenimientos se ocultan del menú: cada
+      // catálogo ya tiene su propio botón «Imprimir» (v6 §2). Las páginas y rutas
+      // siguen existiendo por si se requieren en el futuro.
     ],
   },
   {
