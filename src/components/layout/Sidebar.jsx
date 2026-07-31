@@ -9,6 +9,7 @@ import { NavLink } from 'react-router-dom';
 import { MENU } from '../../data/menuItems';
 import { APP_NAME } from '../../utils/constants';
 import useAuth from '../../hooks/useAuth';
+import { gruposPermitidos } from '../../utils/roles';
 import Logo from '../common/Logo';
 
 const tituloBtn = {
@@ -16,17 +17,10 @@ const tituloBtn = {
   background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left',
 };
 
-// [v8 §8] Grupos visibles por rol. ADMIN (o rol desconocido) ve todo.
-// OPERADOR: solo Catálogos y Procesos. CONSULTOR: solo Catálogos.
-const GRUPOS_POR_ROL = {
-  OPERADOR: ['Principal', 'Catálogos', 'Procesos'],
-  CONSULTOR: ['Principal', 'Catálogos'],
-};
-
 export function Sidebar({ open, onNavigate }) {
   const { user } = useAuth();
-  const rol = String(user?.rol || '').toUpperCase();
-  const permitidos = GRUPOS_POR_ROL[rol]; // undefined => ADMIN / sin restricción
+  // [v8 §8] Grupos visibles según el rol (ADMIN ve todo).
+  const permitidos = gruposPermitidos(user?.rol); // null => ADMIN / sin restricción
   const grupos = permitidos ? MENU.filter((g) => permitidos.includes(g.title)) : MENU;
 
   // Conjunto de grupos contraídos (por título). Por defecto todos expandidos.

@@ -30,6 +30,7 @@ import useCrudMock from '../../hooks/useCrudMock';
 import useSearch from '../../hooks/useSearch';
 import useModal from '../../hooks/useModal';
 import useAuth from '../../hooks/useAuth';
+import { esSoloLectura } from '../../utils/roles';
 import { imprimirReporteGenerico } from '../../utils/impresionDocs';
 
 export function CrudPage({
@@ -53,6 +54,8 @@ export function CrudPage({
   const { items, loading, message, create, update, remove, patchEstado } = useCrudMock(recurso);
   const { term, setTerm, filtered } = useSearch(items, searchFields);
   const { user } = useAuth();
+  // [v8] CONSULTOR: solo lectura (sin crear/editar/eliminar). Puede imprimir.
+  const readonly = esSoloLectura(user?.rol);
   const modal = useModal();
   const confirm = useModal();
 
@@ -124,7 +127,12 @@ export function CrudPage({
 
   return (
     <div>
-      <PageHeader title={title} description={description} actionLabel={newLabel} onAction={openNew} />
+      <PageHeader
+        title={title}
+        description={description}
+        actionLabel={readonly ? undefined : newLabel}
+        onAction={readonly ? undefined : openNew}
+      />
 
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
 
@@ -144,7 +152,7 @@ export function CrudPage({
         data={filtered}
         loading={loading}
         idField={idField}
-        renderActions={(row) => (
+        renderActions={readonly ? undefined : (row) => (
           <RowActions
             onEdit={() => openEdit(row)}
             onDelete={() => confirm.open(row)}
