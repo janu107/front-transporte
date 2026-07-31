@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { MENU } from '../../data/menuItems';
 import { APP_NAME } from '../../utils/constants';
+import useAuth from '../../hooks/useAuth';
 import Logo from '../common/Logo';
 
 const tituloBtn = {
@@ -15,7 +16,19 @@ const tituloBtn = {
   background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left',
 };
 
+// [v8 §8] Grupos visibles por rol. ADMIN (o rol desconocido) ve todo.
+// OPERADOR: solo Catálogos y Procesos. CONSULTOR: solo Catálogos.
+const GRUPOS_POR_ROL = {
+  OPERADOR: ['Principal', 'Catálogos', 'Procesos'],
+  CONSULTOR: ['Principal', 'Catálogos'],
+};
+
 export function Sidebar({ open, onNavigate }) {
+  const { user } = useAuth();
+  const rol = String(user?.rol || '').toUpperCase();
+  const permitidos = GRUPOS_POR_ROL[rol]; // undefined => ADMIN / sin restricción
+  const grupos = permitidos ? MENU.filter((g) => permitidos.includes(g.title)) : MENU;
+
   // Conjunto de grupos contraídos (por título). Por defecto todos expandidos.
   const [colapsados, setColapsados] = useState(() => new Set());
 
@@ -36,7 +49,7 @@ export function Sidebar({ open, onNavigate }) {
       </div>
 
       <nav className="sidebar-nav">
-        {MENU.map((group) => {
+        {grupos.map((group) => {
           const colapsado = colapsados.has(group.title);
           return (
             <div key={group.title} className="nav-group">

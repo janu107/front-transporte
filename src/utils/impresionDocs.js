@@ -62,24 +62,26 @@ function imprimir(titulo, estilos, cuerpo) {
 // [P11b] Tamaño carta: Original + Duplicado 1 en la página 1, Duplicado 2 en la página 2.
 // [P11e/f] "Señor" y "Para ser transportado de" = ORIGEN;  [P11g] "A" = DESTINO.
 export function imprimirCartaPorte(datos) {
+  // [v8 §1] Cada copia con ALTURA FIJA = media hoja, para que 2 quepan por página y
+  // se pueda cortar justo a la mitad sin que la de abajo se traslape.
   const estilos = `
-    @page { size: 8.5in 11in; margin: 0.35in; }
-    .carta { border: 2px solid #000; padding: 14px 16px; margin-bottom: 16px; min-height: 4.55in; box-sizing: border-box; }
+    @page { size: 8.5in 11in; margin: 0.3in; }
+    .carta { border: 2px solid #000; padding: 10px 16px; height: 4.9in; box-sizing: border-box; overflow: hidden; margin-bottom: 0.1in; }
     .carta.brk { page-break-after: always; margin-bottom: 0; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; }
     .predio { font-size: 10px; max-width: 300px; margin-top: 4px; }
     .titulo { text-align: right; }
-    .titulo h1 { margin: 0; font-size: 22px; }
+    .titulo h1 { margin: 0; font-size: 20px; }
     .num { color: #c1121f; font-weight: 800; font-size: 18px; }
     table.dma { border-collapse: collapse; margin-top: 4px; margin-left: auto; }
     table.dma td, table.dma th { border: 1px solid #000; padding: 2px 12px; font-size: 11px; text-align: center; }
-    .fila { display: flex; gap: 10px; margin-top: 14px; font-size: 12px; align-items: flex-end; }
+    .fila { display: flex; gap: 10px; margin-top: 9px; font-size: 12px; align-items: flex-end; }
     .campo { border-bottom: 1px solid #000; flex: 1; padding: 0 4px 2px; min-height: 18px; }
     .lbl { font-weight: 700; white-space: nowrap; }
-    .pie { display: flex; justify-content: space-between; margin-top: 40px; font-size: 10px; text-align: center; gap: 14px; }
+    .pie { display: flex; justify-content: space-between; margin-top: 18px; font-size: 10px; text-align: center; gap: 14px; }
     .firma { border-top: 1px solid #000; padding-top: 3px; width: 30%; }
     .imp { border: 1px solid #000; padding: 4px 6px; font-size: 8px; width: 42%; }
-    .copia { font-style: italic; font-weight: 700; font-size: 12px; margin-top: 8px; }
+    .copia { font-style: italic; font-weight: 700; font-size: 12px; margin-top: 6px; }
   `;
   const p = partesFecha(datos.fecha);
   const carta = (etiqueta, brk) => `
@@ -129,20 +131,22 @@ export function imprimirCartaPorte(datos) {
 // [P13b] En el cuadro del total: tipo de anticipo + descripción + total.
 // [P13f] Impreso: DD/MM/YYYY HH:mm:ss.  [P13g] Nombre/Firma = piloto.
 export function imprimirValeAnticipo(datos) {
+  // [v8 §3] Cada copia con ALTURA FIJA (media hoja apaisada) para que las 3 copias
+  // no se traslapen: 2 arriba y 1 abajo, cada una recortable.
   const estilos = `
-    @page { size: 11in 8.5in; margin: 0.4in; }
+    @page { size: 11in 8.5in; margin: 0.35in; }
     .hoja { display: flex; flex-wrap: wrap; gap: 0; }
-    .vale { width: 50%; padding: 12px 16px; border-right: 1px dashed #555; border-bottom: 1px dashed #555; font-size: 11px; }
+    .vale { width: 50%; height: 3.85in; box-sizing: border-box; overflow: hidden; padding: 10px 16px; border-right: 1px dashed #555; border-bottom: 1px dashed #555; font-size: 11px; }
     .vale .cab { display: flex; justify-content: space-between; align-items: flex-start; }
     .valeno { text-align: right; }
     .valeno .n { font-size: 16px; font-weight: 800; }
-    .row { display: flex; justify-content: space-between; margin-top: 10px; }
-    .lnk { margin-top: 8px; }
-    .caja { border: 1px solid #000; margin-top: 12px; padding: 8px; min-height: 80px; }
+    .row { display: flex; justify-content: space-between; margin-top: 8px; }
+    .lnk { margin-top: 6px; }
+    .caja { border: 1px solid #000; margin-top: 8px; padding: 8px; min-height: 58px; }
     .caja .tipo { font-weight: 700; }
     .caja .desc { margin-top: 4px; }
-    .total { text-align: right; font-weight: 800; margin-top: 10px; font-size: 13px; }
-    .firma { border-top: 1px solid #000; margin-top: 34px; padding-top: 3px; text-align: center; width: 70%; }
+    .total { text-align: right; font-weight: 800; margin-top: 8px; font-size: 13px; }
+    .firma { border-top: 1px solid #000; margin-top: 18px; padding-top: 3px; text-align: center; width: 70%; }
     .copia { font-size: 9px; color: #444; margin-top: 6px; }
   `;
   const copias = ['ORIGINAL CLIENTE', 'CONTABILIDAD', 'COPIA'];
@@ -402,7 +406,8 @@ export function imprimirLiquidacion(datos, usuarioActual = '', terminal = 'WEB')
     .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; }
     .tit { font-size: 15px; font-weight: 800; color: #c1121f; }
     .sub { font-size: 11px; }
-    .meta { font-size: 9px; text-align: right; color: #222; }
+    /* [v8 §2] meta bajo la línea negra, a la izquierda */
+    .meta { font-size: 9px; text-align: left; color: #222; margin: 6px 0 4px; }
     .tname { font-weight: 800; font-size: 12px; margin: 8px 0 4px; background: #1f3d5c; color: #fff; padding: 3px 6px; }
     .sec { font-weight: 700; font-size: 10px; margin: 8px 0 2px; color: #1f3d5c; }
     table { width: 100%; border-collapse: collapse; font-size: 9px; }
@@ -412,7 +417,8 @@ export function imprimirLiquidacion(datos, usuarioActual = '', terminal = 'WEB')
     tfoot td { font-weight: 700; }
     thead { display: table-header-group; }
     tr { page-break-inside: avoid; }
-    .tot { margin-top: 10px; margin-left: auto; width: 46%; font-size: 10px; border: 1px solid #000; }
+    /* [v8 §2] bloque de totales abajo a la IZQUIERDA */
+    .tot { margin-top: 10px; margin-left: 0; margin-right: auto; width: 46%; font-size: 10px; border: 1px solid #000; }
     .tot td { padding: 3px 8px; border-bottom: 1px solid #ccc; }
     .tot .g { font-weight: 800; background: #f0f0f0; }
     .neg { color: #c1121f; }
@@ -474,12 +480,10 @@ export function imprimirLiquidacion(datos, usuarioActual = '', terminal = 'WEB')
           <img src="${logoAbsUrl()}" alt="SETRASA" style="height:38px" />
           <div><div class="tit">SETRASA S.A.</div><div class="sub">Liquidación a Transportistas</div></div>
         </div>
-        <div class="meta">
-          Póliza: <b>${esc(datos.poliza?.nombre_poliza)}</b><br/>
-          Fecha: ${esc(fecha ? String(fecha).slice(0, 10) : '')}<br/>
-          Usuario: ${esc(usuario)} · Terminal: ${esc(terminal)}<br/>
-          Impreso: ${fechaHoraImpresion()}
-        </div>
+      </div>
+      <div class="meta">
+        Póliza: <b>${esc(datos.poliza?.nombre_poliza)}</b> · Fecha: ${esc(fecha ? String(fecha).slice(0, 10) : '')}<br/>
+        Usuario: ${esc(usuario)} · Terminal: ${esc(terminal)} · Impreso: ${fechaHoraImpresion()}
       </div>
       <div class="tname">TRANSPORTISTA: ${esc(t.nit)} ${esc(t.nombre)}</div>
       ${viajesHtml}
@@ -567,10 +571,13 @@ export function imprimirLiquidacionResumen(datos, terminal = 'WEB') {
 // datos: { numero, fecha, bomba, nitTransportista, placa, poliza, transportista,
 //          piloto, cantidad, factura, valor, total }
 export function imprimirValeCombustible(datos) {
+  // [v8 §5] MEDIA CARTA en el ancho de la hoja carta (vertical): las 2 copias
+  // (original + duplicado) van lado a lado ocupando la mitad superior; el resto de
+  // la hoja queda libre para cortar.
   const estilos = `
-    @page { size: 11in 8.5in; margin: 0.4in; }
-    .hoja { display: flex; gap: 0; }
-    .vale { width: 50%; padding: 8px 12px; border-right: 1px dashed #555; font-size: 11px; }
+    @page { size: 8.5in 11in; margin: 0.35in; }
+    .hoja { display: flex; gap: 0; height: 5.2in; }
+    .vale { width: 50%; height: 5.2in; box-sizing: border-box; overflow: hidden; padding: 8px 12px; border-right: 1px dashed #555; font-size: 11px; }
     .vale:last-child { border-right: none; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; }
     .no { text-align: right; } .no .n { font-size: 15px; font-weight: 800; }

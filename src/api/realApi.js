@@ -156,6 +156,14 @@ export const realApi = {
   async detalleFacturaImpresion(id) {
     return unwrap(await axiosClient.get(`/detalle-factura/${id}/impresion`));
   },
+  // [v8 §4] Vale(s) de combustible generado(s) al confirmar un despacho del API.
+  async detalleFacturaPorApi(apiId) {
+    return unwrap(await axiosClient.get(`/detalle-factura/por-api/${apiId}`));
+  },
+  // [v8 §4] Reimpresión de vales de combustible por número de vale y/o placa.
+  async detalleFacturaReimpresion(params = {}) {
+    return unwrap(await axiosClient.get('/detalle-factura/reimpresion', { params }));
+  },
 
   // [v5] Gráficas del dashboard (agregación en servidor).
   async dashboardFacturaActivaDiesel() {

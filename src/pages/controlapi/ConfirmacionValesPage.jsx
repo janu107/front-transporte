@@ -18,9 +18,12 @@ import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import Modal from '../../components/common/Modal';
 import SearchBar from '../../components/common/SearchBar';
+import Input from '../../components/common/Input';
+import Badge from '../../components/common/Badge';
 import realApi from '../../api/realApi';
 import controlApiService from '../../services/controlApi.service';
 import { formatNumber, formatDate, formatCurrency } from '../../utils/formatters';
+import { imprimirValeCombustible } from '../../utils/impresionDocs';
 
 const REFRESH_MS = 3 * 60 * 1000; // 3 minutos
 const FORM_VACIO = { idPoliza: '', idPiloto: '', idFactura: '' };
@@ -52,6 +55,12 @@ export default function ConfirmacionValesPage() {
 
   const [message, setMessage] = useState(null); // { type, text }
   const [confirming, setConfirming] = useState(false);
+  // [v8 §4] Último vale confirmado (para imprimir) y modal de reimpresión.
+  const [ultimoConfirmado, setUltimoConfirmado] = useState(null); // { apiId, numero }
+  const [reimprOpen, setReimprOpen] = useState(false);
+  const [reimprF, setReimprF] = useState({ vale: '', placa: '' });
+  const [reimprRes, setReimprRes] = useState(null);
+  const [reimprLoading, setReimprLoading] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [pagina, setPagina] = useState(1);
   const PAGE_SIZE = 10;
@@ -211,12 +220,16 @@ export default function ConfirmacionValesPage() {
         id_bomba: Number(facturaSel.id_bomba), // bomba de la factura seleccionada
         id_poliza: Number(form.idPoliza),
       };
+      const apiId = selected.api_id;
+      const numero = selected.api_numero;
       const r = await controlApiService.confirmar(payload);
       // [M1] Respuesta del servicio externo (confirma + PDF + correo).
       const correoTxt = r.correo_enviado
         ? ` Correo enviado a ${r.correo || 'transportista'}.`
         : (r.correo_error ? ` (Correo NO enviado: ${r.correo_error})` : '');
       notify('success', `${r.mensaje || 'Despacho confirmado.'}${correoTxt}`);
+      // [v8 §4] Guarda el despacho confirmado para imprimir el vale generado.
+      setUltimoConfirmado({ apiId, numero });
       // Limpia y recarga (cierra el modal)
       setForm(FORM_VACIO);
       setSelected(null);
@@ -228,6 +241,28 @@ export default function ConfirmacionValesPage() {
     } finally {
       setConfirming(false);
     }
+  };
+
+  // [v8 §4] Imprime el/los vale(s) de combustible generado(s) al confirmar un despacho.
+  const imprimirValeGenerado = async (apiId) => {
+    try {
+      const vales = await realApi.detalleFacturaPorApi(apiId);
+      vales.forEach((v) => imprimirValeCombustible(v));
+    } catch (e) {
+      notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo obtener el vale generado.');
+    }
+  };
+
+  // [v8 §4] Reimpresión: busca vales de combustible por número de vale y/o placa.
+  const buscarReimpresion = async () => {
+    if (!reimprF.vale.trim() && !reimprF.placa.trim()) { notify('error', 'Indique el número de vale o la placa.'); return; }
+    setReimprLoading(true);
+    try {
+      setReimprRes(await realApi.detalleFacturaReimpresion({ vale: reimprF.vale, placa: reimprF.placa }));
+    } catch (e) {
+      setReimprRes([]);
+      notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo realizar la búsqueda.');
+    } finally { setReimprLoading(false); }
   };
 
   // Búsqueda libre sobre TODOS los campos visibles de la tabla (con el mismo
@@ -271,6 +306,17 @@ export default function ConfirmacionValesPage() {
         <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>
       )}
 
+      {/* [v8 §4] Vale recién confirmado: permite imprimirlo de una vez. */}
+      {ultimoConfirmado && !selected && (
+        <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span>Vale del MATO <b>{ultimoConfirmado.numero}</b> confirmado. Puede imprimir el vale generado.</span>
+          <span style={{ display: 'flex', gap: 8 }}>
+            <Button variant="secondary" icon="🖨️" onClick={() => imprimirValeGenerado(ultimoConfirmado.apiId)}>Imprimir vale</Button>
+            <Button variant="secondary" onClick={() => setUltimoConfirmado(null)}>Cerrar</Button>
+          </span>
+        </div>
+      )}
+
       {/* [M3.1] Selector global de predio (arriba de la tabla). */}
       <div className="toolbar" style={{ alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 8 }}>
         <div style={{ minWidth: 260 }}>
@@ -301,6 +347,9 @@ export default function ConfirmacionValesPage() {
               Actualizado {lastUpdate.toLocaleTimeString('es-GT')} · auto cada 3 min
             </span>
           )}
+          <Button variant="secondary" icon="🖨️" onClick={() => { setReimprF({ vale: '', placa: '' }); setReimprRes(null); setReimprOpen(true); }}>
+            Reimpresión
+          </Button>
           <Button variant="secondary" icon="🔄" onClick={cargarPendientes}>
             Actualizar
           </Button>
@@ -506,6 +555,63 @@ export default function ConfirmacionValesPage() {
               <Resumen label="Total" value={formatCurrency(total)} strong />
             </div>
           </>
+        )}
+      </Modal>
+
+      {/* [v8 §4] Reimpresión de vales de combustible por número de vale o placa */}
+      <Modal
+        isOpen={reimprOpen}
+        onClose={() => setReimprOpen(false)}
+        size="lg"
+        title="Reimpresión de vale de combustible"
+        footer={<Button variant="secondary" onClick={() => setReimprOpen(false)}>Cerrar</Button>}
+      >
+        <div className="form-grid" style={{ alignItems: 'flex-end' }}>
+          <Input label="N° de vale" name="vale" value={reimprF.vale}
+            onChange={(e) => setReimprF((p) => ({ ...p, vale: e.target.value }))}
+            onKeyDown={(e) => { if (e.key === 'Enter') buscarReimpresion(); }} placeholder="Ej. 8915" />
+          <Input label="Placa" name="placa" value={reimprF.placa}
+            onChange={(e) => setReimprF((p) => ({ ...p, placa: e.target.value }))}
+            onKeyDown={(e) => { if (e.key === 'Enter') buscarReimpresion(); }} placeholder="Ej. 114BXQ" />
+          <Button variant="primary" icon="🔍" onClick={buscarReimpresion} disabled={reimprLoading}>
+            {reimprLoading ? 'Buscando...' : 'Buscar'}
+          </Button>
+        </div>
+        <p style={{ fontSize: 12, color: '#9ca3af', margin: '4px 0 12px' }}>Busca por número de vale y/o placa.</p>
+
+        {reimprRes !== null && (
+          <div className="table-wrapper">
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>N° Vale</th><th>Fecha</th><th>Placa</th><th>Transportista</th>
+                    <th>Póliza</th><th style={{ textAlign: 'right' }}>Total</th><th>Estado</th>
+                    <th style={{ textAlign: 'right' }}>Imprimir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reimprRes.length === 0 ? (
+                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: 24, color: '#6b7280' }}>Sin resultados.</td></tr>
+                  ) : reimprRes.map((r) => (
+                    <tr key={r.correlativo}>
+                      <td>{r.numero}</td>
+                      <td>{formatDate(r.fecha)}</td>
+                      <td>{r.placa}</td>
+                      <td>{r.transportista}</td>
+                      <td>{r.poliza}</td>
+                      <td style={{ textAlign: 'right' }}>{formatCurrency(r.total)}</td>
+                      <td><Badge value={r.estado} /></td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
+                          title="Reimprimir vale" onClick={() => imprimirValeCombustible(r)}>🖨️</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </Modal>
     </div>

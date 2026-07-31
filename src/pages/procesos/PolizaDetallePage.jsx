@@ -67,6 +67,10 @@ export default function PolizaDetallePage() {
   const [confirmRow, setConfirmRow] = useState(null); // fila a anular
   const [term, setTerm] = useState('');
 
+  // [v8 §6] Edición rápida del PESO (recalcula el valor automáticamente).
+  const [pesoEdit, setPesoEdit] = useState(null); // { row, peso }
+  const [pesoSaving, setPesoSaving] = useState(false);
+
   const notify = useCallback((type, text) => {
     setMessage({ type, text });
     if (type !== 'error') setTimeout(() => setMessage(null), 6000);
@@ -129,6 +133,15 @@ export default function PolizaDetallePage() {
   // ---- Calculados ----
   // El valor lo calcula el backend (peso × 0.022046 × tarifa) vía validarEnvio.
   const valorMostrar = calc ? calc.valor : (editing ? num(editing.valor) : 0);
+
+  // [v8 §6] Valor recalculado EN VIVO al editar el peso (misma fórmula del backend:
+  // peso × 0.022046 × valor de la tarifa de embarque del viaje).
+  const pesoEditValor = useMemo(() => {
+    if (!pesoEdit) return 0;
+    const tar = tarifas.find((x) => String(x.codigo) === String(pesoEdit.row.id_tarifa_embarque));
+    const vt = tar ? Number(tar.valor || 0) : 0;
+    return Number((Number(pesoEdit.peso || 0) * 0.022046 * vt).toFixed(2));
+  }, [pesoEdit, tarifas]);
 
   // Piezas máximas para ESTE viaje: el saldo ya descuenta todos los viajes;
   // al editar, se le suma lo que este viaje ya tenía reservado.
@@ -297,6 +310,45 @@ export default function PolizaDetallePage() {
     }
   };
 
+  // [v8 §6] Guarda solo el nuevo peso; el backend recalcula el valor (peso × tarifa).
+  const guardarPeso = async () => {
+    if (!pesoEdit) return;
+    if (Number(pesoEdit.peso) < 0) { notify('error', 'El peso no puede ser negativo.'); return; }
+    setPesoSaving(true);
+    try {
+      const row = pesoEdit.row;
+      const payload = {
+        num_envio: row.num_envio, tipo: row.tipo, id_poliza: row.id_poliza,
+        id_tarifa_embarque: row.id_tarifa_embarque, id_camion: row.id_camion,
+        num_tc: row.num_tc, id_piloto: row.id_piloto,
+        fecha: row.fecha ? String(row.fecha).slice(0, 10) : row.fecha,
+        cantidad_bultos_piezas: row.cantidad_bultos_piezas,
+        peso: pesoEdit.peso, observaciones: row.observaciones, estado: row.estado,
+      };
+      await realApi.update('viajes', row.correlativo, payload);
+      notify('success', 'Peso actualizado; el valor se recalculó automáticamente.');
+      setPesoEdit(null);
+      await cargarViajes();
+    } catch (err) {
+      notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo actualizar el peso.');
+    } finally {
+      setPesoSaving(false);
+    }
+  };
+
+  // [v8 §7] "Nuevo viaje": conserva Tipo, Póliza y Tarifa; limpia de Transportista
+  // hacia abajo (placa, TC, piloto, envío, fecha, piezas, peso, observaciones).
+  const nuevoViaje = () => {
+    setEditing(null);
+    setValues((prev) => ({
+      ...EMPTY, tipo: prev.tipo, id_poliza: prev.id_poliza, id_tarifa_embarque: prev.id_tarifa_embarque,
+    }));
+    setErrors({});
+    setCalc(null); setCalcMsg(null);
+    setSaved(null);
+    // Se conserva el resumen (misma póliza).
+  };
+
   const anular = async () => {
     const row = confirmRow;
     setConfirmRow(null);
@@ -379,7 +431,8 @@ export default function PolizaDetallePage() {
                     <td><Badge value={r.estado} /></td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button style={accionBtn} title="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}>🖨️</button>
-                      <button style={accionBtn} title="Editar" onClick={() => abrirEditar(r)}>✏️</button>
+                      <button style={accionBtn} title="Editar peso (recalcula el valor)" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
+                      <button style={accionBtn} title="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
                       {String(r.estado).toUpperCase() !== 'ANULADO' && (
                         <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                       )}
@@ -402,7 +455,9 @@ export default function PolizaDetallePage() {
           <>
             <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
             <Button variant="secondary" icon="🖨️" onClick={() => imprimirCartaPorte(datosCarta(saved))}>Imprimir</Button>
-            <Button variant="primary" icon="➕" onClick={resetFormulario}>Nuevo</Button>
+            {/* [v8 §7] Nuevo viaje conserva póliza/tarifa; Nueva póliza limpia todo. */}
+            <Button variant="secondary" icon="➕" onClick={nuevoViaje}>Nuevo viaje</Button>
+            <Button variant="primary" icon="🔄" onClick={resetFormulario}>Nueva póliza</Button>
           </>
         ) : (
           <>
@@ -496,6 +551,35 @@ export default function PolizaDetallePage() {
             hint={saldoDisponible == null ? 'Seleccione póliza' : `disponible: ${formatNumber(saldoDisponible, 0)}`} />
           <Total label="Viajes realizados" value={resumen ? formatNumber(resumen.viajes_realizados, 0) : '—'} />
         </div>
+      </Modal>
+
+      {/* [v8 §6] Modal de edición rápida del PESO (recalcula el valor en vivo) */}
+      <Modal
+        isOpen={Boolean(pesoEdit)}
+        onClose={() => setPesoEdit(null)}
+        size="md"
+        title={`Editar peso — envío ${pesoEdit?.row?.num_envio || ''}`}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setPesoEdit(null)} disabled={pesoSaving}>Cancelar</Button>
+            <Button variant="primary" icon="💾" onClick={guardarPeso} disabled={pesoSaving}>
+              {pesoSaving ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </>
+        }
+      >
+        {pesoEdit && (
+          <div className="form-grid">
+            <Input label="Peso (kilogramos)" name="pesoEdit" type="number" min={0} step="0.01"
+              value={pesoEdit.peso}
+              onChange={(e) => setPesoEdit((p) => ({ ...p, peso: e.target.value }))} />
+            <ReadOnly label="Valor (recalculado)" value={formatCurrency(pesoEditValor)} strong />
+            <div className="col-span-2" style={{ fontSize: 12, color: '#9ca3af' }}>
+              El valor se recalcula automáticamente (peso × tarifa de embarque) y el
+              servidor lo vuelve a validar al guardar.
+            </div>
+          </div>
+        )}
       </Modal>
 
       <ConfirmDialog
