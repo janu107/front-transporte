@@ -238,7 +238,7 @@ export default function ConfirmacionValesPage() {
       // Refresca facturas para reflejar el saldo descontado.
       realApi.list('facturasVales').then(setFacturas).catch(() => {});
     } catch (e) {
-      notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo confirmar el despacho.');
+      notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo confirmar el servicio de despacho.');
     } finally {
       setConfirming(false);
     }
