@@ -14,6 +14,8 @@ import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import TablePager from '../../components/common/TablePager';
+import usePagination from '../../hooks/usePagination';
 import realApi from '../../api/realApi';
 import { lookup, formatDate, formatNumber, formatCurrency } from '../../utils/formatters';
 import { imprimirValeCombustible } from '../../utils/impresionDocs';
@@ -165,6 +167,9 @@ export default function DetalleFacturasPage() {
     ].some((c) => c != null && String(c).toLowerCase().includes(q)));
   }, [items, term, facturas, polizas, transportistas, camiones]);
 
+  // [2026-08 §3] Paginación de 25 en 25 (del más nuevo al más antiguo).
+  const pag = usePagination(filtrados, 25);
+
   return (
     <div>
       <PageHeader title="Detalle de Factura" description="Vales de combustible contra facturas activas." actionLabel="+ Nuevo vale" onAction={abrirNuevo} />
@@ -187,7 +192,7 @@ export default function DetalleFacturasPage() {
                 <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40 }}>Cargando...</td></tr>
               ) : filtrados.length === 0 ? (
                 <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>Sin vales registrados.</td></tr>
-              ) : filtrados.map((r) => (
+              ) : pag.visibles.map((r) => (
                 <tr key={r.correlativo}>
                   <td>{r.correlativo}</td>
                   <td>{r.num_vale}</td>
@@ -210,6 +215,7 @@ export default function DetalleFacturasPage() {
             </tbody>
           </table>
         </div>
+        <TablePager {...pag} />
       </div>
 
       <Modal

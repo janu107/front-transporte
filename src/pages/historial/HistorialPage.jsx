@@ -23,7 +23,7 @@ const TABS = [
   { tipo: 'anticipo-efectivo', label: 'Detalle de Anticipos' },
 ];
 
-const LIMIT = 100;
+const LIMIT = 25; // [2026-08 §3] Paginación de 25 en 25 (del más nuevo al más antiguo).
 
 // snake_case / minúsculas -> "Título Legible"
 const prettify = (s) => String(s || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());

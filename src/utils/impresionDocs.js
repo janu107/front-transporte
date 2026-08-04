@@ -321,6 +321,55 @@ export function imprimirReporteViajesPoliza(data, usuario = '') {
   imprimir('Reporte de Viajes por Póliza', estilos, cuerpo);
 }
 
+/* ============= ANTICIPOS A TRANSPORTISTAS (por póliza / arrastre) [2026-08 §11] ============= */
+// data: { modo, poliza, grupos:[{transportista, anticipos:[{num_anticipo,placa,fecha,piloto,valor,motivo,poliza}], total}], total_general }
+export function imprimirReporteAnticiposPoliza(data, usuario = '') {
+  const estilos = `
+    @page { size: 8.5in 11in; margin: 0.6in; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1f3d5c; padding-bottom: 6px; }
+    .tit { color: #1f3d5c; font-weight: 800; font-size: 15px; }
+    .meta { font-size: 9px; text-align: right; color: #333; }
+    .grp-tit { background: #6b7a8c; color: #fff; padding: 3px 6px; font-size: 10px; margin-top: 10px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    th { background: #e5e7eb; padding: 3px 5px; text-align: left; }
+    td { padding: 2px 5px; border-bottom: 1px solid #ddd; }
+    .n { text-align: right; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    .sub td { font-weight: 700; border-top: 1px solid #999; background: #f3f4f6; }
+    .tot { margin-top: 10px; text-align: right; font-weight: 800; font-size: 12px; color: #1f3d5c; }
+  `;
+  const arrastre = String(data.modo).toUpperCase() === 'ARRASTRE';
+  const cols = arrastre ? 5 : 4;
+  const gruposHtml = (data.grupos || []).map((g) => `
+    <div class="grp-tit">TRANSPORTISTA: ${esc(g.transportista)}</div>
+    <table>
+      <thead><tr><th>Vale</th><th>Placa</th><th>Fecha</th><th>Piloto</th>
+        ${arrastre ? '<th>Póliza</th>' : ''}<th class="n">Anticipo</th><th>Motivo</th></tr></thead>
+      <tbody>${g.anticipos.map((a) => `<tr>
+          <td>${esc(a.num_anticipo)}</td><td>${esc(a.placa)}</td>
+          <td>${esc(a.fecha ? String(a.fecha).slice(0, 10) : '')}</td><td>${esc(a.piloto)}</td>
+          ${arrastre ? `<td>${esc(a.poliza)}</td>` : ''}
+          <td class="n">${q(a.valor)}</td><td>${esc(a.motivo)}</td></tr>`).join('')}
+        <tr class="sub"><td colspan="${cols}">Total x Transportista:</td><td class="n">${q(g.total)}</td><td></td></tr>
+      </tbody>
+    </table>`).join('') || '<p style="padding:16px;text-align:center">Sin anticipos para el filtro seleccionado.</p>';
+  const cuerpo = `
+    <div class="cab">
+      <div style="display:flex;gap:8px;align-items:center">
+        <img src="${logoAbsUrl()}" style="height:36px"/>
+        <div class="tit">SETRASA S.A.<br/><span style="font-size:11px">Reporte de Anticipos a Transportistas</span></div>
+      </div>
+      <div class="meta">
+        ${data.poliza ? `Póliza: ${esc(data.poliza.nombre_poliza)}<br/>` : 'Arrastre: todas las pólizas<br/>'}
+        Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>Impreso: ${fechaHoraImpresion()}
+      </div>
+    </div>
+    ${gruposHtml}
+    <div class="tot">Total ${data.poliza ? 'x Póliza' : 'general'}: ${q(data.total_general)}</div>`;
+  imprimir('Reporte de Anticipos a Transportistas', estilos, cuerpo);
+}
+
 /* ========================= REPORTE DE DIESEL (P18 / v6 §6) ========================= */
 // data: { facturas, detalle, totales }; filtros: { fecha_ini, fecha_fin, ... }; usuario: string
 // [v6 §6] Vertical (carta), agrupado por factura, sombrea los vales de pólizas

@@ -8,14 +8,17 @@ import Input from '../common/Input';
 import Select from '../common/Select';
 import { ESTADO_OPTIONS_FACTURA } from '../../utils/constants';
 
-export function FacturaValeForm({ values, setField, errors, productoOptions = [], bombaOptions = [] }) {
-  // Apoyo visual: saldo sugerido = unidades * precio (solo si el saldo está vacío
-  // o coincide con el cálculo previo, para no pisar ediciones manuales).
+export function FacturaValeForm({ values, setField, errors, isEdit = false, productoOptions = [], bombaOptions = [] }) {
+  // [2026-08 §7] El SALDO es el saldo REAL de la factura (se va consumiendo con los
+  // vales); NO debe recalcularse al editar, porque pisaba el saldo real con
+  // unidades×precio y por eso no cuadraba con lo que se ve en el listado.
+  // Solo al CREAR se sugiere saldo = unidades × precio (monto inicial disponible).
   useEffect(() => {
+    if (isEdit) return; // al editar, se respeta el saldo real guardado
     const calc = (Number(values.unidades) || 0) * (Number(values.precio) || 0);
     setField('saldo', Number(calc.toFixed(2)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.unidades, values.precio]);
+  }, [values.unidades, values.precio, isEdit]);
 
   return (
     <div className="form-grid">

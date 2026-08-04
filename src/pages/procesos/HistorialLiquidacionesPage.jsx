@@ -10,7 +10,7 @@ import SearchableSelect from '../../components/common/SearchableSelect';
 import Badge from '../../components/common/Badge';
 import realApi from '../../api/realApi';
 import { formatDate, formatCurrency } from '../../utils/formatters';
-import { imprimirLiquidacionResumen } from '../../utils/impresionDocs';
+import { imprimirLiquidacionResumen, imprimirLiquidacion } from '../../utils/impresionDocs';
 
 export default function HistorialLiquidacionesPage() {
   const [items, setItems] = useState([]);
@@ -45,6 +45,17 @@ export default function HistorialLiquidacionesPage() {
 
   const setField = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const limpiar = () => setF({ id_poliza: '', id_transportista: '', num_liquidacion: '', fecha_ini: '', fecha_fin: '' });
+
+  // [2026-08 §9b] Reimprime el REPORTE DETALLADO de liquidación (el mismo que se
+  // genera en la pantalla de Liquidaciones): detalle de viajes + descuentos + totales.
+  const imprimirReporteDetallado = async (idPoliza) => {
+    try {
+      const datos = await realApi.liquidacionReporte(idPoliza);
+      imprimirLiquidacion(datos, datos.usuario || '');
+    } catch (e) {
+      notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo generar el reporte de liquidación.');
+    }
+  };
 
   const reimprimir = async (idPoliza, nombrePoliza) => {
     try {
@@ -113,9 +124,12 @@ export default function HistorialLiquidacionesPage() {
                   <td>{formatDate(r.fecha_liquidacion)}</td>
                   <td>{r.usuario_graba || '-'}</td>
                   <td><Badge value={r.estado} /></td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
-                      title="Reimprimir liquidación de la póliza" onClick={() => reimprimir(r.id_poliza, r.nombre_poliza)}>🖨️</button>
+                      title="Reimprimir liquidación (resumen por transportista)" onClick={() => reimprimir(r.id_poliza, r.nombre_poliza)}>🖨️</button>
+                    {/* [2026-08 §9b] Reporte detallado de liquidación (igual al de la pantalla Liquidaciones). */}
+                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
+                      title="Reporte detallado de liquidación (viajes + descuentos + totales)" onClick={() => imprimirReporteDetallado(r.id_poliza)}>📄</button>
                   </td>
                 </tr>
               ))}

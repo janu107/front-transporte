@@ -49,6 +49,9 @@ import HistorialLiquidacionesPage from '../pages/procesos/HistorialLiquidaciones
 
 // Reportes
 import ReporteDieselPage from '../pages/reportes/ReporteDieselPage';
+import ReporteArrastreDieselPage from '../pages/reportes/ReporteArrastreDieselPage';
+import ReportePolizasPendientesPage from '../pages/reportes/ReportePolizasPendientesPage';
+import ReporteAnticiposPolizaPage from '../pages/reportes/ReporteAnticiposPolizaPage';
 import ReporteTipoCamionPage from '../pages/reportes/ReporteTipoCamionPage';
 import ReporteTipoProductoPage from '../pages/reportes/ReporteTipoProductoPage';
 import ReporteTipoAnticipoPage from '../pages/reportes/ReporteTipoAnticipoPage';
@@ -120,6 +123,9 @@ export function AppRoutes() {
 
           {/* Reportes */}
           <Route path={ROUTES.reporteDiesel} element={<ReporteDieselPage />} />
+          <Route path={ROUTES.reporteArrastreDiesel} element={<ReporteArrastreDieselPage />} />
+          <Route path={ROUTES.reportePolizasPendientes} element={<ReportePolizasPendientesPage />} />
+          <Route path={ROUTES.reporteAnticiposPoliza} element={<ReporteAnticiposPolizaPage />} />
           <Route path={ROUTES.reporteTipoCamion} element={<ReporteTipoCamionPage />} />
           <Route path={ROUTES.reporteTipoProducto} element={<ReporteTipoProductoPage />} />
           <Route path={ROUTES.reporteTipoAnticipo} element={<ReporteTipoAnticipoPage />} />

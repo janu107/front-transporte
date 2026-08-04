@@ -94,7 +94,9 @@ export default function ParametrosPage() {
           <div className="form-grid">
             <Input label="IVA (%)" name="iva" type="number" min={0} step="0.01" value={values.iva}
               onChange={(e) => setField('iva', e.target.value)} error={errors.iva} />
-            <Input label="Porcentaje de pagos (%)" name="porcentaje_pagos" type="number" min={0} step="0.01" value={values.porcentaje_pagos}
+            {/* [2026-08 §8] Factor de la fórmula del valor de envío
+                (VALOR = peso × porcentaje_pagos × tarifa). Admite 6 decimales, p. ej. 0.022046. */}
+            <Input label="Porcentaje de pagos (factor, ej. 0.022046)" name="porcentaje_pagos" type="number" min={0} step="0.000001" value={values.porcentaje_pagos}
               onChange={(e) => setField('porcentaje_pagos', e.target.value)} error={errors.porcentaje_pagos} />
             <Input label="ISR (%)" name="isr" type="number" min={0} step="0.01" value={values.isr}
               onChange={(e) => setField('isr', e.target.value)} error={errors.isr} />

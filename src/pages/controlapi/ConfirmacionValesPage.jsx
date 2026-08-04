@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
+import SearchableSelect from '../../components/common/SearchableSelect';
 import Modal from '../../components/common/Modal';
 import SearchBar from '../../components/common/SearchBar';
 import Input from '../../components/common/Input';
@@ -491,12 +492,13 @@ export default function ConfirmacionValesPage() {
               Genera Vale SETRASA
             </h4>
             <div className="form-grid">
-              <Select
+              {/* [2026-08 §4] Póliza editable con búsqueda tipo "like". */}
+              <SearchableSelect
                 label="Póliza (activa)" name="idPoliza" required className="col-span-2"
                 value={form.idPoliza}
-                onChange={(e) => setField('idPoliza', e.target.value)}
+                onChange={(v) => setField('idPoliza', v)}
                 options={polizaOptions}
-                placeholder={polizaOptions.length ? 'Seleccione póliza ABIERTA...' : 'No hay pólizas abiertas'}
+                placeholder={polizaOptions.length ? 'Escriba para buscar póliza ABIERTA...' : 'No hay pólizas abiertas'}
               />
 
               {/* Placa: del vale (solo lectura) o editable si es LLAVE MAESTRA [M4.2] */}

@@ -65,8 +65,11 @@ export const MENU = [
     title: 'Reportes',
     items: [
       { label: 'Reporte de Diesel', path: ROUTES.reporteDiesel, icon: '⛽' },
+      { label: 'Arrastre de Diesel', path: ROUTES.reporteArrastreDiesel, icon: '🛢️' },
       { label: 'Arrastre de Pólizas', path: ROUTES.reporteArrastrePolizas, icon: '📦' },
       { label: 'Viajes por Póliza', path: ROUTES.reporteViajesPoliza, icon: '🚚' },
+      { label: 'Pólizas Pendientes', path: ROUTES.reportePolizasPendientes, icon: '📋' },
+      { label: 'Anticipos a Transportistas', path: ROUTES.reporteAnticiposPoliza, icon: '💵' },
       // [v7 §2] Los reportes de catálogos/mantenimientos se ocultan del menú: cada
       // catálogo ya tiene su propio botón «Imprimir» (v6 §2). Las páginas y rutas
       // siguen existiendo por si se requieren en el futuro.

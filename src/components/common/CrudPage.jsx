@@ -50,6 +50,7 @@ export function CrudPage({
   anularEstado = 'ANULADA',
   searchPlaceholder = 'Buscar...',
   printable = true,
+  extraActions, // (row) => JSX: acciones adicionales por fila (antes de editar/eliminar)
 }) {
   const { items, loading, message, create, update, remove, patchEstado } = useCrudMock(recurso);
   const { term, setTerm, filtered } = useSearch(items, searchFields);
@@ -154,6 +155,7 @@ export function CrudPage({
         idField={idField}
         renderActions={readonly ? undefined : (row) => (
           <RowActions
+            extra={extraActions ? extraActions(row) : undefined}
             onEdit={() => openEdit(row)}
             onDelete={() => confirm.open(row)}
             deleteIcon={deleteMode === 'anular' ? '🚫' : '🗑️'}

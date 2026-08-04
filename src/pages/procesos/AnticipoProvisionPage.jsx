@@ -14,6 +14,8 @@ import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import TablePager from '../../components/common/TablePager';
+import usePagination from '../../hooks/usePagination';
 import realApi from '../../api/realApi';
 import { toOptions } from '../../hooks/useRelated';
 import { lookup, formatDate, formatCurrency } from '../../utils/formatters';
@@ -201,6 +203,9 @@ export default function AnticipoProvisionPage() {
     ].some((c) => c != null && String(c).toLowerCase().includes(q)));
   }, [items, term, polizas, transportistas, camiones]);
 
+  // [2026-08 §3] Paginación de 25 en 25 (del más nuevo al más antiguo).
+  const pag = usePagination(filtrados, 25);
+
   return (
     <div>
       <PageHeader
@@ -236,7 +241,7 @@ export default function AnticipoProvisionPage() {
               ) : filtrados.length === 0 ? (
                 <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>Sin anticipos registrados.</td></tr>
               ) : (
-                filtrados.map((r) => (
+                pag.visibles.map((r) => (
                   <tr key={r.correlativo}>
                     <td>{r.correlativo}</td>
                     <td>{r.num_anticipo || '-'}</td>
@@ -259,6 +264,7 @@ export default function AnticipoProvisionPage() {
             </tbody>
           </table>
         </div>
+        <TablePager {...pag} />
       </div>
 
       <Modal
@@ -291,9 +297,10 @@ export default function AnticipoProvisionPage() {
         <div className="form-grid">
           {/* Número de anticipo: solo lectura, correlativo AÑO+00000 al guardar. */}
           <ReadOnly label="Número de anticipo" value={values.num_anticipo || '(se asigna al guardar)'} />
-          <Select label="Póliza (activa)" name="id_poliza" required value={values.id_poliza}
-            onChange={(e) => setField('id_poliza', e.target.value)} options={polizaOptions} error={errors.id_poliza}
-            placeholder={polizaOptions.length ? 'Seleccione póliza...' : 'No hay pólizas abiertas'} />
+          {/* [2026-08 §6] Póliza editable con búsqueda tipo "like". */}
+          <SearchableSelect label="Póliza (activa)" name="id_poliza" required value={values.id_poliza}
+            onChange={(v) => setField('id_poliza', v)} options={polizaOptions} error={errors.id_poliza}
+            placeholder={polizaOptions.length ? 'Escriba para buscar póliza...' : 'No hay pólizas abiertas'} />
 
           <SearchableSelect label="Placa (camión)" name="id_camion" required value={values.id_camion}
             onChange={(v) => onChangeCamion(v)} options={camionOptions} error={errors.id_camion}

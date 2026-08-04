@@ -1,9 +1,12 @@
 /**
  * PolizasPage.jsx — man_poliza. Selects de empresa y producto.
  * La eliminación se maneja como anulación (cambia el estado a ANULADA).
+ * [2026-08 §2] Acción extra "Retarifar": recalcula el valor de los envíos de la póliza.
  */
+import { useState } from 'react';
 import CrudPage from '../../components/common/CrudPage';
 import PolizaForm from '../../components/forms/PolizaForm';
+import RetarifarModal from '../../components/forms/RetarifarModal';
 import Badge from '../../components/common/Badge';
 import useRelated, { toOptions } from '../../hooks/useRelated';
 import { lookup, formatDate, formatNumber } from '../../utils/formatters';
@@ -13,6 +16,7 @@ export default function PolizasPage() {
   const { empresas = [], productos = [] } = useRelated({ empresas: 'empresas', productos: 'productos' });
   const empresaOptions = toOptions(empresas, { value: 'codigo', label: 'nombre' });
   const productoOptions = toOptions(productos);
+  const [retarifarRow, setRetarifarRow] = useState(null);
 
   const columns = [
     { key: 'codigo', label: 'Código' },
@@ -25,35 +29,44 @@ export default function PolizasPage() {
   ];
 
   return (
-    <CrudPage
-      title="Pólizas"
-      description="Mantenimiento de pólizas."
-      newLabel="+ Nueva póliza"
-      recurso="polizas"
-      modalSize="lg"
-      deleteMode="anular"
-      anularEstado="ANULADA"
-      columns={columns}
-      searchFields={['nombre_poliza', 'descripcion']}
-      emptyRecord={{
-        nombre_poliza: '', id_empresa: '', id_producto: '', fecha: '', fecha_liquidacion: '',
-        descripcion: '', cantidad_bultos: 0, cantidad_piezas: 0, peso_quintales: 0,
-        peso_kilogramos: 0, peso_total: 0, estado: 'ABIERTA',
-      }}
-      validate={(v) => {
-        const errs = validateForm(v, {
-          nombre_poliza: [required('El nombre es obligatorio')],
-          id_empresa: [required('Seleccione una empresa')],
-          id_producto: [required('Seleccione un producto')],
-          fecha: [required('La fecha es obligatoria')],
-        });
-        // fecha_liquidacion es obligatoria solo si el estado es LIQUIDADA
-        if (v.estado === 'LIQUIDADA' && !v.fecha_liquidacion) {
-          errs.fecha_liquidacion = 'Requerida cuando el estado es LIQUIDADA';
-        }
-        return errs;
-      }}
-      renderForm={(props) => <PolizaForm {...props} empresaOptions={empresaOptions} productoOptions={productoOptions} />}
-    />
+    <>
+      <CrudPage
+        title="Pólizas"
+        description="Mantenimiento de pólizas."
+        newLabel="+ Nueva póliza"
+        recurso="polizas"
+        modalSize="lg"
+        deleteMode="anular"
+        anularEstado="ANULADA"
+        columns={columns}
+        searchFields={['nombre_poliza', 'descripcion']}
+        emptyRecord={{
+          nombre_poliza: '', id_empresa: '', id_producto: '', fecha: '', fecha_liquidacion: '',
+          descripcion: '', cantidad_bultos: 0, cantidad_piezas: 0, peso_quintales: 0,
+          peso_kilogramos: 0, peso_total: 0, estado: 'ABIERTA',
+        }}
+        validate={(v) => {
+          const errs = validateForm(v, {
+            nombre_poliza: [required('El nombre es obligatorio')],
+            id_empresa: [required('Seleccione una empresa')],
+            id_producto: [required('Seleccione un producto')],
+            fecha: [required('La fecha es obligatoria')],
+          });
+          // fecha_liquidacion es obligatoria solo si el estado es LIQUIDADA
+          if (v.estado === 'LIQUIDADA' && !v.fecha_liquidacion) {
+            errs.fecha_liquidacion = 'Requerida cuando el estado es LIQUIDADA';
+          }
+          return errs;
+        }}
+        renderForm={(props) => <PolizaForm {...props} empresaOptions={empresaOptions} productoOptions={productoOptions} />}
+        extraActions={(row) => (
+          <button type="button" className="icon-btn" title="Retarifar (recalcular valores de envíos)"
+            onClick={() => setRetarifarRow(row)}>
+            🏷️
+          </button>
+        )}
+      />
+      <RetarifarModal poliza={retarifarRow} onClose={() => setRetarifarRow(null)} />
+    </>
   );
 }

@@ -48,6 +48,9 @@ export const ROUTES = {
 
   // Reportes
   reporteDiesel: '/reportes/reporte-diesel',
+  reporteArrastreDiesel: '/reportes/arrastre-diesel',
+  reportePolizasPendientes: '/reportes/polizas-pendientes',
+  reporteAnticiposPoliza: '/reportes/anticipos-poliza',
   reporteTipoCamion: '/reportes/tipo-camion',
   reporteTipoProducto: '/reportes/tipo-producto',
   reporteTipoAnticipo: '/reportes/tipo-anticipo',

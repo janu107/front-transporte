@@ -105,6 +105,14 @@ export const realApi = {
     return unwrap(await axiosClient.post('/viajes/validar', body));
   },
 
+  // [2026-08 §2] Retarifar: tarifas usadas por la póliza y recálculo masivo del valor.
+  async viajesTarifasPoliza(idPoliza) {
+    return unwrap(await axiosClient.get(`/viajes/poliza/${idPoliza}/tarifas`));
+  },
+  async viajesRetarifar(idPoliza, body) {
+    return unwrap(await axiosClient.post(`/viajes/poliza/${idPoliza}/retarifar`, body));
+  },
+
   // Liquidación de pólizas
   async liquidacionResumen(idPoliza) {
     return unwrap(await axiosClient.get(`/liquidacion/resumen/${idPoliza}`));
@@ -150,6 +158,16 @@ export const realApi = {
   // [v5 §7] Reporte de viajes por póliza
   async reporteViajesPoliza(params = {}) {
     return unwrap(await axiosClient.get('/reportes/viajes-poliza', { params }));
+  },
+
+  // [2026-08 §10] Pólizas pendientes por liquidar (filtro por estados).
+  async reportePolizasPendientes(params = {}) {
+    return unwrap(await axiosClient.get('/reportes/polizas-pendientes', { params }));
+  },
+
+  // [2026-08 §11] Anticipos a transportistas por póliza / arrastre.
+  async reporteAnticiposPoliza(params = {}) {
+    return unwrap(await axiosClient.get('/reportes/anticipos-poliza', { params }));
   },
 
   // [v5] Detalle de Factura: datos resueltos en servidor para imprimir el vale.

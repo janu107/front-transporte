@@ -17,12 +17,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
 import SearchableSelect from '../../components/common/SearchableSelect';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
 import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import TablePager from '../../components/common/TablePager';
+import usePagination from '../../hooks/usePagination';
 import realApi from '../../api/realApi';
 import { lookup, formatDate, formatNumber, formatCurrency } from '../../utils/formatters';
 import { TIPO_VIAJE_OPTIONS } from '../../utils/constants';
@@ -133,6 +134,10 @@ export default function PolizaDetallePage() {
   // ---- Calculados ----
   // El valor lo calcula el backend (peso × 0.022046 × tarifa) vía validarEnvio.
   const valorMostrar = calc ? calc.valor : (editing ? num(editing.valor) : 0);
+
+  // [2026-08 §5] Viaje local: el número de envío se escribe a mano. En Carta de
+  // Porte / Exportación se asigna el correlativo automático al guardar.
+  const esLocal = String(values.tipo || '').toLowerCase().includes('local');
 
   // [v8 §6] Valor recalculado EN VIVO al editar el peso (misma fórmula del backend:
   // peso × 0.022046 × valor de la tarifa de embarque del viaje).
@@ -376,6 +381,9 @@ export default function PolizaDetallePage() {
     });
   }, [items, term, polizas, transportistas, camiones]);
 
+  // [2026-08 §3] Paginación de 25 en 25 (del más nuevo al más antiguo).
+  const pag = usePagination(filtrados, 25);
+
   return (
     <div>
       <PageHeader
@@ -416,7 +424,7 @@ export default function PolizaDetallePage() {
               ) : filtrados.length === 0 ? (
                 <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>Sin viajes registrados.</td></tr>
               ) : (
-                filtrados.map((r) => (
+                pag.visibles.map((r) => (
                   <tr key={r.correlativo}>
                     <td>{r.correlativo}</td>
                     <td>{r.num_envio || '-'}</td>
@@ -443,6 +451,7 @@ export default function PolizaDetallePage() {
             </tbody>
           </table>
         </div>
+        <TablePager {...pag} />
       </div>
 
       {/* Modal Nuevo/Editar viaje (estilo legacy) */}
@@ -494,9 +503,10 @@ export default function PolizaDetallePage() {
               ))}
             </div>
           </div>
-          <Select label="Póliza (ABIERTA)" name="id_poliza" required value={values.id_poliza}
-            onChange={(e) => onChangePoliza(e.target.value)} options={polizaOptions} error={errors.id_poliza}
-            placeholder={polizaOptions.length ? 'Seleccione póliza...' : 'No hay pólizas abiertas'} />
+          {/* [2026-08 §5] Póliza editable con búsqueda tipo "like". */}
+          <SearchableSelect label="Póliza (ABIERTA)" name="id_poliza" required value={values.id_poliza}
+            onChange={(v) => onChangePoliza(v)} options={polizaOptions} error={errors.id_poliza}
+            placeholder={polizaOptions.length ? 'Escriba para buscar póliza...' : 'No hay pólizas abiertas'} />
           <SearchableSelect label="Tarifa de embarque" name="id_tarifa_embarque" value={values.id_tarifa_embarque}
             onChange={(v) => { setField('id_tarifa_embarque', v); setCalc(null); setCalcMsg(null); }}
             options={tarifaOptions} placeholder="Buscar tarifa (código, origen, destino)..." />
@@ -524,9 +534,16 @@ export default function PolizaDetallePage() {
         {/* Datos del envío */}
         <h4 style={secTitle}>Datos del envío</h4>
         <div className="form-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-          {/* [M5.3] Número de envío: solo lectura, se asigna al guardar (correlativo AÑO+00000). */}
-          <ReadOnly label="Número de envío"
-            value={values.num_envio || '(se asigna al guardar)'} />
+          {/* [2026-08 §5] Número de envío: editable en Viajes Locales; en Carta de Porte
+              y Exportación se asigna el correlativo automático (AÑO+00000) al guardar. */}
+          {esLocal ? (
+            <Input label="Número de envío" name="num_envio" value={values.num_envio}
+              onChange={(e) => setField('num_envio', e.target.value)}
+              placeholder="Escriba el número de envío" error={errors.num_envio} />
+          ) : (
+            <ReadOnly label="Número de envío"
+              value={values.num_envio || '(se asigna al guardar)'} />
+          )}
           <Input label="Fecha de envío" name="fecha" type="date" required value={values.fecha}
             onChange={(e) => setField('fecha', e.target.value)} error={errors.fecha} />
           <Input label="No. de piezas" name="cantidad_bultos_piezas" type="number" min={0} value={values.cantidad_bultos_piezas}
