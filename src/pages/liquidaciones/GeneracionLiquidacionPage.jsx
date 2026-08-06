@@ -61,12 +61,12 @@ export default function GeneracionLiquidacionPage() {
   return (
     <div>
       <PageHeader title="Generación de liquidación"
-        description="Calcula y registra la liquidación de todos los transportistas de una póliza cerrada." />
+        description="Calcula y registra la liquidación de todos los transportistas de una póliza disponible." />
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
 
       <div className="toolbar" style={{ alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 320, flex: '0 1 520px' }}>
-          <SearchableSelect label="Póliza cerrada sin liquidación activa" name="idPolizaLiquidacion"
+          <SearchableSelect label="Póliza disponible sin liquidación activa" name="idPolizaLiquidacion"
             value={idPoliza} options={options}
             onChange={(value) => { setIdPoliza(value); setVista(null); setMessage(null); }}
             placeholder={options.length ? 'Escriba para buscar póliza...' : 'No hay pólizas disponibles'} />
