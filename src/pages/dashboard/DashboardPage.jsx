@@ -97,7 +97,7 @@ export default function DashboardPage() {
       </div>
 
       {/* [v5 §5 / v6 §1] Gráficas: última factura activa de diesel + última póliza activa */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginTop: 24 }}>
+      <div className="dashboard-grid">
         <div className="card">
           <div className="card-body">
             <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 14 }}>Despachos de diesel por transportista</h3>

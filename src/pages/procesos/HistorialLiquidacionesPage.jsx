@@ -101,7 +101,7 @@ export default function HistorialLiquidacionesPage() {
         <Button variant="secondary" onClick={limpiar}>Limpiar</Button>
       </div>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper table-wrapper--cards">
         <div className="table-scroll">
           <table className="data-table">
             <thead><tr>
@@ -116,20 +116,20 @@ export default function HistorialLiquidacionesPage() {
                 <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>Sin liquidaciones.</td></tr>
               ) : items.map((r) => (
                 <tr key={r.correlativo}>
-                  <td>{r.num_liquidacion}</td>
-                  <td>{r.nombre_poliza}</td>
-                  <td>{r.nit}</td>
-                  <td>{r.nombre_comercial}</td>
-                  <td style={{ textAlign: 'right', color: Number(r.valor_liquidacion) < 0 ? '#c1121f' : undefined }}>{formatCurrency(r.valor_liquidacion)}</td>
-                  <td>{formatDate(r.fecha_liquidacion)}</td>
-                  <td>{r.usuario_graba || '-'}</td>
-                  <td><Badge value={r.estado} /></td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
-                      title="Reimprimir liquidación (resumen por transportista)" onClick={() => reimprimir(r.id_poliza, r.nombre_poliza)}>🖨️</button>
+                  <td data-label="N° Liquidación">{r.num_liquidacion}</td>
+                  <td data-label="Póliza">{r.nombre_poliza}</td>
+                  <td data-label="NIT">{r.nit}</td>
+                  <td data-label="Transportista">{r.nombre_comercial}</td>
+                  <td data-label="Líquido" style={{ textAlign: 'right', color: Number(r.valor_liquidacion) < 0 ? '#c1121f' : undefined }}>{formatCurrency(r.valor_liquidacion)}</td>
+                  <td data-label="Fecha">{formatDate(r.fecha_liquidacion)}</td>
+                  <td data-label="Usuario">{r.usuario_graba || '-'}</td>
+                  <td data-label="Estado"><Badge value={r.estado} /></td>
+                  <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button style={accionBtnHist} title="Reimprimir liquidación (resumen por transportista)" aria-label="Reimprimir liquidación"
+                      onClick={() => reimprimir(r.id_poliza, r.nombre_poliza)}>🖨️</button>
                     {/* [2026-08 §9b] Reporte detallado de liquidación (igual al de la pantalla Liquidaciones). */}
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
-                      title="Reporte detallado de liquidación (viajes + descuentos + totales)" onClick={() => imprimirReporteDetallado(r.id_poliza)}>📄</button>
+                    <button style={accionBtnHist} title="Reporte detallado de liquidación (viajes + descuentos + totales)" aria-label="Reporte detallado de liquidación"
+                      onClick={() => imprimirReporteDetallado(r.id_poliza)}>📄</button>
                   </td>
                 </tr>
               ))}
@@ -143,3 +143,9 @@ export default function HistorialLiquidacionesPage() {
     </div>
   );
 }
+
+const accionBtnHist = {
+  background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
+  minWidth: 40, minHeight: 40, padding: 8, borderRadius: '50%',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+};

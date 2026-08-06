@@ -179,7 +179,7 @@ export default function DetalleFacturasPage() {
         <SearchBar value={term} onChange={setTerm} placeholder="Buscar por vale, factura, póliza, transportista, placa..." />
       </div>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper table-wrapper--cards">
         <div className="table-scroll">
           <table className="data-table">
             <thead><tr>
@@ -194,20 +194,20 @@ export default function DetalleFacturasPage() {
                 <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>Sin vales registrados.</td></tr>
               ) : pag.visibles.map((r) => (
                 <tr key={r.correlativo}>
-                  <td>{r.correlativo}</td>
-                  <td>{r.num_vale}</td>
-                  <td>{lookup(facturas, r.id_factura_vale, 'codigo', 'factura')}</td>
-                  <td>{lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza')}</td>
-                  <td>{lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial')}</td>
-                  <td>{lookup(camiones, r.id_camion, 'codigo', 'placa')}</td>
-                  <td>{formatDate(r.fecha)}</td>
-                  <td style={{ textAlign: 'right' }}>{formatNumber(r.cantidad)}</td>
-                  <td style={{ textAlign: 'right' }}>{formatCurrency(r.total)}</td>
-                  <td><Badge value={r.estado || 'ACTIVO'} /></td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <button style={accionBtn} title="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
+                  <td data-label="Corr.">{r.correlativo}</td>
+                  <td data-label="N° Vale">{r.num_vale}</td>
+                  <td data-label="Factura">{lookup(facturas, r.id_factura_vale, 'codigo', 'factura')}</td>
+                  <td data-label="Póliza">{lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza')}</td>
+                  <td data-label="Transportista">{lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial')}</td>
+                  <td data-label="Placa">{lookup(camiones, r.id_camion, 'codigo', 'placa')}</td>
+                  <td data-label="Fecha">{formatDate(r.fecha)}</td>
+                  <td data-label="Cantidad" style={{ textAlign: 'right' }}>{formatNumber(r.cantidad)}</td>
+                  <td data-label="Total" style={{ textAlign: 'right' }}>{formatCurrency(r.total)}</td>
+                  <td data-label="Estado"><Badge value={r.estado || 'ACTIVO'} /></td>
+                  <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
                     {String(r.estado).toUpperCase() !== 'ANULADO' && String(r.origen).toUpperCase() === 'M' && (
-                      <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                      <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                     )}
                   </td>
                 </tr>
@@ -284,7 +284,11 @@ export default function DetalleFacturasPage() {
   );
 }
 
-const accionBtn = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 6px' };
+const accionBtn = {
+  background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
+  minWidth: 40, minHeight: 40, padding: 8, borderRadius: '50%',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+};
 function ReadOnly({ label, value, invalid, strong }) {
   return (
     <div className="form-field">

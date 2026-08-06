@@ -135,7 +135,7 @@ export default function HistorialPage() {
         <div className="card"><div className="card-body" style={{ color: '#6b7280' }}>No hay registros para el filtro seleccionado.</div></div>
       ) : (
         <>
-          <div className="table-wrapper">
+          <div className="table-wrapper table-wrapper--cards">
             <div className="table-scroll">
               <table className="data-table">
                 <thead>
@@ -144,7 +144,7 @@ export default function HistorialPage() {
                 <tbody>
                   {filas.map((row, i) => (
                     <tr key={i}>
-                      {columnas.map((c) => <td key={c}>{cellText(row[c], c, dateCol)}</td>)}
+                      {columnas.map((c) => <td key={c} data-label={prettify(c)}>{cellText(row[c], c, dateCol)}</td>)}
                     </tr>
                   ))}
                 </tbody>

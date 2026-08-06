@@ -15,6 +15,11 @@
  * [2026-08 §1/§3] Paginación de 25 en 25. Los datos se reciben ya ordenados del
  * más reciente al más antiguo (el backend lista por PK/correlativo DESC), por lo
  * que la primera página muestra siempre lo más nuevo.
+ *
+ * Responsive: en pantallas ≤768px cada fila se convierte en una tarjeta
+ * (ver tables.css, clase `table-wrapper--cards`). Cada <td> lleva
+ * `data-label` con el texto del encabezado para que la tarjeta muestre
+ * "Etiqueta: valor" sin duplicar la lógica de columnas.
  */
 import { useEffect, useMemo, useState } from 'react';
 import EmptyState from './EmptyState';
@@ -50,7 +55,7 @@ export function DataTable({
   const colCount = columns.length + (renderActions ? 1 : 0);
 
   return (
-    <div className="table-wrapper">
+    <div className="table-wrapper table-wrapper--cards">
       <div className="table-scroll">
         <table className="data-table">
           <thead>
@@ -80,7 +85,7 @@ export function DataTable({
               visibles.map((row) => (
                 <tr key={row[idField]}>
                   {columns.map((col) => (
-                    <td key={col.key} className={col.className}>
+                    <td key={col.key} className={col.className} data-label={col.label}>
                       {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '-')}
                     </td>
                   ))}

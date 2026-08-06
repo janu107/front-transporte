@@ -358,7 +358,7 @@ export default function ConfirmacionValesPage() {
       </div>
 
       {/* Tabla de vales pendientes (estado 'P') */}
-      <div className="table-wrapper">
+      <div className="table-wrapper table-wrapper--cards">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -402,15 +402,15 @@ export default function ConfirmacionValesPage() {
                         background: isSel ? 'rgba(193,18,31,0.10)' : undefined,
                       }}
                     >
-                      <td style={{ fontWeight: 600 }}>{row.api_numero}</td>
-                      <td>{formatNumber(row.api_cant_galones)}</td>
-                      <td>{formatDate(row.api_fecha)}</td>
-                      <td>{row.api_nombre_piloto || '-'}</td>
-                      <td>{row.api_placa || '-'}</td>
-                      <td>{row.api_surtidor ?? '-'}</td>
+                      <td data-label="No. Mato" style={{ fontWeight: 600 }}>{row.api_numero}</td>
+                      <td data-label="Galones">{formatNumber(row.api_cant_galones)}</td>
+                      <td data-label="Fecha">{formatDate(row.api_fecha)}</td>
+                      <td data-label="Nombre Piloto">{row.api_nombre_piloto || '-'}</td>
+                      <td data-label="Placa">{row.api_placa || '-'}</td>
+                      <td data-label="Surtidor">{row.api_surtidor ?? '-'}</td>
                       {/* [M3.1] Predio: preseleccionado por el selector global (o el propio del vale). */}
-                      <td>{predioDeFila(row) || '—'}</td>
-                      <td><span className="badge badge-pendiente">Pendiente</span></td>
+                      <td data-label="Predio">{predioDeFila(row) || '—'}</td>
+                      <td data-label="Estado"><span className="badge badge-pendiente">Pendiente</span></td>
                     </tr>
                   );
                 })

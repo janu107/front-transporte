@@ -225,7 +225,7 @@ export default function AnticipoProvisionPage() {
         </Button>
       </div>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper table-wrapper--cards">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -243,19 +243,19 @@ export default function AnticipoProvisionPage() {
               ) : (
                 pag.visibles.map((r) => (
                   <tr key={r.correlativo}>
-                    <td>{r.correlativo}</td>
-                    <td>{r.num_anticipo || '-'}</td>
-                    <td>{lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza')}</td>
-                    <td>{lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial')}</td>
-                    <td>{lookup(tipos, r.id_tipo_anticipo_provision)}</td>
-                    <td>{formatDate(r.fecha)}</td>
-                    <td>{formatCurrency(r.valor)}</td>
-                    <td><Badge value={r.estado} /></td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button style={accionBtn} title="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
-                      <button style={accionBtn} title="Editar" onClick={() => abrirEditar(r)}>✏️</button>
+                    <td data-label="Corr.">{r.correlativo}</td>
+                    <td data-label="N° Anticipo">{r.num_anticipo || '-'}</td>
+                    <td data-label="Póliza">{lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza')}</td>
+                    <td data-label="Transportista">{lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial')}</td>
+                    <td data-label="Tipo">{lookup(tipos, r.id_tipo_anticipo_provision)}</td>
+                    <td data-label="Fecha">{formatDate(r.fecha)}</td>
+                    <td data-label="Valor">{formatCurrency(r.valor)}</td>
+                    <td data-label="Estado"><Badge value={r.estado} /></td>
+                    <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
+                      <button style={accionBtn} title="Editar" aria-label="Editar" onClick={() => abrirEditar(r)}>✏️</button>
                       {String(r.estado).toUpperCase() !== 'ANULADO' && (
-                        <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                       )}
                     </td>
                   </tr>
@@ -402,7 +402,11 @@ export default function AnticipoProvisionPage() {
   );
 }
 
-const accionBtn = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 6px' };
+const accionBtn = {
+  background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
+  minWidth: 40, minHeight: 40, padding: 8, borderRadius: '50%',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+};
 
 function ReadOnly({ label, value, invalid }) {
   return (

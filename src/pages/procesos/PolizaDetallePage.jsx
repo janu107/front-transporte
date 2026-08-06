@@ -399,7 +399,7 @@ export default function PolizaDetallePage() {
         <SearchBar value={term} onChange={setTerm} placeholder="Buscar por envío, tipo, TC, póliza, transportista o placa..." />
       </div>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper table-wrapper--cards">
         <div className="table-scroll">
           <table className="data-table">
             <thead>
@@ -426,23 +426,23 @@ export default function PolizaDetallePage() {
               ) : (
                 pag.visibles.map((r) => (
                   <tr key={r.correlativo}>
-                    <td>{r.correlativo}</td>
-                    <td>{r.num_envio || '-'}</td>
-                    <td>{r.tipo || '-'}</td>
-                    <td>{lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza')}</td>
-                    <td>{lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial')}</td>
-                    <td>{lookup(camiones, r.id_camion, 'codigo', 'placa')}</td>
-                    <td>{formatDate(r.fecha)}</td>
-                    <td>{formatNumber(r.cantidad_bultos_piezas, 0)}</td>
-                    <td>{formatNumber(r.peso)}</td>
-                    <td>{formatCurrency(r.valor)}</td>
-                    <td><Badge value={r.estado} /></td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button style={accionBtn} title="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}>🖨️</button>
-                      <button style={accionBtn} title="Editar peso (recalcula el valor)" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
-                      <button style={accionBtn} title="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
+                    <td data-label="Corr.">{r.correlativo}</td>
+                    <td data-label="N° Envío">{r.num_envio || '-'}</td>
+                    <td data-label="Tipo">{r.tipo || '-'}</td>
+                    <td data-label="Póliza">{lookup(polizas, r.id_poliza, 'codigo', 'nombre_poliza')}</td>
+                    <td data-label="Transportista">{lookup(transportistas, r.id_transportista, 'codigo', 'nombre_comercial')}</td>
+                    <td data-label="Placa">{lookup(camiones, r.id_camion, 'codigo', 'placa')}</td>
+                    <td data-label="Fecha">{formatDate(r.fecha)}</td>
+                    <td data-label="Piezas">{formatNumber(r.cantidad_bultos_piezas, 0)}</td>
+                    <td data-label="Peso">{formatNumber(r.peso)}</td>
+                    <td data-label="Valor">{formatCurrency(r.valor)}</td>
+                    <td data-label="Estado"><Badge value={r.estado} /></td>
+                    <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button style={accionBtn} title="Imprimir Carta de Porte" aria-label="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}>🖨️</button>
+                      <button style={accionBtn} title="Editar peso (recalcula el valor)" aria-label="Editar peso" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
+                      <button style={accionBtn} title="Editar viaje" aria-label="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
                       {String(r.estado).toUpperCase() !== 'ANULADO' && (
-                        <button style={accionBtn} title="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                       )}
                     </td>
                   </tr>
@@ -614,7 +614,11 @@ export default function PolizaDetallePage() {
 /* ---- estilos / subcomponentes ---- */
 // [M5.1] Espaciado compacto para que el formulario quepa sin scroll.
 const secTitle = { margin: '10px 0 6px', fontSize: 13, fontWeight: 700, color: '#374151' };
-const accionBtn = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 6px' };
+const accionBtn = {
+  background: 'none', border: 'none', cursor: 'pointer', fontSize: 16,
+  minWidth: 40, minHeight: 40, padding: 8, borderRadius: '50%',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+};
 const totalesBox = {
   display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 12,
   padding: '10px 14px', background: '#f8f9fb', borderRadius: 8, border: '1px solid #eceef1',

@@ -1,7 +1,15 @@
 /* =====================================================================
-   global.css — Sistema de diseño Material (moderno y elegante)
-   Paleta de marca SETRASA: ROJO (#c1121f) + NEGRO + BLANCO.
+   global.css — Sistema de diseño SETRASA (claridad iOS, marca en rojo)
    Tokens, tipografía, superficies y utilidades base.
+
+   Breakpoints usados en todo el proyecto (documentados aquí, no hay
+   soporte nativo de CSS para var() dentro de @media, así que se repiten
+   como valores literales en cada archivo):
+     480px  → teléfono pequeño / grande
+     640px  → teléfono grande / tableta
+     768px  → tableta (punto donde las tablas pasan a tarjetas)
+     1024px → tableta / escritorio
+     1440px → escritorio / pantalla amplia
    ===================================================================== */
 
 :root {
@@ -19,7 +27,7 @@
   --color-teal: #c1121f;          /* remapeado a rojo de marca */
   --color-teal-dark: #9d0e18;
 
-  /* ----- Primario / acentos (Material 3 con rojo) ----- */
+  /* ----- Primario / acentos ----- */
   --primary: #c1121f;
   --primary-hover: #9d0e18;
   --primary-container: #fde3e5;
@@ -27,66 +35,128 @@
   --accent: #c1121f;
   --accent-hover: #9d0e18;
 
-  --color-bg: #f3f4f6;
+  --color-bg: #f2f2f7;
   --surface: #ffffff;
   --surface-1: #ffffff;
-  --surface-2: #f8f9fb;
-  --surface-3: #eef0f3;
+  --surface-2: #f7f7fa;
+  --surface-3: #eeeef2;
   --color-surface: #ffffff;
-  --color-border: #e6e8ec;
-  --outline: #d6d9df;
+  --color-border: #e4e4ea;
+  --outline: #d8d8e0;
 
-  --color-text: #1c1d20;
-  --color-text-muted: #6b7280;
+  --color-text: #1c1c1e;
+  --color-text-muted: #6c6c72;
 
   /* ----- Estados (badges semánticos) ----- */
-  --estado-activo: #16a34a;
-  --estado-inactivo: #94a3b8;
+  --estado-activo: #1fa855;
+  --estado-inactivo: #96969c;
   --estado-anulado: #c1121f;
-  --estado-liquidado: #2563eb;
-  --estado-pendiente: #f59e0b;
+  --estado-liquidado: #2f6fed;
+  --estado-pendiente: #e0972a;
   --estado-bloqueado: #b91c1c;
   --estado-pagado: #0e9384;
 
   --danger: #c1121f;
   --danger-dark: #9d0e18;
-  --warning: #f59e0b;
-  --success: #16a34a;
+  --warning: #e0972a;
+  --success: #1fa855;
 
   /* ----- Layout ----- */
   --sidebar-width: 268px;
-  --header-height: 66px;
+  --sidebar-width-collapsed: 76px;
+  --header-height: 62px;
+  --container-max: 1440px;
 
-  /* ----- Radios (Material moderno) ----- */
+  /* ----- Espaciado (escala 4px) ----- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 48px;
+
+  /* ----- Tipografía (escala) ----- */
+  --fs-xs: 11px;
+  --fs-sm: 12.5px;
+  --fs-base: 13.5px;
+  --fs-md: 15px;
+  --fs-lg: 17px;
+  --fs-xl: 20px;
+  --fs-2xl: 23px;
+  --fs-display: 28px;
+
+  /* ----- Radios -----
+     Controles (botones/inputs) usan un rectángulo muy redondeado, NO
+     pill completo — es la diferencia deliberada frente al Material
+     anterior y lo que da la sensación de control nativo tipo iOS.
+     Los badges/chips sí son pill (son etiquetas, no controles). */
   --radius-xs: 8px;
   --radius-sm: 10px;
+  --radius-control: 13px;
   --radius: 16px;
-  --radius-lg: 22px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
   --radius-pill: 999px;
 
-  /* ----- Elevaciones Material ----- */
-  --elev-1: 0 1px 2px rgba(24, 24, 24, 0.06), 0 1px 3px rgba(24, 24, 24, 0.10);
-  --elev-2: 0 2px 6px rgba(24, 24, 24, 0.07), 0 4px 10px rgba(24, 24, 24, 0.08);
-  --elev-3: 0 6px 16px rgba(24, 24, 24, 0.10), 0 2px 6px rgba(24, 24, 24, 0.06);
-  --elev-4: 0 12px 28px rgba(24, 24, 24, 0.16), 0 6px 12px rgba(24, 24, 24, 0.10);
-  --elev-5: 0 20px 48px rgba(16, 16, 16, 0.28);
+  /* ----- Elevaciones (sutiles, una sola sombra difusa + una de contacto) ----- */
+  --elev-1: 0 1px 2px rgba(16, 16, 18, 0.05), 0 1px 1px rgba(16, 16, 18, 0.04);
+  --elev-2: 0 2px 6px rgba(16, 16, 18, 0.06), 0 1px 2px rgba(16, 16, 18, 0.05);
+  --elev-3: 0 8px 20px rgba(16, 16, 18, 0.09), 0 2px 5px rgba(16, 16, 18, 0.05);
+  --elev-4: 0 16px 36px rgba(16, 16, 18, 0.13), 0 4px 10px rgba(16, 16, 18, 0.06);
+  --elev-5: 0 24px 56px rgba(10, 10, 12, 0.24);
 
   /* compat */
   --shadow-sm: var(--elev-1);
   --shadow: var(--elev-2);
   --shadow-lg: var(--elev-4);
 
-  /* ----- Movimiento (easing estándar Material) ----- */
+  /* ----- Movimiento -----
+     --ease: hover/estado general (Material standard, sutil).
+     --ease-ios: aperturas de hoja/modal (curva "sheet" de iOS: arranca
+     rápido, termina con un asentamiento suave). */
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
-  --dur: 0.2s;
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur: 0.18s;
+  --dur-lg: 0.32s;
 
   --font: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ----- Modo oscuro (tokens preparados; se activa manualmente con
+   [data-theme="dark"] en <html>. Aún no hay control en la UI para
+   encenderlo — queda listo para cuando se valide visualmente.) ----- */
+:root[data-theme='dark'] {
+  --color-bg: #0d0d10;
+  --surface: #17171b;
+  --surface-1: #17171b;
+  --surface-2: #1e1e23;
+  --surface-3: #26262c;
+  --color-surface: #17171b;
+  --color-border: #2c2c33;
+  --outline: #38383f;
+
+  --color-text: #f2f2f4;
+  --color-text-muted: #a2a2aa;
+  --color-azul-oscuro: #f2f2f4;
+
+  --primary-container: #4a1218;
+  --on-primary-container: #ffd9dc;
+
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --elev-2: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --elev-3: 0 10px 24px rgba(0, 0, 0, 0.45);
+  --elev-4: 0 18px 40px rgba(0, 0, 0, 0.5);
+  --elev-5: 0 28px 60px rgba(0, 0, 0, 0.6);
 }
 
 * { box-sizing: border-box; }
 
 html, body, #root { height: 100%; }
+
+html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
@@ -109,7 +179,9 @@ h1, h2, h3, h4 {
   letter-spacing: -0.01em;
 }
 
-/* Ícono Material Symbols */
+img { max-width: 100%; }
+
+/* Ícono Material Symbols (reservado para uso futuro; hoy los íconos son emoji) */
 .msi {
   font-family: 'Material Symbols Rounded';
   font-weight: normal;
@@ -132,20 +204,27 @@ h1, h2, h3, h4 {
 
 ::selection { background: rgba(193, 18, 31, 0.18); }
 
-/* Foco accesible global */
-:focus-visible { outline: 2px solid var(--brand-red); outline-offset: 2px; }
+/* Foco accesible global — nunca se elimina, solo se reestiliza por componente */
+:focus-visible { outline: 2px solid var(--brand-red); outline-offset: 2px; border-radius: 4px; }
+
+/* Zoom del navegador / accesibilidad de texto: nada usa unidades fijas que
+   rompan con font-size del usuario; se evita `rem` atado a un root forzado. */
 
 /* ----- Utilidades ----- */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
-.gap-sm { gap: 8px; }
-.gap-md { gap: 16px; }
+.gap-sm { gap: var(--space-2); }
+.gap-md { gap: var(--space-4); }
 .text-muted { color: var(--color-text-muted); }
 .full-width { width: 100%; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 
-/* ----- Card (Material elevation) ----- */
+/* ----- Card ----- */
 .card {
   background: var(--surface);
   border: 1px solid var(--color-border);
@@ -154,32 +233,35 @@ h1, h2, h3, h4 {
   transition: box-shadow var(--dur) var(--ease);
 }
 .card:hover { box-shadow: var(--elev-2); }
-.card-body { padding: 22px; }
+.card-body { padding: var(--space-6); }
+@media (max-width: 480px) {
+  .card-body { padding: var(--space-4); }
+}
 
 /* ----- Toolbar ----- */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
 }
 .toolbar .spacer { flex: 1; }
 
-/* ----- Alerts (Material banners) ----- */
+/* ----- Alerts ----- */
 .alert {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  font-size: var(--fs-base);
   font-weight: 500;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-4);
   box-shadow: var(--elev-1);
-  animation: slideDown 0.26s var(--ease);
+  animation: slideDown 0.22s var(--ease);
 }
-.alert-success { background: #e7f6ed; color: #136c38; }
+.alert-success { background: #e4f7ea; color: #106b34; }
 .alert-error { background: #fde3e5; color: #8d1019; }
 .alert-info { background: #eef0f3; color: #333; }
 
@@ -196,4 +278,18 @@ h1, h2, h3, h4 {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.fade-in { animation: fadeIn 0.26s var(--ease); }
+@keyframes sheetUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.22s var(--ease); }
+
+/* Respeta la preferencia de movimiento reducido del sistema operativo. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

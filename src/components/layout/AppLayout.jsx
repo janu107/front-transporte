@@ -1,9 +1,10 @@
 /**
  * AppLayout.jsx
  * Estructura administrativa: Sidebar + Header + área de contenido (Outlet).
- * Gestiona la apertura del sidebar en móvil.
+ * Gestiona la apertura del sidebar en móvil y bloquea el scroll del fondo
+ * (document.body) mientras el drawer está abierto.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -13,6 +14,11 @@ export function AppLayout() {
 
   const toggle = () => setSidebarOpen((v) => !v);
   const closeSidebar = () => setSidebarOpen(false);
+
+  useEffect(() => {
+    document.body.classList.toggle('no-scroll', sidebarOpen);
+    return () => document.body.classList.remove('no-scroll');
+  }, [sidebarOpen]);
 
   return (
     <div className="app-layout">

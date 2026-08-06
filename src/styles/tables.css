@@ -1,5 +1,19 @@
 /* =====================================================================
-   tables.css — Material Design: data table, chips de estado y acciones.
+   tables.css — Tabla de datos, chips de estado, acciones y patrón
+   responsive de tarjetas.
+
+   Patrón de tabla → tarjeta:
+   El wrapper que quiere convertirse en tarjetas en pantallas angostas
+   lleva la clase modificadora `table-wrapper--cards` (la usan el
+   componente DataTable y las pantallas con listado propio). Cada <td>
+   debe tener `data-label="Encabezado"` con el mismo texto del <th>; la
+   celda de acciones usa `class="col-actions"` (ya la trae DataTable) y
+   no lleva etiqueta.
+
+   Las tablas de REPORTES agrupados (arrastre, diesel, anticipos) NO
+   llevan esta clase a propósito: convertir cada fila en tarjeta ahí
+   rompería la lectura de subtotales por grupo, así que en pantallas
+   angostas conservan scroll horizontal dentro de `.table-scroll`.
    ===================================================================== */
 
 .table-wrapper {
@@ -14,14 +28,14 @@
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: var(--fs-base);
 }
 .data-table thead th {
   background: var(--surface-2);
   text-align: left;
-  padding: 14px 16px;
+  padding: 13px 16px;
   font-weight: 700;
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
@@ -31,7 +45,7 @@
   top: 0;
 }
 .data-table tbody td {
-  padding: 13px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
   vertical-align: middle;
@@ -42,7 +56,7 @@
 
 .col-actions { white-space: nowrap; text-align: right; }
 
-.row-actions { display: inline-flex; gap: 6px; }
+.row-actions { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .icon-btn {
   position: relative;
   border: none;
@@ -55,25 +69,30 @@
   color: var(--color-text-muted);
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
-.icon-btn:hover { background: rgba(15, 61, 92, 0.08); color: var(--color-azul-petroleo); }
+.icon-btn:hover { background: rgba(28, 28, 30, 0.06); color: var(--color-azul-petroleo); }
 .icon-btn:active { transform: scale(0.92); }
 .icon-btn.edit:hover { color: var(--color-azul); background: rgba(29, 111, 165, 0.12); }
 .icon-btn.danger:hover { color: var(--danger); background: rgba(220, 38, 38, 0.12); }
 .icon-btn.view:hover { color: var(--brand-red-dark); background: rgba(193, 18, 31, 0.12); }
 
+/* Objetivo táctil de 44px para los botones de acción en pantallas táctiles. */
+@media (max-width: 768px) {
+  .icon-btn { width: 44px; height: 44px; font-size: 17px; }
+}
+
 /* Estado vacío */
 .empty-state { text-align: center; padding: 56px 20px; color: var(--color-text-muted); }
 .empty-state .empty-icon { font-size: 46px; margin-bottom: 10px; opacity: 0.5; }
-.empty-state .empty-title { font-weight: 700; color: var(--color-text); margin-bottom: 4px; font-size: 15px; }
+.empty-state .empty-title { font-weight: 700; color: var(--color-text); margin-bottom: 4px; font-size: var(--fs-md); }
 
-/* Chips de estado (Material) */
+/* Chips de estado */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 12px 4px 11px;
   border-radius: var(--radius-pill);
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1.4;
@@ -84,6 +103,7 @@
   width: 7px; height: 7px;
   border-radius: 50%;
   background: currentColor;
+  flex-shrink: 0;
 }
 .badge-activo    { color: #146c38; background: #e3f6ea; }
 .badge-inactivo  { color: #5b6b7b; background: #eef1f4; }
@@ -103,11 +123,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
   padding: 12px 16px;
   border-top: 1px solid var(--color-border);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   color: var(--color-text-muted);
   font-weight: 500;
   background: var(--surface-2);
@@ -117,6 +137,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .table-pager .pager-info {
@@ -128,20 +149,91 @@
   border: 1px solid var(--color-border);
   background: var(--surface-1, #fff);
   color: var(--color-text, #1f2937);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   padding: 4px 9px;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   transition: background .12s, border-color .12s;
 }
-
 .table-pager .pager-btn:hover:not(:disabled) {
   background: var(--surface-2);
-  border-color: var(--color-primary, #c1121f);
+  border-color: var(--brand-red);
+}
+.table-pager .pager-btn:disabled { opacity: .45; cursor: default; }
+@media (max-width: 480px) {
+  .table-pager .pager-btn { min-height: 36px; padding: 6px 11px; }
 }
 
-.table-pager .pager-btn:disabled {
-  opacity: .45;
-  cursor: default;
+/* ============================ Tabla → Tarjeta (≤768px) ============================ */
+@media (max-width: 768px) {
+  .table-wrapper--cards .table-scroll { overflow-x: visible; }
+
+  .table-wrapper--cards .data-table thead { display: none; }
+
+  .table-wrapper--cards .data-table,
+  .table-wrapper--cards .data-table tbody,
+  .table-wrapper--cards .data-table tr,
+  .table-wrapper--cards .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table-wrapper--cards .data-table tbody {
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .table-wrapper--cards .data-table tr {
+    background: var(--surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-1) var(--space-4);
+    box-shadow: var(--elev-1);
+  }
+  .table-wrapper--cards .data-table tbody tr:hover { background: var(--surface); }
+
+  /* Fila-mensaje (cargando / sin registros): ocupa colSpan, se muestra como aviso simple. */
+  .table-wrapper--cards .data-table tr:has(> td[colspan]) {
+    background: transparent; border: none; box-shadow: none; padding: 0;
+  }
+  .table-wrapper--cards .data-table td[colspan] {
+    text-align: center; border: none; padding: var(--space-6) 0;
+  }
+  .table-wrapper--cards .data-table td[colspan]::before { content: none; }
+
+  .table-wrapper--cards .data-table td {
+    text-align: right;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+    min-height: 24px;
+  }
+  .table-wrapper--cards .data-table td::before {
+    content: attr(data-label);
+    float: left;
+    font-weight: 600;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    text-align: left;
+    padding-right: var(--space-3);
+  }
+  /* Valores ausentes: que se note que el campo está vacío, no que falta la etiqueta. */
+  .table-wrapper--cards .data-table td:empty::after { content: '—'; color: var(--color-text-muted); }
+
+  .table-wrapper--cards .data-table td:last-of-type:not(.col-actions) { border-bottom: none; }
+
+  .table-wrapper--cards .data-table td.col-actions {
+    text-align: left;
+    float: none;
+    display: flex;
+    justify-content: flex-end;
+    padding-top: var(--space-3);
+    border-bottom: none;
+  }
+  .table-wrapper--cards .data-table td.col-actions::before { content: none; }
+  .table-wrapper--cards .row-actions { gap: 6px; }
 }
