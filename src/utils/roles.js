@@ -2,13 +2,13 @@
  * roles.js — [v8] Reglas de visibilidad/acceso por rol (frontend).
  * Debe coincidir con la política del backend (index.routes.js):
  *   ADMIN     -> todo
- *   OPERADOR  -> Principal + Catálogos + Procesos
+ *   OPERADOR  -> Principal + Catálogos + Procesos + Liquidaciones
  *   CONSULTOR -> Principal + Catálogos (solo lectura)
  */
 import { MENU } from '../data/menuItems';
 
 export const GRUPOS_POR_ROL = {
-  OPERADOR: ['Principal', 'Catálogos', 'Procesos'],
+  OPERADOR: ['Principal', 'Catálogos', 'Procesos', 'Liquidaciones'],
   CONSULTOR: ['Principal', 'Catálogos'],
 };
 
@@ -20,11 +20,16 @@ export function gruposPermitidos(rol) {
 
 /** Rutas (paths) permitidas para el rol; null = todas (ADMIN). */
 export function rutasPermitidas(rol) {
+  const rolNormalizado = String(rol || '').toUpperCase();
   const permitidos = gruposPermitidos(rol);
   if (!permitidos) return null;
   const rutas = [];
   MENU.forEach((g) => {
-    if (permitidos.includes(g.title)) g.items.forEach((it) => rutas.push(it.path));
+    if (permitidos.includes(g.title)) {
+      g.items
+        .filter((it) => !it.roles || it.roles.includes(rolNormalizado))
+        .forEach((it) => rutas.push(it.path));
+    }
   });
   return rutas;
 }

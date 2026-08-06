@@ -17,19 +17,27 @@ export default function RetarifarModal({ poliza, onClose }) {
   const isOpen = Boolean(poliza);
   const [tarifas, setTarifas] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fechaInicio, setFechaInicio] = useState('');
+  const [fechaFin, setFechaFin] = useState('');
+  const [consultado, setConsultado] = useState(false);
   const [sel, setSel] = useState(null); // id_tarifa_embarque seleccionado
   const [nuevaTarifa, setNuevaTarifa] = useState('');
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const cargar = useCallback(async (idPoliza) => {
+  const cargar = useCallback(async (idPoliza, inicio, fin) => {
     setLoading(true); setError(null); setResult(null);
     setSel(null); setNuevaTarifa('');
     try {
-      setTarifas(await realApi.viajesTarifasPoliza(idPoliza));
+      setTarifas(await realApi.viajesTarifasPoliza(idPoliza, {
+        fecha_inicio: inicio,
+        fecha_fin: fin,
+      }));
+      setConsultado(true);
     } catch (e) {
       setTarifas([]);
+      setConsultado(false);
       setError(e?.userMessage || e?.response?.data?.message || 'No se pudieron cargar las tarifas de la póliza.');
     } finally {
       setLoading(false);
@@ -37,12 +45,36 @@ export default function RetarifarModal({ poliza, onClose }) {
   }, []);
 
   useEffect(() => {
-    if (poliza) cargar(poliza.codigo);
-  }, [poliza, cargar]);
+    if (!poliza) return;
+    const inicio = String(poliza.fecha || '').slice(0, 10);
+    const ahora = new Date();
+    const hoy = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+    setFechaInicio(inicio);
+    setFechaFin(inicio && inicio > hoy ? inicio : hoy);
+    setTarifas([]); setConsultado(false); setSel(null); setNuevaTarifa('');
+    setResult(null); setError(null);
+  }, [poliza]);
 
   const seleccionada = tarifas.find((t) => String(t.id_tarifa_embarque) === String(sel)) || null;
   const nueva = Number(nuevaTarifa);
-  const puedeAplicar = seleccionada && nuevaTarifa !== '' && Number.isFinite(nueva) && nueva >= 0 && !saving;
+  const rangoValido = fechaInicio && fechaFin && fechaInicio <= fechaFin;
+  const puedeAplicar = consultado && rangoValido && seleccionada && nuevaTarifa !== ''
+    && Number.isFinite(nueva) && nueva >= 0 && !saving;
+
+  const cambiarFecha = (setter) => (e) => {
+    setter(e.target.value);
+    setTarifas([]); setConsultado(false); setSel(null); setResult(null); setError(null);
+  };
+
+  const consultar = () => {
+    if (!rangoValido) {
+      setError(fechaInicio && fechaFin
+        ? 'La fecha de inicio no puede ser posterior a la fecha final.'
+        : 'Indique la fecha de inicio y la fecha final.');
+      return;
+    }
+    cargar(poliza.codigo, fechaInicio, fechaFin);
+  };
 
   const aplicar = async () => {
     if (!puedeAplicar) return;
@@ -51,10 +83,15 @@ export default function RetarifarModal({ poliza, onClose }) {
       const r = await realApi.viajesRetarifar(poliza.codigo, {
         id_tarifa_embarque: sel,
         nueva_tarifa: nueva,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
       });
-      setResult(r);
-      // Refresca los conteos/valores de la tabla tras el recálculo.
-      await cargar(poliza.codigo);
+      const actualizadas = await realApi.viajesTarifasPoliza(poliza.codigo, {
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+      });
+      setTarifas(actualizadas);
+      setSel(null); setNuevaTarifa(''); setResult(r);
     } catch (e) {
       setError(e?.userMessage || e?.response?.data?.message || 'No se pudo aplicar la nueva tarifa.');
     } finally {
@@ -87,10 +124,21 @@ export default function RetarifarModal({ poliza, onClose }) {
       )}
 
       <p style={{ fontSize: 13, color: '#374151', margin: '4px 0 10px' }}>
-        Seleccione la tarifa a corregir, escriba el valor de la nueva tarifa y presione
+        Indique el rango de fechas, consulte las tarifas, seleccione la que desea corregir,
+        escriba el valor nuevo y presione
         «Aplicar». El valor de cada envío se recalcula como
         <b> peso × porcentaje de pagos × nueva tarifa</b> y se guarda en el detalle de la póliza.
       </p>
+
+      <div className="form-grid" style={{ marginBottom: 14, alignItems: 'flex-end' }}>
+        <Input label="Fecha de inicio" name="fechaInicioRetarifa" type="date" required
+          value={fechaInicio} onChange={cambiarFecha(setFechaInicio)} />
+        <Input label="Fecha final" name="fechaFinRetarifa" type="date" required
+          min={fechaInicio || undefined} value={fechaFin} onChange={cambiarFecha(setFechaFin)} />
+        <Button variant="secondary" icon="🔍" onClick={consultar} disabled={loading || !rangoValido}>
+          {loading ? 'Consultando...' : 'Consultar tarifas'}
+        </Button>
+      </div>
 
       <div className="table-wrapper">
         <div className="table-scroll">
@@ -109,9 +157,13 @@ export default function RetarifarModal({ poliza, onClose }) {
             <tbody>
               {loading ? (
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: 30 }}>Cargando...</td></tr>
+              ) : !consultado ? (
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 30, color: '#6b7280' }}>
+                  Indique el rango de fechas y presione «Consultar tarifas».
+                </td></tr>
               ) : tarifas.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: 30, color: '#6b7280' }}>
-                  Esta póliza no tiene envíos con tarifa registrada.
+                  Esta póliza no tiene envíos con tarifa registrada dentro del rango indicado.
                 </td></tr>
               ) : tarifas.map((t) => {
                 const selRow = String(t.id_tarifa_embarque) === String(sel);

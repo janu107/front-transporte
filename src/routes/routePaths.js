@@ -46,6 +46,13 @@ export const ROUTES = {
   descuentoAceite: '/procesos/descuento-aceite',
   descuentoAdministrativo: '/procesos/descuento-administrativo',
 
+  // Módulo de Liquidaciones v2
+  liquidacionGenerar: '/liquidaciones/generacion',
+  liquidacionRevertir: '/liquidaciones/reversion',
+  liquidacionHistorialV2: '/liquidaciones/historial',
+  liquidacionAbonos: '/liquidaciones/abonos-sobregiros',
+  liquidacionReporteV2: '/liquidaciones/reporte',
+
   // Reportes
   reporteDiesel: '/reportes/reporte-diesel',
   reporteArrastreDiesel: '/reportes/arrastre-diesel',

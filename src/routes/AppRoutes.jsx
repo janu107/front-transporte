@@ -47,6 +47,13 @@ import DetalleFacturasPage from '../pages/procesos/DetalleFacturasPage';
 import LiquidacionesPage from '../pages/procesos/LiquidacionesPage';
 import HistorialLiquidacionesPage from '../pages/procesos/HistorialLiquidacionesPage';
 
+// Liquidaciones v2
+import GeneracionLiquidacionPage from '../pages/liquidaciones/GeneracionLiquidacionPage';
+import ReversionLiquidacionPage from '../pages/liquidaciones/ReversionLiquidacionPage';
+import HistorialLiquidacionesV2Page from '../pages/liquidaciones/HistorialLiquidacionesV2Page';
+import AbonosSobregirosPage from '../pages/liquidaciones/AbonosSobregirosPage';
+import ReporteLiquidacionesV2Page from '../pages/liquidaciones/ReporteLiquidacionesV2Page';
+
 // Reportes
 import ReporteDieselPage from '../pages/reportes/ReporteDieselPage';
 import ReporteArrastreDieselPage from '../pages/reportes/ReporteArrastreDieselPage';
@@ -120,6 +127,13 @@ export function AppRoutes() {
           <Route path={ROUTES.detalleFacturas} element={<DetalleFacturasPage />} />
           <Route path={ROUTES.liquidaciones} element={<LiquidacionesPage />} />
           <Route path={ROUTES.historialLiquidaciones} element={<HistorialLiquidacionesPage />} />
+
+          {/* Liquidaciones v2 */}
+          <Route path={ROUTES.liquidacionGenerar} element={<GeneracionLiquidacionPage />} />
+          <Route path={ROUTES.liquidacionRevertir} element={<ReversionLiquidacionPage />} />
+          <Route path={ROUTES.liquidacionHistorialV2} element={<HistorialLiquidacionesV2Page />} />
+          <Route path={ROUTES.liquidacionAbonos} element={<AbonosSobregirosPage />} />
+          <Route path={ROUTES.liquidacionReporteV2} element={<ReporteLiquidacionesV2Page />} />
 
           {/* Reportes */}
           <Route path={ROUTES.reporteDiesel} element={<ReporteDieselPage />} />

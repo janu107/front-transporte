@@ -106,8 +106,8 @@ export const realApi = {
   },
 
   // [2026-08 §2] Retarifar: tarifas usadas por la póliza y recálculo masivo del valor.
-  async viajesTarifasPoliza(idPoliza) {
-    return unwrap(await axiosClient.get(`/viajes/poliza/${idPoliza}/tarifas`));
+  async viajesTarifasPoliza(idPoliza, params = {}) {
+    return unwrap(await axiosClient.get(`/viajes/poliza/${idPoliza}/tarifas`, { params }));
   },
   async viajesRetarifar(idPoliza, body) {
     return unwrap(await axiosClient.post(`/viajes/poliza/${idPoliza}/retarifar`, body));
@@ -129,6 +129,41 @@ export const realApi = {
   // [v5 §2] Reporte detallado de liquidación (viajes + descuentos + totales por transportista).
   async liquidacionReporte(idPoliza) {
     return unwrap(await axiosClient.get(`/liquidacion/reporte/${idPoliza}`));
+  },
+
+  // Liquidaciones v2 (generación, reversión, trazabilidad, sobregiros y reporte).
+  async liquidacionV2Polizas() {
+    return unwrap(await axiosClient.get('/liquidacion/v2/polizas-disponibles'));
+  },
+  async liquidacionV2VistaPrevia(idPoliza) {
+    return unwrap(await axiosClient.get(`/liquidacion/v2/vista-previa/${idPoliza}`));
+  },
+  async liquidacionV2Generar(data) {
+    return unwrap(await axiosClient.post('/liquidacion/v2/generar', data));
+  },
+  async liquidacionV2Detalle(idLiquidacion) {
+    return unwrap(await axiosClient.get(`/liquidacion/v2/detalle/${idLiquidacion}`));
+  },
+  async liquidacionV2Historial(params = {}) {
+    return unwrap(await axiosClient.get('/liquidacion/v2/historial', { params }));
+  },
+  async liquidacionV2Reversibles(buscar = '') {
+    return unwrap(await axiosClient.get('/liquidacion/v2/reversibles', { params: { buscar } }));
+  },
+  async liquidacionV2Revertir(idLiquidacion, motivo) {
+    return unwrap(await axiosClient.post(`/liquidacion/v2/revertir/${idLiquidacion}`, { motivo }));
+  },
+  async liquidacionV2Sobregiros() {
+    return unwrap(await axiosClient.get('/liquidacion/v2/sobregiros'));
+  },
+  async liquidacionV2Abonos(idTransportista) {
+    return unwrap(await axiosClient.get(`/liquidacion/v2/sobregiros/${idTransportista}/abonos`));
+  },
+  async liquidacionV2RegistrarAbono(data) {
+    return unwrap(await axiosClient.post('/liquidacion/v2/abonos', data));
+  },
+  async liquidacionV2Reporte(params = {}) {
+    return unwrap(await axiosClient.get('/liquidacion/v2/reporte-liquidaciones', { params }));
   },
 
   // [v6 §3] Historial (tablas his_*): tipo ∈ det-poliza | val-detalle | anticipo-efectivo.

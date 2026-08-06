@@ -57,8 +57,16 @@ export const MENU = [
       { label: 'Detalle de Póliza / Envíos', path: ROUTES.polizaDetalle, icon: '📑' },
       { label: 'Anticipos / Provisión', path: ROUTES.anticipoProvision, icon: '💰' },
       { label: 'Detalle de Facturas', path: ROUTES.detalleFacturas, icon: '📋' },
-      { label: 'Liquidaciones', path: ROUTES.liquidaciones, icon: '✅' },
-      { label: 'Historial Liquidaciones', path: ROUTES.historialLiquidaciones, icon: '📚' },
+    ],
+  },
+  {
+    title: 'Liquidaciones',
+    items: [
+      { label: 'Generación', path: ROUTES.liquidacionGenerar, icon: '🧮' },
+      { label: 'Reversión', path: ROUTES.liquidacionRevertir, icon: '↩️', roles: ['ADMIN'] },
+      { label: 'Historial', path: ROUTES.liquidacionHistorialV2, icon: '📚' },
+      { label: 'Abonos y Sobregiros', path: ROUTES.liquidacionAbonos, icon: '💳' },
+      { label: 'Reporte', path: ROUTES.liquidacionReporteV2, icon: '📊' },
     ],
   },
   {

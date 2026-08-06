@@ -206,6 +206,56 @@ export function imprimirReporteGenerico(titulo, columnas, filas, usuario = '') {
   imprimir(titulo, estilos, cuerpo);
 }
 
+/* ================= REPORTE DE LIQUIDACIONES V2 ================= */
+export function imprimirReporteLiquidacionesV2(datos, filtros = {}, usuario = '') {
+  const estilos = `
+    @page { size: 11in 8.5in; margin: 0.45in; }
+    .cab { display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1f3d5c;padding-bottom:6px; }
+    .tit { color:#1f3d5c;font-weight:800;font-size:15px; }
+    .meta { font-size:9px;text-align:right;color:#333; }
+    .filtros { font-size:9px;color:#444;margin-top:7px; }
+    table { width:100%;border-collapse:collapse;margin-top:10px;font-size:8.5px; }
+    th { background:#1f3d5c;color:#fff;padding:4px;text-align:left; }
+    td { padding:3px 4px;border-bottom:1px solid #d1d5db; }
+    .num { text-align:right;white-space:nowrap; }
+    .revertida { color:#777;text-decoration:line-through; }
+    tfoot td { font-weight:700;border:0;padding-top:6px; }
+  `;
+  const fecha = (value) => {
+    if (!value) return '';
+    const iso = String(value).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+      const [anio, mes, dia] = iso.split('-');
+      return `${dia}/${mes}/${anio}`;
+    }
+    const p = partesFecha(value);
+    return `${p.dia}/${p.mes}/${p.anio}`;
+  };
+  const filas = (datos?.items || []).map((r) => `<tr class="${Number(r.revertida) ? 'revertida' : ''}">
+    <td>${esc(r.num_liquidacion)}</td><td>${esc(fecha(r.fecha_liquidacion))}</td>
+    <td>${esc(r.nombre_comercial)}</td><td>${esc(r.nombre_poliza)}</td>
+    <td class="num">${esc(r.cantidad_viajes)}</td><td class="num">${esc(q(r.valor_diesel))}</td>
+    <td class="num">${esc(q(r.valor_anticipos))}</td><td class="num">${esc(q(r.valor_impuesto))}</td>
+    <td class="num">${esc(q(r.valor_liquidacion))}</td>
+    <td>${Number(r.revertida) ? 'REVERTIDA' : 'LIQUIDADO'}</td>
+  </tr>`).join('');
+  const rango = filtros.fecha_inicio || filtros.fecha_fin
+    ? `${filtros.fecha_inicio || 'inicio'} a ${filtros.fecha_fin || 'hoy'}` : 'Todas las fechas';
+  const cuerpo = `
+    <div class="cab"><div style="display:flex;gap:8px;align-items:center">
+      <img src="${logoAbsUrl()}" style="height:36px"/>
+      <div class="tit">SETRASA S.A.<br/><span style="font-size:11px">Reporte de Liquidaciones</span></div>
+    </div><div class="meta">Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>Impreso: ${fechaHoraImpresion()}</div></div>
+    <div class="filtros">Período: ${esc(rango)} · Estado: ${esc(filtros.estado || 'Todos')}</div>
+    <table><thead><tr><th>Liquidación</th><th>Fecha</th><th>Transportista</th><th>Póliza</th>
+      <th>Viajes</th><th>Diesel</th><th>Anticipos</th><th>Impuesto</th><th>Total a pagar</th><th>Estado</th></tr></thead>
+      <tbody>${filas || '<tr><td colspan="10" style="text-align:center;padding:20px">Sin registros.</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="8" class="num">Total efectivo:</td><td class="num">${esc(q(datos?.totales?.total_pagar))}</td><td></td></tr>
+        <tr><td colspan="8" class="num">Sobregiros generados:</td><td class="num">${esc(q(datos?.totales?.sobregiros_generados))}</td><td></td></tr></tfoot>
+    </table>`;
+  imprimir('Reporte de Liquidaciones', estilos, cuerpo);
+}
+
 /* ================= ARRASTRE DE PÓLIZAS Y PUNTO DE EMBARQUE (v5 §6) ================= */
 // data: resultado de GET /reportes/arrastre-polizas; filtros: {fecha_inicio,fecha_fin}
 export function imprimirReporteArrastre(data, filtros = {}, usuario = '') {

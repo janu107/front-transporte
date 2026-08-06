@@ -8,6 +8,7 @@ export const ESTADOS = {
   INACTIVO: 'INACTIVO',
   BLOQUEADO: 'BLOQUEADO',
   ABIERTA: 'ABIERTA',
+  CERRADA: 'CERRADA',
   LIQUIDADA: 'LIQUIDADA',
   ANULADA: 'ANULADA',
   PENDIENTE: 'PENDIENTE',
@@ -28,6 +29,7 @@ export const ESTADO_OPTIONS_USUARIO = [
 
 export const ESTADO_OPTIONS_POLIZA = [
   { value: 'ABIERTA', label: 'ABIERTA' },
+  { value: 'CERRADA', label: 'CERRADA (SIN LIQUIDAR)' },
   { value: 'LIQUIDADA', label: 'LIQUIDADA' },
   { value: 'ANULADA', label: 'ANULADA' },
 ];

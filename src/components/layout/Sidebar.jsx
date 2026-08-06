@@ -19,6 +19,7 @@ const tituloBtn = {
 
 export function Sidebar({ open, onNavigate }) {
   const { user } = useAuth();
+  const rol = String(user?.rol || '').toUpperCase();
   // [v8 §8] Grupos visibles según el rol (ADMIN ve todo).
   const permitidos = gruposPermitidos(user?.rol); // null => ADMIN / sin restricción
   const grupos = permitidos ? MENU.filter((g) => permitidos.includes(g.title)) : MENU;
@@ -44,6 +45,8 @@ export function Sidebar({ open, onNavigate }) {
 
       <nav className="sidebar-nav">
         {grupos.map((group) => {
+          const items = group.items.filter((item) => !item.roles || item.roles.includes(rol));
+          if (!items.length) return null;
           const colapsado = colapsados.has(group.title);
           return (
             <div key={group.title} className="nav-group">
@@ -58,7 +61,7 @@ export function Sidebar({ open, onNavigate }) {
                 <span>{group.title}</span>
                 <span style={{ fontSize: 10, transition: 'transform .15s', transform: colapsado ? 'rotate(-90deg)' : 'none' }}>▾</span>
               </button>
-              {!colapsado && group.items.map((item) => (
+              {!colapsado && items.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
