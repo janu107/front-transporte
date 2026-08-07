@@ -79,8 +79,8 @@ export default function ConfirmacionValesPage() {
       const data = await controlApiService.listarPendientes();
       setPendientes(data);
       setLastUpdate(new Date());
-      // Conserva la selección solo si el vale sigue pendiente.
-      setSelected((prev) => (prev && data.some((r) => r.api_id === prev.api_id) ? prev : null));
+      // El vale que se está confirmando NO se descarta aquí: aunque deje de venir
+      // en la lista, el modal sigue abierto para no perder lo ya capturado.
     } catch (e) {
       notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudieron cargar los vales del API.');
     }
@@ -109,10 +109,14 @@ export default function ConfirmacionValesPage() {
   }, [cargarPendientes]);
 
   // ---- Refresco automático cada 3 minutos ----
+  // Se PAUSA mientras hay un vale abierto: al recargar se reemplaza la lista y,
+  // si el vale ya no viene en ella, se perdía la selección y el modal se cerraba
+  // con los datos a medio llenar. Se reanuda al cerrar el modal.
   useEffect(() => {
+    if (selected) return undefined;
     const id = setInterval(cargarPendientes, REFRESH_MS);
     return () => clearInterval(id);
-  }, [cargarPendientes]);
+  }, [cargarPendientes, selected]);
 
   // ---- Opciones derivadas del modal ----
   // Póliza: sólo ABIERTA (activas).
