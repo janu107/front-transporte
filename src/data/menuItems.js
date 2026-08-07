@@ -67,12 +67,12 @@ export const MENU = [
       { label: 'Historial', path: ROUTES.liquidacionHistorialV2, icon: '📚' },
       { label: 'Abonos y Sobregiros', path: ROUTES.liquidacionAbonos, icon: '💳' },
       { label: 'Reporte', path: ROUTES.liquidacionReporteV2, icon: '📊' },
-      { label: 'Reporte de Liquidación', path: ROUTES.liquidacionReporteDoc, icon: '📄' },
     ],
   },
   {
     title: 'Reportes',
     items: [
+      { label: 'Reporte de Liquidación', path: ROUTES.liquidacionReporteDoc, icon: '📄' },
       { label: 'Reporte de Diesel', path: ROUTES.reporteDiesel, icon: '⛽' },
       { label: 'Arrastre de Diesel', path: ROUTES.reporteArrastreDiesel, icon: '🛢️' },
       { label: 'Arrastre de Pólizas', path: ROUTES.reporteArrastrePolizas, icon: '📦' },
