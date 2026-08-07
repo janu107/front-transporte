@@ -35,26 +35,90 @@ const formatNum = (n) => Number(n || 0).toLocaleString('es-GT', { minimumFractio
 // texto fijo en el encabezado de los reportes, junto al usuario, como pidió el cliente.
 const TERMINAL = 'WEB';
 
-/** Abre una ventana nueva, escribe el documento y lanza la impresión. */
-function imprimir(titulo, estilos, cuerpo) {
-  const w = window.open('', '_blank', 'width=1000,height=700');
-  if (!w) {
-    alert('El navegador bloqueó la ventana de impresión. Permita las ventanas emergentes.');
-    return;
-  }
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(titulo)}</title>
+/** Arma el documento completo (HTML + estilos) de un reporte. */
+function documentoHtml(titulo, estilos, cuerpo) {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(titulo)}</title>
     <style>
       * { box-sizing: border-box; }
-      body { font-family: Arial, Helvetica, sans-serif; color: #000; margin: 0; }
+      body { font-family: Arial, Helvetica, sans-serif; color: #000; margin: 0; padding: 16px; background: #fff; }
       ${estilos}
-      @media print { .no-print { display: none !important; } }
-    </style></head><body>${cuerpo}
-    <div class="no-print" style="text-align:center;padding:12px">
-      <button onclick="window.print()" style="padding:8px 18px;font-size:14px;cursor:pointer">Imprimir</button>
-    </div>
-    <script>window.onload = function(){ setTimeout(function(){ window.focus(); window.print(); }, 300); };<\/script>
-  </body></html>`);
-  w.document.close();
+      @media print { body { padding: 0; } .no-print { display: none !important; } }
+    </style></head><body>${cuerpo}</body></html>`;
+}
+
+/**
+ * Muestra el documento en una VISTA PREVIA (ventana emergente) antes de imprimir,
+ * con las acciones Imprimir / Abrir en otra pestaña / Cerrar.
+ *
+ * Todas las funciones de impresión de este módulo terminan aquí, así que los
+ * reportes del sistema comparten la misma vista previa sin duplicar código.
+ * El documento se renderiza dentro de un <iframe> aislado para que sus estilos
+ * (@page, tamaños de hoja) no afecten a la aplicación ni al revés.
+ */
+function imprimir(titulo, estilos, cuerpo) {
+  const html = documentoHtml(titulo, estilos, cuerpo);
+
+  // Evita superponer dos vistas previas.
+  document.getElementById('preview-doc-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'preview-doc-overlay';
+  overlay.className = 'preview-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', `Vista previa: ${titulo}`);
+
+  overlay.innerHTML = `
+    <div class="preview-modal">
+      <div class="preview-header">
+        <h3>Vista previa — ${esc(titulo)}</h3>
+        <button type="button" class="preview-close" aria-label="Cerrar vista previa">&times;</button>
+      </div>
+      <div class="preview-body"><iframe class="preview-frame" title="${esc(titulo)}"></iframe></div>
+      <div class="preview-footer">
+        <button type="button" class="btn btn-secondary preview-tab">🡕 Abrir en otra pestaña</button>
+        <button type="button" class="btn btn-secondary preview-cancel">Cerrar vista</button>
+        <button type="button" class="btn btn-primary preview-print">🖨️ Imprimir</button>
+      </div>
+    </div>`;
+
+  const frame = overlay.querySelector('.preview-frame');
+  frame.srcdoc = html;
+
+  const previo = document.activeElement;
+  const cerrar = () => {
+    document.removeEventListener('keydown', onKey);
+    document.body.classList.remove('no-scroll');
+    overlay.remove();
+    if (previo && document.contains(previo)) previo.focus();
+  };
+  const onKey = (e) => { if (e.key === 'Escape') cerrar(); };
+
+  overlay.querySelector('.preview-close').onclick = cerrar;
+  overlay.querySelector('.preview-cancel').onclick = cerrar;
+  overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) cerrar(); });
+
+  overlay.querySelector('.preview-print').onclick = () => {
+    const w = frame.contentWindow;
+    if (!w) return;
+    w.focus();
+    w.print();
+  };
+
+  overlay.querySelector('.preview-tab').onclick = () => {
+    const w = window.open('', '_blank');
+    if (!w) {
+      alert('El navegador bloqueó la ventana emergente. Permita las ventanas emergentes para abrir el reporte en otra pestaña.');
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+  };
+
+  document.addEventListener('keydown', onKey);
+  document.body.classList.add('no-scroll');
+  document.body.appendChild(overlay);
+  overlay.querySelector('.preview-print').focus();
 }
 
 /* ============================ CARTA DE PORTE (P11) ============================ */

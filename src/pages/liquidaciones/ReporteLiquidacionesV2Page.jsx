@@ -5,6 +5,7 @@ import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import SearchableSelect from '../../components/common/SearchableSelect';
 import Badge from '../../components/common/Badge';
+import LiquidacionTabs from '../../components/liquidaciones/LiquidacionTabs';
 import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatDate, formatNumber } from '../../utils/formatters';
@@ -54,6 +55,7 @@ export default function ReporteLiquidacionesV2Page() {
     <div>
       <PageHeader title="Reporte de liquidaciones"
         description="Reporte imprimible por período, transportista, póliza y estado." />
+      <LiquidacionTabs />
       {message && <div className="alert alert-error">{message.text}</div>}
 
       <div className="toolbar" style={{ alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>

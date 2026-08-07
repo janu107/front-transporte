@@ -1,0 +1,201 @@
+/* =====================================================================
+   liquidaciones.css — Módulo de Liquidaciones: pestañas de navegación,
+   panel de generación y tarjetas de transportista.
+   ===================================================================== */
+
+/* ============================ Pestañas del módulo ============================ */
+.liq-tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-5);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.liq-tabs::-webkit-scrollbar { display: none; }
+
+.liq-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.liq-tab:hover { color: var(--color-text); background: var(--surface-2); }
+.liq-tab.active { color: var(--brand-red); border-bottom-color: var(--brand-red); }
+
+@media (max-width: 640px) {
+  .liq-tab { padding: 10px 12px; min-height: 44px; }
+}
+
+/* ============================ Panel de generación ============================ */
+.liq-generar {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .liq-generar { grid-template-columns: 1fr; }
+}
+
+.liq-panel { overflow: hidden; }
+
+.liq-panel-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin: 0 0 var(--space-4);
+}
+.liq-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.liq-panel-head .liq-panel-title { margin-bottom: var(--space-4); }
+.liq-conteo { font-size: var(--fs-sm); color: var(--color-text-muted); font-weight: 500; }
+
+/* Selector de dos opciones (aplicar sobregiro / dejarlo para la siguiente póliza) */
+.liq-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.liq-toggle-btn {
+  padding: 10px 12px;
+  min-height: 44px;
+  border: 1.5px solid var(--outline);
+  background: var(--surface);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-control);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.liq-toggle-btn:hover { border-color: var(--color-azul-petroleo); color: var(--color-text); }
+.liq-toggle-btn.active {
+  background: var(--color-azul-petroleo);
+  border-color: var(--color-azul-petroleo);
+  color: #fff;
+}
+
+.liq-aviso {
+  background: #fdf6e3;
+  border: 1px solid #f0d9a0;
+  color: #7a5b12;
+  border-radius: var(--radius-control);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-4);
+}
+.liq-aviso-nota { font-size: var(--fs-xs); margin-top: 3px; opacity: 0.85; }
+
+/* ============================ Tarjetas de transportista ============================ */
+.liq-vacio {
+  color: var(--color-text-muted);
+  font-size: var(--fs-base);
+  text-align: center;
+  padding: var(--space-7) var(--space-4);
+  margin: 0;
+}
+
+.liq-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+
+.liq-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.liq-item:hover { box-shadow: var(--elev-2); }
+
+.liq-item-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.liq-item-info { flex: 1; min-width: 0; }
+.liq-item-nombre {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-weight: 700;
+  color: var(--color-azul-oscuro);
+  font-size: var(--fs-base);
+}
+.liq-item-meta { display: block; font-size: var(--fs-xs); color: var(--color-text-muted); margin-top: 2px; }
+
+.liq-chip-sob {
+  background: #fde7e7;
+  color: #b01818;
+  border-radius: var(--radius-pill);
+  padding: 2px 9px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.liq-item-monto { font-weight: 800; font-size: var(--fs-lg); white-space: nowrap; }
+.liq-item-monto.pos, .liq-total b.pos { color: #15803d; }
+.liq-item-monto.neg, .liq-total b.neg { color: var(--brand-red); }
+
+.liq-chevron { color: var(--color-text-muted); font-size: 12px; transition: transform var(--dur) var(--ease); flex-shrink: 0; }
+.liq-chevron.abierto { transform: rotate(180deg); }
+
+.liq-item-detalle {
+  padding: 0 var(--space-4) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  animation: fadeIn 0.18s var(--ease);
+}
+
+/* Desglose en dos columnas etiqueta/valor */
+.liq-datos {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px var(--space-4);
+  margin: var(--space-4) 0 0;
+  font-size: var(--fs-sm);
+}
+.liq-datos dt { color: var(--color-text-muted); }
+.liq-datos dd { margin: 0; text-align: right; font-weight: 600; }
+
+.liq-vales { margin-top: var(--space-4); }
+.liq-vales-tit { font-weight: 700; font-size: var(--fs-sm); margin-bottom: var(--space-2); }
+
+.liq-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+.liq-total b { font-size: var(--fs-xl); }
+
+@media (max-width: 480px) {
+  .liq-item-head { flex-wrap: wrap; }
+  .liq-item-monto { font-size: var(--fs-md); }
+}

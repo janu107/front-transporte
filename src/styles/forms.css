@@ -251,6 +251,102 @@ select.form-control { cursor: pointer; }
   .modal-footer .btn { flex: 1 1 auto; }
 }
 
+/* ============ Vista previa de reportes (impresionDocs.js) ============ */
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 14, 0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  z-index: 80; /* por encima de los modales de formulario */
+  animation: fadeIn 0.18s var(--ease);
+}
+
+.preview-modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-5);
+  width: 100%;
+  max-width: 1100px;
+  height: 100%;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleIn 0.22s var(--ease-ios);
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+.preview-header h3 {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-close {
+  background: none; border: none; font-size: 24px; cursor: pointer;
+  color: var(--color-text-muted); line-height: 1;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.preview-close:hover { background: rgba(28, 28, 30, 0.06); color: var(--color-text); }
+
+/* Fondo gris para que la "hoja" del documento se distinga, como un visor. */
+.preview-body {
+  flex: 1;
+  min-height: 0;
+  background: var(--surface-3);
+  padding: var(--space-4);
+  overflow: auto;
+}
+.preview-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  border: none;
+  background: #fff;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--elev-2);
+}
+
+.preview-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--surface-2);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .preview-overlay { padding: 0; }
+  .preview-modal { max-width: 100%; max-height: 100%; border-radius: 0; }
+  .preview-header { padding: var(--space-3) var(--space-4); }
+  .preview-body { padding: var(--space-2); }
+  .preview-footer {
+    padding: var(--space-3) var(--space-4);
+    padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  }
+  .preview-footer .btn { flex: 1 1 auto; }
+}
+
 /* ============================ Login ============================ */
 .login-page {
   position: relative;

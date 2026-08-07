@@ -5,6 +5,7 @@ import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import SearchableSelect from '../../components/common/SearchableSelect';
 import Badge from '../../components/common/Badge';
+import LiquidacionTabs from '../../components/liquidaciones/LiquidacionTabs';
 import realApi from '../../api/realApi';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
@@ -67,6 +68,7 @@ export default function AbonosSobregirosPage() {
     <div>
       <PageHeader title="Abonos y sobregiros"
         description="Registra pagos de transportistas y consulta el saldo negativo consolidado." />
+      <LiquidacionTabs />
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
 
       <div style={panelStyle}>

@@ -1,21 +1,21 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
-import SearchableSelect from '../../components/common/SearchableSelect';
 import Badge from '../../components/common/Badge';
 import LiquidacionDetalleTable from '../../components/liquidaciones/LiquidacionDetalleTable';
+import LiquidacionTabs from '../../components/liquidaciones/LiquidacionTabs';
 import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { imprimirLiquidacionV2, imprimirResumenLiquidacionTransportista } from '../../utils/impresionDocs';
 
-const VACIO = { id_transportista: '', estado: '', fecha_inicio: '', fecha_fin: '' };
+// El historial se consulta por LIQUIDACIÓN (número), no por transportista.
+const VACIO = { num_liquidacion: '', estado: '', fecha_inicio: '', fecha_fin: '' };
 
 export default function HistorialLiquidacionesV2Page() {
   const { user } = useAuth();
-  const [transportistas, setTransportistas] = useState([]);
   const [filtros, setFiltros] = useState(VACIO);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,13 +35,11 @@ export default function HistorialLiquidacionesV2Page() {
   }, [filtros]);
 
   useEffect(() => {
-    realApi.list('transportistas').then(setTransportistas).catch(() => setTransportistas([]));
     cargar(VACIO);
     // La carga inicial no debe repetirse al editar filtros.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const options = useMemo(() => transportistas.map((t) => ({ value: t.codigo, label: t.nombre_comercial })), [transportistas]);
   const setField = (name, value) => setFiltros((prev) => ({ ...prev, [name]: value }));
 
   const alternarDetalle = async (id, clave) => {
@@ -84,12 +82,17 @@ export default function HistorialLiquidacionesV2Page() {
     <div>
       <PageHeader title="Historial de liquidaciones"
         description="Consulta liquidaciones activas y revertidas con su cadena de trazabilidad." />
+      <LiquidacionTabs />
       {message && <div className="alert alert-error">{message.text}</div>}
 
       <div className="toolbar" style={{ alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 240 }}><SearchableSelect label="Transportista" name="histTransportista"
-          value={filtros.id_transportista} onChange={(v) => setField('id_transportista', v)}
-          options={options} placeholder="Todos" /></div>
+        {/* Filtro principal: número de liquidación. */}
+        <div style={{ minWidth: 220 }}>
+          <Input label="N° de liquidación" name="histLiquidacion" value={filtros.num_liquidacion}
+            placeholder="Ej. 202600010"
+            onChange={(e) => setField('num_liquidacion', e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') cargar(); }} />
+        </div>
         <Select label="Estado" name="histEstado" value={filtros.estado}
           onChange={(e) => setField('estado', e.target.value)}
           options={[{ value: 'LIQUIDADO', label: 'Liquidado' }, { value: 'REVERTIDA', label: 'Revertida' }]}

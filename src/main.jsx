@@ -12,6 +12,7 @@ import './styles/global.css';
 import './styles/layout.css';
 import './styles/tables.css';
 import './styles/forms.css';
+import './styles/liquidaciones.css';
 
 window.addEventListener('error', (event) => {
   logger.error('Error global de JavaScript', {

@@ -4,6 +4,7 @@ import Button from '../../components/common/Button';
 import SearchBar from '../../components/common/SearchBar';
 import Modal from '../../components/common/Modal';
 import LiquidacionDetalleTable from '../../components/liquidaciones/LiquidacionDetalleTable';
+import LiquidacionTabs from '../../components/liquidaciones/LiquidacionTabs';
 import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatDate } from '../../utils/formatters';
@@ -56,6 +57,7 @@ export default function ReversionLiquidacionPage() {
     <div>
       <PageHeader title="Reversión de liquidación"
         description="Restaura una liquidación y conserva la trazabilidad del motivo y del usuario responsable." />
+      <LiquidacionTabs />
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
 
       <div className="toolbar" style={{ gap: 10, flexWrap: 'wrap' }}>
