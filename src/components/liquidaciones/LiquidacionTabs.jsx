@@ -12,6 +12,7 @@ const TABS = [
   { to: ROUTES.liquidacionRevertir, icon: '↩️', label: 'Reversión' },
   { to: ROUTES.liquidacionAbonos, icon: '💳', label: 'Abonos y sobregiros' },
   { to: ROUTES.liquidacionReporteV2, icon: '📊', label: 'Reporte' },
+  { to: ROUTES.liquidacionReporteDoc, icon: '📄', label: 'Reporte de Liquidación' },
 ];
 
 export default function LiquidacionTabs() {

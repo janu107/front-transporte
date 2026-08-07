@@ -67,6 +67,7 @@ export const MENU = [
       { label: 'Historial', path: ROUTES.liquidacionHistorialV2, icon: '📚' },
       { label: 'Abonos y Sobregiros', path: ROUTES.liquidacionAbonos, icon: '💳' },
       { label: 'Reporte', path: ROUTES.liquidacionReporteV2, icon: '📊' },
+      { label: 'Reporte de Liquidación', path: ROUTES.liquidacionReporteDoc, icon: '📄' },
     ],
   },
   {

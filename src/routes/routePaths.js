@@ -52,6 +52,7 @@ export const ROUTES = {
   liquidacionHistorialV2: '/liquidaciones/historial',
   liquidacionAbonos: '/liquidaciones/abonos-sobregiros',
   liquidacionReporteV2: '/liquidaciones/reporte',
+  liquidacionReporteDoc: '/liquidaciones/reporte-liquidacion',
 
   // Reportes
   reporteDiesel: '/reportes/reporte-diesel',
