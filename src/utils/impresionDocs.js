@@ -725,3 +725,178 @@ export function imprimirValeCombustible(datos) {
     </div>`;
   imprimir(`Vale de Combustible ${datos.numero || ''}`, estilos, `<div class="hoja">${copias.map(vale).join('')}</div>`);
 }
+
+/* ============ LIQUIDACIÓN A TRANSPORTISTAS · módulo v2 [2026-08] ============ */
+// datos: resultado de GET /liquidacion/v2/reporte-detallado/:id_liquidacion
+// Una página por transportista: detalle de viajes, anticipos, diesel y totales.
+export function imprimirLiquidacionV2(datos, usuarioActual = '') {
+  const estilos = `
+    @page { size: 8.5in 11in; margin: 0.5in; }
+    .transp { page-break-after: always; }
+    .transp:last-child { page-break-after: auto; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 6px; }
+    .tit { font-size: 15px; font-weight: 800; color: #c1121f; }
+    .sub { font-size: 11px; }
+    .meta { font-size: 9px; text-align: left; color: #222; margin: 6px 0 4px; }
+    .tname { font-weight: 800; font-size: 12px; margin: 8px 0 4px; background: #1f3d5c; color: #fff; padding: 3px 6px; }
+    .sec { font-weight: 700; font-size: 10px; margin: 8px 0 2px; color: #1f3d5c; }
+    table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    th { background: #e5e7eb; padding: 2px 5px; text-align: left; }
+    td { padding: 2px 5px; border-bottom: 1px solid #ddd; }
+    .n { text-align: right; }
+    tfoot td { font-weight: 700; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    .tot { margin-top: 10px; margin-left: 0; margin-right: auto; width: 52%; font-size: 10px; border: 1px solid #000; }
+    .tot td { padding: 3px 8px; border-bottom: 1px solid #ccc; }
+    .tot .g { font-weight: 800; background: #f0f0f0; }
+    .neg { color: #c1121f; }
+    .viajes-tot { text-align: right; font-size: 10px; margin-top: 6px; }
+  `;
+  const liq = datos?.liquidacion || {};
+  const usuario = liq.usuario_graba || usuarioActual || '';
+  const dmy = (v) => {
+    if (!v) return '';
+    const p = partesFecha(v);
+    return `${p.dia}/${p.mes}/${p.anio}`;
+  };
+
+  const paginas = (datos?.transportistas || []).map((t) => {
+    const to = t.totales || {};
+    const viajes = (t.viajes || []).map((v) => `<tr>
+      <td>${esc(v.c_porte)}</td><td>${esc(dmy(v.fecha))}</td><td>${esc(v.piloto)}</td>
+      <td>${esc(v.placa)}</td><td>${esc(v.tipo)}</td>
+      <td class="n">${formatNum(v.peso)}</td><td class="n">${q(v.total_pago)}</td>
+      <td>${esc(v.embarque)}</td><td>${esc(v.destino)}</td></tr>`).join('');
+
+    const anticipos = (t.anticipos || []).length ? `
+      <div class="sec">DESCUENTOS DE ANTICIPOS</div>
+      <table><thead><tr><th>N° Anticipo</th><th>Fecha</th><th>Descripción</th><th class="n">Valor</th></tr></thead>
+        <tbody>${t.anticipos.map((a) => `<tr><td>${esc(a.num)}</td><td>${esc(dmy(a.fecha))}</td>
+          <td>${esc(a.descripcion)}</td><td class="n">${q(a.valor)}</td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="3" class="n">Total anticipos</td><td class="n">${q(to.valor_anticipos)}</td></tr></tfoot>
+      </table>` : '';
+
+    const diesel = (t.diesel || []).length ? `
+      <div class="sec">DESCUENTO DE DIESEL</div>
+      <table><thead><tr><th>N° Vale</th><th>Fecha</th><th class="n">Galones</th><th class="n">Precio</th><th class="n">Subtotal</th></tr></thead>
+        <tbody>${t.diesel.map((c) => `<tr><td>${esc(c.num_vale)}</td><td>${esc(dmy(c.fecha))}</td>
+          <td class="n">${formatNum(c.galones)}</td><td class="n">${q(c.precio)}</td>
+          <td class="n">${q(c.total)}</td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="2" class="n">Totales</td><td class="n">${formatNum(to.total_galones)}</td>
+          <td></td><td class="n">${q(to.valor_diesel)}</td></tr></tfoot>
+      </table>` : '';
+
+    return `<div class="transp">
+      <div class="cab">
+        <div style="display:flex;gap:8px;align-items:center">
+          <img src="${logoAbsUrl()}" style="height:38px"/>
+          <div><div class="tit">SETRASA S.A.</div>
+            <div class="sub">Liquidación a Transportistas — ${esc(dmy(liq.fecha_liquidacion))}</div></div>
+        </div>
+        <div class="meta" style="text-align:right">Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>
+          Impreso: ${fechaHoraImpresion()}</div>
+      </div>
+      <div class="meta"><b>Liquidación:</b> ${esc(liq.num_liquidacion)} &nbsp;·&nbsp;
+        <b>Póliza:</b> ${esc(liq.nombre_poliza)}</div>
+      <div class="tname">TRANSPORTISTA: ${esc(t.nombre)} ${t.nit ? `· NIT ${esc(t.nit)}` : ''}</div>
+
+      <table>
+        <thead><tr><th>C. Porte</th><th>Fecha</th><th>Nombre Piloto</th><th>Placa</th><th>Tipo</th>
+          <th class="n">Peso</th><th class="n">Total Pago</th><th>Embarque</th><th>Destino</th></tr></thead>
+        <tbody>${viajes || '<tr><td colspan="9" style="text-align:center;padding:8px">Sin viajes registrados.</td></tr>'}</tbody>
+      </table>
+      ${anticipos}
+      ${diesel}
+
+      <table class="tot">
+        <tr><td>TOTAL A FACTURAR:</td><td class="n">${q(to.total_facturar)}</td></tr>
+        <tr><td>(-) ANTICIPOS</td><td class="n">${q(to.valor_anticipos)}</td></tr>
+        <tr><td>(-) SUMINISTROS (diesel)</td><td class="n">${q(to.suministro || to.valor_diesel)}</td></tr>
+        <tr><td>(-) SALDO NEGATIVO</td><td class="n ${Number(to.sobregiro_anterior) > 0 ? 'neg' : ''}">${q(to.sobregiro_anterior)}</td></tr>
+        <tr class="g"><td>TOTAL A PAGAR:</td><td class="n ${Number(to.total_pagar) < 0 ? 'neg' : ''}">${q(to.total_pagar)}</td></tr>
+      </table>
+      <div class="viajes-tot">TOTAL VIAJES EFECTUADOS: <b>${esc(to.cantidad_viajes)}</b></div>
+    </div>`;
+  }).join('');
+
+  imprimir(`Liquidación ${liq.num_liquidacion || ''}`, estilos,
+    paginas || '<p style="padding:20px;text-align:center">La liquidación no tiene transportistas.</p>');
+}
+
+/* ====== RESUMEN POR LIQUIDACIÓN DE TRANSPORTISTA · módulo v2 [2026-08] ====== */
+// datos: resultado de GET /liquidacion/v2/resumen-transportista
+// INGRESOS: viajes, peso, valor carta de porte / viajes locales.
+// DESCUENTOS: anticipos, diesel, galones, total a facturar.
+export function imprimirResumenLiquidacionTransportista(datos, filtros = {}, usuario = '') {
+  const estilos = `
+    @page { size: 11in 8.5in; margin: 0.45in; }
+    .cab { display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1f3d5c;padding-bottom:6px; }
+    .tit { color:#1f3d5c;font-weight:800;font-size:15px; }
+    .meta { font-size:9px;text-align:right;color:#333; }
+    .filtros { font-size:9px;color:#444;margin-top:7px; }
+    table { width:100%;border-collapse:collapse;margin-top:10px;font-size:8.5px; }
+    th { background:#1f3d5c;color:#fff;padding:4px;text-align:left; }
+    td { padding:3px 4px;border-bottom:1px solid #d1d5db; }
+    .num { text-align:right;white-space:nowrap; }
+    .ing { background:#eef7ee; }
+    .des { background:#fdefee; }
+    tfoot td { font-weight:700;border-top:2px solid #1f3d5c;background:#f3f4f6; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+  `;
+  const t = datos?.totales || {};
+  const filas = (datos?.items || []).map((r) => `<tr>
+    <td>${esc(r.num_liquidacion)}</td>
+    <td>${esc(r.nombre_comercial)}</td>
+    <td>${esc(r.nombre_poliza)}</td>
+    <td class="num ing">${esc(r.cantidad_viajes)}</td>
+    <td class="num ing">${formatNum(r.total_peso)}</td>
+    <td class="num ing">${q(r.valor_carta_porte)}</td>
+    <td class="num ing">${q(r.valor_locales)}</td>
+    <td class="num des">${q(r.valor_anticipos)}</td>
+    <td class="num des">${q(r.valor_diesel)}</td>
+    <td class="num des">${formatNum(r.total_galones)}</td>
+    <td class="num des">${q(r.total_facturar)}</td>
+  </tr>`).join('');
+
+  const rangoFechas = [filtros.fecha_inicio, filtros.fecha_fin].filter(Boolean).join(' al ');
+  const cuerpo = `
+    <div class="cab">
+      <div style="display:flex;gap:8px;align-items:center">
+        <img src="${logoAbsUrl()}" style="height:36px"/>
+        <div class="tit">SETRASA S.A.<br/><span style="font-size:11px">Resumen por Liquidación de Transportista</span></div>
+      </div>
+      <div class="meta">Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>Impreso: ${fechaHoraImpresion()}</div>
+    </div>
+    ${rangoFechas ? `<div class="filtros">Período: ${esc(rangoFechas)}</div>` : ''}
+    <table>
+      <thead>
+        <tr>
+          <th colspan="3"></th>
+          <th colspan="4" style="text-align:center;background:#2f7a37">INGRESOS</th>
+          <th colspan="4" style="text-align:center;background:#a5232f">DESCUENTOS</th>
+        </tr>
+        <tr>
+          <th>Liquidación</th><th>Transportista</th><th>Póliza</th>
+          <th class="num">Viajes</th><th class="num">Total peso</th>
+          <th class="num">Carta de porte</th><th class="num">Viajes locales</th>
+          <th class="num">Anticipos</th><th class="num">Diesel</th>
+          <th class="num">Galones</th><th class="num">Total a facturar</th>
+        </tr>
+      </thead>
+      <tbody>${filas || '<tr><td colspan="11" style="text-align:center;padding:16px">Sin liquidaciones para los filtros indicados.</td></tr>'}</tbody>
+      ${datos?.items?.length ? `<tfoot><tr>
+        <td colspan="3">TOTALES</td>
+        <td class="num">${esc(t.cantidad_viajes)}</td>
+        <td class="num">${formatNum(t.total_peso)}</td>
+        <td class="num">${q(t.valor_carta_porte)}</td>
+        <td class="num">${q(t.valor_locales)}</td>
+        <td class="num">${q(t.valor_anticipos)}</td>
+        <td class="num">${q(t.valor_diesel)}</td>
+        <td class="num">${formatNum(t.total_galones)}</td>
+        <td class="num">${q(t.total_facturar)}</td>
+      </tr></tfoot>` : ''}
+    </table>`;
+  imprimir('Resumen por Liquidación de Transportista', estilos, cuerpo);
+}

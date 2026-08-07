@@ -165,6 +165,13 @@ export const realApi = {
   async liquidacionV2Reporte(params = {}) {
     return unwrap(await axiosClient.get('/liquidacion/v2/reporte-liquidaciones', { params }));
   },
+  // Reportes disponibles desde el Historial de liquidaciones.
+  async liquidacionV2ReporteDetallado(idLiquidacion) {
+    return unwrap(await axiosClient.get(`/liquidacion/v2/reporte-detallado/${idLiquidacion}`));
+  },
+  async liquidacionV2ResumenTransportista(params = {}) {
+    return unwrap(await axiosClient.get('/liquidacion/v2/resumen-transportista', { params }));
+  },
 
   // [v6 §3] Historial (tablas his_*): tipo ∈ det-poliza | val-detalle | anticipo-efectivo.
   async historial(tipo, params = {}) {
