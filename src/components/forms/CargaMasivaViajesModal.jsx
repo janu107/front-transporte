@@ -1,0 +1,233 @@
+/**
+ * CargaMasivaViajesModal.jsx — [V9 §1] CARGA MASIVA DE VIAJES LOCALES.
+ *
+ * Sube un Excel/CSV con 7 columnas por fila, en el orden del proceso legacy:
+ *   1 LICENCIA · 2 TIPCA · 3 PLACA · 4 PUNTO · 5 PESO · 6 FECHA · 7 VALOR
+ * La póliza es la seleccionada en el listado, no viene en el archivo.
+ *
+ * Primero se pide una VISTA PREVIA al servidor (que resuelve licencias, placas
+ * y puntos contra los catálogos) y se muestran las filas listas y las que
+ * tienen problema con su motivo. Al aplicar solo se cargan las correctas.
+ */
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Modal from '../common/Modal';
+import Button from '../common/Button';
+import realApi from '../../api/realApi';
+import { leerExcel, descargarPlantillaViajes } from '../../utils/excel';
+import { formatCurrency, formatDate, formatNumber } from '../../utils/formatters';
+
+const COLUMNAS = ['LICENCIA', 'TIPCA', 'PLACA', 'PUNTO', 'PESO', 'FECHA', 'VALOR'];
+
+/** ¿La primera fila es un encabezado de texto y no datos? */
+function esEncabezado(fila) {
+  if (!fila) return false;
+  const texto = fila.map((c) => String(c ?? '').trim().toUpperCase());
+  return COLUMNAS.some((c) => texto.includes(c));
+}
+
+export default function CargaMasivaViajesModal({ poliza, onClose, onCargado }) {
+  const isOpen = Boolean(poliza);
+  const inputRef = useRef(null);
+  const [archivo, setArchivo] = useState(null);
+  const [filas, setFilas] = useState([]);
+  const [previa, setPrevia] = useState(null);
+  const [leyendo, setLeyendo] = useState(false);
+  const [aplicando, setAplicando] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  const limpiar = useCallback(() => {
+    setArchivo(null); setFilas([]); setPrevia(null); setMessage(null);
+    if (inputRef.current) inputRef.current.value = '';
+  }, []);
+
+  useEffect(() => { if (poliza) limpiar(); }, [poliza, limpiar]);
+
+  const elegirArchivo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setArchivo(file); setPrevia(null); setMessage(null); setLeyendo(true);
+    try {
+      const matriz = await leerExcel(file);
+      const sinEncabezado = esEncabezado(matriz[0]) ? matriz.slice(1) : matriz;
+      const desplazamiento = esEncabezado(matriz[0]) ? 2 : 1;
+
+      const datos = sinEncabezado
+        .map((f, i) => ({
+          __fila: i + desplazamiento,
+          licencia: f[0], tipca: f[1], placa: f[2],
+          punto: f[3], peso: f[4], fecha: f[5], valor: f[6],
+        }))
+        .filter((f) => [f.licencia, f.placa, f.punto, f.peso].some((v) => String(v ?? '').trim() !== ''));
+
+      if (!datos.length) {
+        setMessage({ type: 'error', text: 'El archivo no tiene filas con datos.' });
+        setFilas([]); return;
+      }
+      setFilas(datos);
+      // Vista previa: valida contra los catálogos sin escribir nada.
+      const r = await realApi.viajesCargaMasiva({
+        id_poliza: poliza.codigo, filas: datos, aplicar: false,
+      });
+      setPrevia(r);
+    } catch (err) {
+      setFilas([]);
+      setMessage({
+        type: 'error',
+        text: err?.userMessage || err?.response?.data?.message
+          || 'No se pudo leer el archivo. Verifique que sea un Excel (.xlsx) o CSV válido.',
+      });
+    } finally { setLeyendo(false); }
+  };
+
+  const aplicar = async () => {
+    if (!previa?.validas || aplicando) return;
+    setAplicando(true); setMessage(null);
+    try {
+      const r = await realApi.viajesCargaMasiva({
+        id_poliza: poliza.codigo, filas, aplicar: true,
+      });
+      setPrevia(r);
+      setMessage({
+        type: 'success',
+        text: `Se cargaron ${r.insertados} viaje(s) en la póliza ${r.poliza?.nombre_poliza || ''}.`
+          + (r.con_error ? ` ${r.con_error} fila(s) quedaron fuera por errores.` : ''),
+      });
+      onCargado?.(r);
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err?.userMessage || err?.response?.data?.message || 'No se pudo aplicar la carga.',
+      });
+    } finally { setAplicando(false); }
+  };
+
+  const yaAplicado = Boolean(previa?.aplicado);
+  const puedeAplicar = previa && previa.validas > 0 && !aplicando && !yaAplicado;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      title={poliza ? `Carga masiva de viajes locales — ${poliza.nombre_poliza}` : 'Carga masiva'}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={aplicando}>Salir</Button>
+          <Button variant="primary" icon="💾" onClick={aplicar} disabled={!puedeAplicar}>
+            {aplicando ? 'Cargando...' : previa ? `Aplicar ${previa.validas} viaje(s)` : 'Aplicar'}
+          </Button>
+        </>
+      }
+    >
+      {message && (
+        <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`} style={{ marginTop: 0 }}>
+          {message.text}
+        </div>
+      )}
+
+      <div className="carga-cab">
+        <div>
+          <span className="carga-lbl">Póliza</span>
+          <div className="carga-poliza">{poliza?.nombre_poliza}</div>
+        </div>
+        <div className="carga-acciones">
+          <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" onChange={elegirArchivo}
+            style={{ display: 'none' }} id="archivoCargaViajes" />
+          <Button variant="secondary" icon="📄" onClick={descargarPlantillaViajes}>Plantilla</Button>
+          <Button variant="primary" icon="📂" onClick={() => inputRef.current?.click()} disabled={leyendo || aplicando}>
+            {leyendo ? 'Leyendo...' : 'Carga info.'}
+          </Button>
+        </div>
+      </div>
+
+      <p className="carga-ayuda">
+        El archivo debe tener estas 7 columnas en orden:
+        {' '}<b>{COLUMNAS.join(' · ')}</b>. La fecha en formato DD/MM/AAAA.
+        {archivo && <> · Archivo: <b>{archivo.name}</b></>}
+      </p>
+
+      {previa && (
+        <div className="carga-resumen">
+          <Dato etiqueta="Filas del archivo" valor={formatNumber(previa.total_filas, 0)} />
+          <Dato etiqueta="Listas para cargar" valor={formatNumber(previa.validas, 0)} tono="ok" />
+          <Dato etiqueta="Con error" valor={formatNumber(previa.con_error, 0)} tono={previa.con_error ? 'error' : undefined} />
+          <Dato etiqueta="Peso del archivo" valor={`${formatNumber(previa.peso_archivo)} kg`} />
+          <Dato etiqueta="Saldo de peso al aplicar" valor={`${formatNumber(previa.saldo_peso_despues)} kg`}
+            tono={previa.saldo_peso_despues < 0 ? 'error' : undefined} />
+        </div>
+      )}
+
+      {/* Filas listas para cargar */}
+      {previa?.filas?.length > 0 && (
+        <>
+          <h4 className="carga-sec">Viajes a cargar</h4>
+          <div className="table-wrapper"><div className="table-scroll" style={{ maxHeight: 260 }}>
+            <table className="data-table">
+              <thead><tr>
+                <th>Envío</th><th>Nit transportista</th><th>Placa</th><th>Piloto</th>
+                <th>Cod. embarque</th><th>Fecha</th>
+                <th style={{ textAlign: 'right' }}>Peso neto</th>
+                <th style={{ textAlign: 'right' }}>Valor</th>
+              </tr></thead>
+              <tbody>
+                {previa.filas.map((f) => (
+                  <tr key={f.fila}>
+                    <td>{f.num_envio || <span className="text-muted">(al guardar)</span>}</td>
+                    <td>{f.nit || '—'}<div style={{ fontSize: 11, color: '#6b7280' }}>{f.transportista}</div></td>
+                    <td>{f.placa}</td>
+                    <td>{f.piloto}<div style={{ fontSize: 11, color: '#6b7280' }}>{f.licencia}</div></td>
+                    <td>{f.id_tarifa_embarque}<div style={{ fontSize: 11, color: '#6b7280' }}>{f.embarque}</div></td>
+                    <td>{formatDate(f.fecha)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatNumber(f.peso)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatCurrency(f.valor)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div></div>
+        </>
+      )}
+
+      {/* Filas rechazadas con su motivo */}
+      {previa?.errores?.length > 0 && (
+        <>
+          <h4 className="carga-sec carga-sec--error">
+            Filas con error ({previa.errores.length}) — no se cargarán
+          </h4>
+          <div className="table-wrapper"><div className="table-scroll" style={{ maxHeight: 200 }}>
+            <table className="data-table">
+              <thead><tr>
+                <th>Fila</th><th>Licencia</th><th>Placa</th><th>Punto</th><th>Fecha</th><th>Motivo</th>
+              </tr></thead>
+              <tbody>
+                {previa.errores.map((e) => (
+                  <tr key={e.fila} className="carga-fila-error">
+                    <td>{e.fila}</td><td>{String(e.licencia)}</td><td>{String(e.placa)}</td>
+                    <td>{String(e.punto)}</td><td>{String(e.fecha)}</td>
+                    <td>{e.motivo}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div></div>
+        </>
+      )}
+
+      {!previa && !leyendo && (
+        <p className="carga-vacio">
+          Presione «Carga info.» para elegir el archivo. Se mostrará una vista previa
+          antes de guardar nada.
+        </p>
+      )}
+    </Modal>
+  );
+}
+
+function Dato({ etiqueta, valor, tono }) {
+  return (
+    <div>
+      <div className="carga-lbl">{etiqueta}</div>
+      <div className={`carga-val ${tono ? `carga-val--${tono}` : ''}`}>{valor}</div>
+    </div>
+  );
+}

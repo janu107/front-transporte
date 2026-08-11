@@ -32,6 +32,7 @@ import useModal from '../../hooks/useModal';
 import useAuth from '../../hooks/useAuth';
 import { esSoloLectura } from '../../utils/roles';
 import { imprimirReporteGenerico } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 export function CrudPage({
   title,
@@ -62,13 +63,20 @@ export function CrudPage({
 
   // [v6 §2] Imprime el listado actual (filtrado) con el formato de reporte estándar
   // (logo, usuario/terminal, fecha). Usa las columnas visibles de la tabla.
-  const imprimir = () => {
-    const cols = (columns || []).map((c) => ({
-      label: c.label,
-      get: (row) => (c.print ? c.print(row) : (row[c.key] ?? '')),
-    }));
-    imprimirReporteGenerico(title, cols, filtered, user?.nombre || user?.usuario || '');
-  };
+  const columnasSalida = () => (columns || []).map((c) => ({
+    label: c.label,
+    get: (row) => (c.print ? c.print(row) : (row[c.key] ?? '')),
+  }));
+
+  const imprimir = () => imprimirReporteGenerico(
+    title, columnasSalida(), filtered, user?.nombre || user?.usuario || ''
+  );
+
+  // [V9 §6] Exporta el listado tal como se ve (con la búsqueda aplicada).
+  const exportar = () => exportarExcel(title, columnasSalida(), filtered, {
+    meta: [['Usuario', user?.nombre || user?.usuario || ''], ['Búsqueda', term || ''],
+      ['Registros', filtered.length]],
+  });
 
   const [values, setValues] = useState(emptyRecord);
   const [errors, setErrors] = useState({});
@@ -142,9 +150,14 @@ export function CrudPage({
           <SearchBar value={term} onChange={setTerm} placeholder={searchPlaceholder} />
         </div>
         {printable && (
-          <Button variant="secondary" icon="🖨️" onClick={imprimir} disabled={loading || !filtered.length}>
-            Imprimir
-          </Button>
+          <>
+            <Button variant="secondary" icon="📊" onClick={exportar} disabled={loading || !filtered.length}>
+              Excel
+            </Button>
+            <Button variant="secondary" icon="🖨️" onClick={imprimir} disabled={loading || !filtered.length}>
+              Imprimir
+            </Button>
+          </>
         )}
       </div>
 

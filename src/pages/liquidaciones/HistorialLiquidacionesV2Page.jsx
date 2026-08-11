@@ -10,6 +10,7 @@ import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { imprimirLiquidacionV2, imprimirResumenLiquidacionTransportista } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 // El historial se consulta por LIQUIDACIÓN (número), no por transportista.
 const VACIO = { num_liquidacion: '', estado: '', fecha_inicio: '', fecha_fin: '' };
@@ -62,6 +63,29 @@ export default function HistorialLiquidacionesV2Page() {
     }
   };
 
+  // [V9 §6] Exporta el historial con los filtros aplicados.
+  const exportar = () => {
+    if (!items.length) return;
+    exportarExcel('Historial de Liquidaciones', [
+      { label: 'N° Liquidación', get: (r) => r.num_liquidacion },
+      { label: 'Póliza', get: (r) => r.nombre_poliza },
+      { label: 'Transportista', get: (r) => r.nombre_comercial },
+      { label: 'NIT', get: (r) => r.nit },
+      { label: 'Viajes', get: (r) => Number(r.cantidad_viajes || 0) },
+      { label: 'Diesel', get: (r) => Number(r.valor_diesel || 0) },
+      { label: 'Anticipos', get: (r) => Number(r.valor_anticipos || 0) },
+      { label: 'Total a pagar', get: (r) => Number(r.valor_liquidacion || 0) },
+      { label: 'Fecha', get: (r) => formatDate(r.fecha_liquidacion) },
+      { label: 'Estado', get: (r) => (Number(r.revertida) ? 'REVERTIDA' : 'LIQUIDADO') },
+      { label: 'Motivo reversión', get: (r) => r.motivo_reversion || '' },
+    ], items, {
+      meta: [['Usuario', user?.nombre || user?.usuario || ''],
+        ['N° liquidación', filtros.num_liquidacion || 'Todas'],
+        ['Estado', filtros.estado || 'Todos'],
+        ['Período', [filtros.fecha_inicio, filtros.fecha_fin].filter(Boolean).join(' al ')]],
+    });
+  };
+
   // Resumen por liquidación de transportista, con los filtros aplicados en pantalla.
   const imprimirResumen = async () => {
     setMessage(null); setImprimiendo(true);
@@ -103,6 +127,8 @@ export default function HistorialLiquidacionesV2Page() {
           value={filtros.fecha_fin} onChange={(e) => setField('fecha_fin', e.target.value)} />
         <Button variant="secondary" onClick={() => cargar()}>Aplicar filtros</Button>
         <Button variant="secondary" onClick={() => { setFiltros(VACIO); cargar(VACIO); }}>Limpiar</Button>
+        {/* [V9 §6] Exporta el historial tal como se ve. */}
+        <Button variant="secondary" icon="📊" onClick={exportar} disabled={!items.length}>Excel</Button>
         {/* Reporte de resumen por liquidación de transportista (usa los filtros de arriba). */}
         <Button variant="primary" icon="📊" onClick={imprimirResumen} disabled={imprimiendo || !items.length}>
           {imprimiendo ? 'Generando...' : 'Resumen por transportista'}

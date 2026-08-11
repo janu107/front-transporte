@@ -65,7 +65,7 @@ export const MENU = [
       { label: 'Generación', path: ROUTES.liquidacionGenerar, icon: '🧮' },
       { label: 'Reversión', path: ROUTES.liquidacionRevertir, icon: '↩️', roles: ['ADMIN'] },
       { label: 'Historial', path: ROUTES.liquidacionHistorialV2, icon: '📚' },
-      { label: 'Abonos y Sobregiros', path: ROUTES.liquidacionAbonos, icon: '💳' },
+      { label: 'Sobregiros', path: ROUTES.liquidacionAbonos, icon: '⚠️' },
       { label: 'Reporte', path: ROUTES.liquidacionReporteV2, icon: '📊' },
     ],
   },

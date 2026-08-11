@@ -25,6 +25,7 @@ import SearchBar from './SearchBar';
 import useSearch from '../../hooks/useSearch';
 import realApi from '../../api/realApi';
 import { imprimirReporteGenerico } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 export function ReportPage({
   title, description, recurso, columns, searchFields, hasEstado = false, usuario = '', pageSize = 20, enrich,
@@ -67,13 +68,19 @@ export function ReportPage({
   const paginaActual = Math.min(pagina, totalPaginas);
   const pagina_ = filtradoEstado.slice((paginaActual - 1) * pageSize, paginaActual * pageSize);
 
-  const imprimir = () => {
-    const cols = columns.map((c) => ({
-      label: c.label,
-      get: c.print || ((row) => (c.render ? c.render(row) : (row[c.key] ?? '-'))),
-    }));
-    imprimirReporteGenerico(title, cols, filtradoEstado, usuario);
-  };
+  // Mismas columnas para imprimir y para exportar (una sola fuente).
+  const columnasSalida = () => columns.map((c) => ({
+    label: c.label,
+    get: c.print || ((row) => (c.render ? c.render(row) : (row[c.key] ?? '-'))),
+  }));
+
+  const imprimir = () => imprimirReporteGenerico(title, columnasSalida(), filtradoEstado, usuario);
+
+  // [V9 §6] Exporta lo que está en pantalla (respetando búsqueda y filtro).
+  const exportar = () => exportarExcel(title, columnasSalida(), filtradoEstado, {
+    meta: [['Usuario', usuario], ['Filtro', term || ''], ['Estado', estadoFiltro || 'Todos'],
+      ['Registros', filtradoEstado.length]],
+  });
 
   return (
     <div>
@@ -91,6 +98,9 @@ export function ReportPage({
           </select>
         )}
         <div className="spacer" />
+        <Button variant="secondary" icon="📊" onClick={exportar} disabled={loading || !!error || !filtradoEstado.length}>
+          Exportar Excel
+        </Button>
         <Button variant="secondary" icon="🖨️" onClick={imprimir} disabled={loading || !!error}>Imprimir</Button>
       </div>
 

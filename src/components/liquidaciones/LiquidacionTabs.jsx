@@ -10,7 +10,7 @@ const TABS = [
   { to: ROUTES.liquidacionGenerar, icon: '⚡', label: 'Generar' },
   { to: ROUTES.liquidacionHistorialV2, icon: '📋', label: 'Historial' },
   { to: ROUTES.liquidacionRevertir, icon: '↩️', label: 'Reversión' },
-  { to: ROUTES.liquidacionAbonos, icon: '💳', label: 'Abonos y sobregiros' },
+  { to: ROUTES.liquidacionAbonos, icon: '⚠️', label: 'Sobregiros' },
   { to: ROUTES.liquidacionReporteV2, icon: '📊', label: 'Reporte' },
   { to: ROUTES.liquidacionReporteDoc, icon: '📄', label: 'Reporte de Liquidación' },
 ];

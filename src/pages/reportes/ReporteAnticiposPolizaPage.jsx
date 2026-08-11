@@ -12,6 +12,7 @@ import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { imprimirReporteAnticiposPoliza } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 const MODO_OPTIONS = [
   { value: 'POLIZA', label: 'Por póliza' },
@@ -49,6 +50,27 @@ export default function ReporteAnticiposPolizaPage() {
 
   const arrastre = data && String(data.modo).toUpperCase() === 'ARRASTRE';
 
+  // [V9 §6] Una fila por anticipo, con su transportista.
+  const exportar = () => {
+    const filas = (data?.grupos || []).flatMap((g) => g.anticipos.map((a) => ({ ...a, transportista: g.transportista })));
+    const cols = [
+      { label: 'Transportista', get: (a) => a.transportista },
+      { label: 'Vale', get: (a) => a.num_anticipo },
+      { label: 'Placa', get: (a) => a.placa },
+      { label: 'Fecha', get: (a) => formatDate(a.fecha) },
+      { label: 'Piloto', get: (a) => a.piloto },
+    ];
+    if (arrastre) cols.push({ label: 'Póliza', get: (a) => a.poliza });
+    cols.push({ label: 'Anticipo', get: (a) => Number(a.valor || 0) });
+    cols.push({ label: 'Motivo', get: (a) => a.motivo });
+
+    exportarExcel('Anticipos a Transportistas', cols, filas, {
+      meta: [['Usuario', user?.nombre || user?.usuario || ''],
+        ['Modo', data?.modo], ['Póliza', data?.poliza?.nombre_poliza || 'Todas'],
+        ['Total', data?.total_general]],
+    });
+  };
+
   return (
     <div>
       <PageHeader title="Anticipos a Transportistas" description="Anticipos agrupados por transportista, por póliza o arrastre (todas)." />
@@ -69,7 +91,10 @@ export default function ReporteAnticiposPolizaPage() {
         )}
         <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
         {data && data.grupos.length > 0 && (
-          <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteAnticiposPoliza(data, user?.nombre || user?.usuario || '')}>Imprimir</Button>
+          <>
+            <Button variant="secondary" icon="📊" onClick={exportar}>Exportar Excel</Button>
+            <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteAnticiposPoliza(data, user?.nombre || user?.usuario || '')}>Imprimir</Button>
+          </>
         )}
       </div>
 

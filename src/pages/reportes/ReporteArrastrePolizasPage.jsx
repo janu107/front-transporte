@@ -15,6 +15,7 @@ import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatNumber, formatDate } from '../../utils/formatters';
 import { imprimirReporteArrastre } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 export default function ReporteArrastrePolizasPage() {
   const { user } = useAuth();
@@ -27,15 +28,22 @@ export default function ReporteArrastrePolizasPage() {
 
   useEffect(() => {
     (async () => {
-      const [po, pe] = await Promise.all([
-        realApi.list('polizas').catch(() => []),
-        realApi.list('tarifaEmbarque').catch(() => []),
-      ]);
-      setPolizas(po); setPuntos(pe);
+      setPolizas(await realApi.list('polizas').catch(() => []));
     })();
   }, []);
 
   const setField = (k, v) => setF((p) => ({ ...p, [k]: v }));
+
+  // [V9 §3] Los puntos de embarque se cargan SEGÚN la póliza elegida: antes se
+  // listaba el catálogo completo (cientos de puntos) y era imposible ubicar los
+  // que realmente tuvo la póliza.
+  const elegirPoliza = async (idPoliza) => {
+    setField('poliza_id', idPoliza);
+    setField('punto_embarque_id', '');
+    setPuntos([]);
+    if (!idPoliza) return;
+    setPuntos(await realApi.viajesPuntosPoliza(idPoliza).catch(() => []));
+  };
 
   const polizaOptions = useMemo(
     () => polizas.map((p) => ({ value: p.codigo, label: `${p.nombre_poliza} (${p.estado})` })),
@@ -64,6 +72,28 @@ export default function ReporteArrastrePolizasPage() {
 
   const r = data?.resumen;
 
+  // [V9 §6] Una fila por viaje, con su punto de embarque.
+  const exportar = () => {
+    const filas = (data?.grupos || []).flatMap((g) => g.filas.map((x) => ({ ...x, punto: g.descripcion })));
+    exportarExcel('Arrastre de Pólizas', [
+      { label: 'Punto de embarque', get: (x) => x.punto },
+      { label: 'C. Porte', get: (x) => x.num_envio },
+      { label: 'Fecha', get: (x) => formatDate(x.fecha) },
+      { label: 'Piloto', get: (x) => x.piloto },
+      { label: 'Placa', get: (x) => x.placa },
+      { label: 'Bultos', get: (x) => Number(x.piezas || 0) },
+      { label: 'Saldo bultos', get: (x) => Number(x.saldo_bultos || 0) },
+      { label: 'Peso qq', get: (x) => Number(x.peso_qq || 0) },
+      { label: 'Peso kg', get: (x) => Number(x.peso_kg || 0) },
+      { label: 'Saldo kg', get: (x) => Number(x.saldo_kg || 0) },
+    ], filas, {
+      meta: [['Usuario', user?.nombre || user?.usuario || ''],
+        ['Póliza', data?.poliza?.nombre_poliza],
+        ['Período', [f.fecha_inicio, f.fecha_fin].filter(Boolean).join(' al ')],
+        ['Piezas', data?.totales?.total_piezas], ['Peso kg', data?.totales?.total_peso_kg]],
+    });
+  };
+
   return (
     <div>
       <PageHeader
@@ -75,19 +105,27 @@ export default function ReporteArrastrePolizasPage() {
       <div className="toolbar" style={{ alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 240 }}>
           <SearchableSelect label="Póliza" name="poliza_id" value={f.poliza_id}
-            onChange={(v) => setField('poliza_id', v)} options={polizaOptions} placeholder="Buscar póliza..." required />
+            onChange={elegirPoliza} options={polizaOptions} placeholder="Buscar póliza..." required />
         </div>
         <div style={{ minWidth: 260 }}>
           <SearchableSelect label="Punto de embarque (opcional)" name="punto_embarque_id" value={f.punto_embarque_id}
-            onChange={(v) => setField('punto_embarque_id', v)} options={puntoOptions} placeholder="Todos" />
+            onChange={(v) => setField('punto_embarque_id', v)} options={puntoOptions}
+            disabled={!f.poliza_id}
+            placeholder={!f.poliza_id ? 'Elija primero la póliza'
+              : (puntoOptions.length ? `Todos (${puntoOptions.length})` : 'La póliza no tiene puntos')} />
         </div>
         <Input label="Desde" name="fecha_inicio" type="date" value={f.fecha_inicio} onChange={(e) => setField('fecha_inicio', e.target.value)} />
         <Input label="Hasta" name="fecha_fin" type="date" value={f.fecha_fin} onChange={(e) => setField('fecha_fin', e.target.value)} />
         <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
         {data && (
-          <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteArrastre(data, f, user?.nombre || user?.usuario || '')}>
-            Imprimir
-          </Button>
+          <>
+            <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.grupos?.length}>
+              Exportar Excel
+            </Button>
+            <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteArrastre(data, f, user?.nombre || user?.usuario || '')}>
+              Imprimir
+            </Button>
+          </>
         )}
       </div>
 

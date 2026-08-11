@@ -11,6 +11,7 @@ import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatNumber, formatDate } from '../../utils/formatters';
 import { imprimirReporteGenerico } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 // Etiqueta -> estado real de man_poliza.
 const ESTADOS = [
@@ -41,18 +42,32 @@ export default function ReportePolizasPendientesPage() {
     } finally { setLoading(false); }
   };
 
+  const columnasSalida = (paraExcel = false) => [
+    { label: 'No.', get: (r) => r._no },
+    { label: 'Póliza', get: (r) => r.nombre_poliza },
+    { label: 'Fecha', get: (r) => formatDate(r.fecha) },
+    { label: 'Estado', get: (r) => r.estado },
+    // En Excel los números van sin formato para poder sumarlos en la hoja.
+    { label: 'Peso Kgrs', get: (r) => (paraExcel ? Number(r.peso_total || 0) : formatNumber(r.peso_total, 2)) },
+    { label: 'Bultos', get: (r) => (paraExcel ? Number(r.cantidad_bultos || 0) : formatNumber(r.cantidad_bultos, 0)) },
+    { label: 'Piezas', get: (r) => (paraExcel ? Number(r.cantidad_piezas || 0) : formatNumber(r.cantidad_piezas, 0)) },
+  ];
+  const filasNumeradas = () => (data?.polizas || []).map((p, i) => ({ ...p, _no: i + 1 }));
+
   const imprimir = () => {
     if (!data) return;
-    const filas = data.polizas.map((p, i) => ({ ...p, _no: i + 1 }));
-    const columnas = [
-      { label: 'No.', get: (r) => r._no },
-      { label: 'Póliza', get: (r) => r.nombre_poliza },
-      { label: 'Fecha', get: (r) => formatDate(r.fecha) },
-      { label: 'Peso Kgrs', get: (r) => formatNumber(r.peso_total, 2) },
-      { label: 'Bultos', get: (r) => formatNumber(r.cantidad_bultos, 0) },
-      { label: 'Piezas', get: (r) => formatNumber(r.cantidad_piezas, 0) },
-    ];
-    imprimirReporteGenerico('Reporte de Pólizas Pendientes de Liquidar', columnas, filas, user?.nombre || user?.usuario || '');
+    imprimirReporteGenerico('Reporte de Pólizas Pendientes de Liquidar',
+      columnasSalida(false), filasNumeradas(), user?.nombre || user?.usuario || '');
+  };
+
+  // [V9 §6]
+  const exportar = () => {
+    if (!data) return;
+    exportarExcel('Pólizas Pendientes de Liquidar', columnasSalida(true), filasNumeradas(), {
+      meta: [['Usuario', user?.nombre || user?.usuario || ''],
+        ['Estados', (data.estados || []).join(', ')],
+        ['Pólizas', data.totales?.total_polizas], ['Peso total', data.totales?.total_peso]],
+    });
   };
 
   return (
@@ -70,7 +85,12 @@ export default function ReportePolizasPendientesPage() {
           </label>
         ))}
         <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
-        {data && data.polizas.length > 0 && <Button variant="secondary" icon="🖨️" onClick={imprimir}>Imprimir</Button>}
+        {data && data.polizas.length > 0 && (
+          <>
+            <Button variant="secondary" icon="📊" onClick={exportar}>Exportar Excel</Button>
+            <Button variant="secondary" icon="🖨️" onClick={imprimir}>Imprimir</Button>
+          </>
+        )}
       </div>
 
       {loading ? (

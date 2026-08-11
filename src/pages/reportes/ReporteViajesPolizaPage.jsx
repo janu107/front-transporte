@@ -14,6 +14,7 @@ import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters';
 import { imprimirReporteViajesPoliza } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 export default function ReporteViajesPolizaPage() {
   const { user } = useAuth();
@@ -71,6 +72,26 @@ export default function ReporteViajesPolizaPage() {
     } finally { setLoading(false); }
   };
 
+  // [V9 §6] Una fila por viaje, con el transportista de su grupo.
+  const exportar = () => {
+    const filas = (data?.grupos || []).flatMap((g) => g.filas.map((x) => ({ ...x, transportista: g.transportista })));
+    exportarExcel('Viajes por Póliza', [
+      { label: 'Transportista', get: (x) => x.transportista },
+      { label: 'C. Porte', get: (x) => x.num_envio },
+      { label: 'Fecha', get: (x) => formatDate(x.fecha) },
+      { label: 'Piloto', get: (x) => x.piloto },
+      { label: 'Placa', get: (x) => x.placa },
+      { label: 'Peso qq', get: (x) => Number(x.peso_qq || 0) },
+      { label: 'Peso kg', get: (x) => Number(x.peso_kg || 0) },
+      { label: 'Total pagado', get: (x) => Number(x.valor || 0) },
+      { label: 'Destino', get: (x) => x.destino },
+    ], filas, {
+      meta: [['Usuario', user?.nombre || user?.usuario || ''],
+        ['Póliza', data?.poliza?.nombre_poliza],
+        ['Viajes', data?.totales?.total_viajes], ['Total pagado', data?.totales?.total_pagado]],
+    });
+  };
+
   return (
     <div>
       <PageHeader title="Reporte de Viajes por Póliza" description="Viajes de una póliza, agrupados por transportista." />
@@ -89,9 +110,14 @@ export default function ReporteViajesPolizaPage() {
         </div>
         <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
         {data && (
-          <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteViajesPoliza(data, user?.nombre || user?.usuario || '')}>
-            Imprimir
-          </Button>
+          <>
+            <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.grupos?.length}>
+              Exportar Excel
+            </Button>
+            <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteViajesPoliza(data, user?.nombre || user?.usuario || '')}>
+              Imprimir
+            </Button>
+          </>
         )}
       </div>
 

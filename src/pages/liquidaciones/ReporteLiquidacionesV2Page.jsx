@@ -10,6 +10,7 @@ import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatDate, formatNumber } from '../../utils/formatters';
 import { imprimirReporteLiquidacionesV2 } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 const VACIO = { fecha_inicio: '', fecha_fin: '', id_transportista: '', id_poliza: '', estado: '' };
 
@@ -50,6 +51,29 @@ export default function ReporteLiquidacionesV2Page() {
     imprimirReporteLiquidacionesV2(reporte, filtros, user?.nombre || user?.usuario || '');
   };
 
+  // [V9 §6]
+  const exportar = () => {
+    if (!reporte?.items?.length) return;
+    exportarExcel('Reporte de Liquidaciones', [
+      { label: 'Liquidación', get: (r) => r.num_liquidacion },
+      { label: 'Fecha', get: (r) => formatDate(r.fecha_liquidacion) },
+      { label: 'Transportista', get: (r) => r.nombre_comercial },
+      { label: 'NIT', get: (r) => r.nit },
+      { label: 'Póliza', get: (r) => r.nombre_poliza },
+      { label: 'Viajes', get: (r) => Number(r.cantidad_viajes || 0) },
+      { label: 'Diesel', get: (r) => Number(r.valor_diesel || 0) },
+      { label: 'Anticipos', get: (r) => Number(r.valor_anticipos || 0) },
+      { label: 'Impuesto', get: (r) => Number(r.valor_impuesto || 0) },
+      { label: 'Total a pagar', get: (r) => Number(r.valor_liquidacion || 0) },
+      { label: 'Estado', get: (r) => (Number(r.revertida) ? 'REVERTIDA' : 'LIQUIDADO') },
+    ], reporte.items, {
+      meta: [['Usuario', user?.nombre || user?.usuario || ''],
+        ['Período', [filtros.fecha_inicio, filtros.fecha_fin].filter(Boolean).join(' al ')],
+        ['Total efectivo', reporte.totales?.total_pagar],
+        ['Sobregiros generados', reporte.totales?.sobregiros_generados]],
+    });
+  };
+
   const items = reporte?.items || [];
   return (
     <div>
@@ -73,6 +97,7 @@ export default function ReporteLiquidacionesV2Page() {
           onChange={(e) => setField('estado', e.target.value)} placeholder="Todos"
           options={[{ value: 'LIQUIDADO', label: 'Liquidado' }, { value: 'REVERTIDA', label: 'Revertida' }]} />
         <Button variant="secondary" icon="🔍" onClick={consultar} disabled={loading}>{loading ? 'Consultando...' : 'Consultar'}</Button>
+        <Button variant="secondary" icon="📊" onClick={exportar} disabled={!items.length}>Exportar Excel</Button>
         <Button variant="primary" icon="🖨️" onClick={imprimir} disabled={!items.length}>Exportar PDF</Button>
       </div>
 

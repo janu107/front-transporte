@@ -10,12 +10,15 @@ import { useCallback, useEffect, useState } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Input from '../common/Input';
+import Select from '../common/Select';
 import realApi from '../../api/realApi';
 import { formatCurrency, formatNumber } from '../../utils/formatters';
 
 export default function RetarifarModal({ poliza, onClose }) {
   const isOpen = Boolean(poliza);
   const [tarifas, setTarifas] = useState([]);
+  const [transportistas, setTransportistas] = useState([]);
+  const [idTransportista, setIdTransportista] = useState(''); // vacío = todos
   const [loading, setLoading] = useState(false);
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
@@ -26,14 +29,19 @@ export default function RetarifarModal({ poliza, onClose }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const cargar = useCallback(async (idPoliza, inicio, fin) => {
+  const cargar = useCallback(async (idPoliza, inicio, fin, transportista) => {
     setLoading(true); setError(null); setResult(null);
     setSel(null); setNuevaTarifa('');
     try {
-      setTarifas(await realApi.viajesTarifasPoliza(idPoliza, {
-        fecha_inicio: inicio,
-        fecha_fin: fin,
-      }));
+      const params = { fecha_inicio: inicio, fecha_fin: fin };
+      // [V9 §4] Vacío = todos los transportistas.
+      if (transportista) params.id_transportista = transportista;
+      const [tar, transp] = await Promise.all([
+        realApi.viajesTarifasPoliza(idPoliza, params),
+        realApi.viajesTransportistasPoliza(idPoliza, { fecha_inicio: inicio, fecha_fin: fin }).catch(() => []),
+      ]);
+      setTarifas(tar);
+      setTransportistas(transp);
       setConsultado(true);
     } catch (e) {
       setTarifas([]);
@@ -51,7 +59,8 @@ export default function RetarifarModal({ poliza, onClose }) {
     const hoy = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
     setFechaInicio(inicio);
     setFechaFin(inicio && inicio > hoy ? inicio : hoy);
-    setTarifas([]); setConsultado(false); setSel(null); setNuevaTarifa('');
+    setTarifas([]); setTransportistas([]); setIdTransportista('');
+    setConsultado(false); setSel(null); setNuevaTarifa('');
     setResult(null); setError(null);
   }, [poliza]);
 
@@ -66,6 +75,11 @@ export default function RetarifarModal({ poliza, onClose }) {
     setTarifas([]); setConsultado(false); setSel(null); setResult(null); setError(null);
   };
 
+  const cambiarTransportista = (e) => {
+    setIdTransportista(e.target.value);
+    setTarifas([]); setConsultado(false); setSel(null); setResult(null); setError(null);
+  };
+
   const consultar = () => {
     if (!rangoValido) {
       setError(fechaInicio && fechaFin
@@ -73,7 +87,7 @@ export default function RetarifarModal({ poliza, onClose }) {
         : 'Indique la fecha de inicio y la fecha final.');
       return;
     }
-    cargar(poliza.codigo, fechaInicio, fechaFin);
+    cargar(poliza.codigo, fechaInicio, fechaFin, idTransportista);
   };
 
   const aplicar = async () => {
@@ -85,11 +99,11 @@ export default function RetarifarModal({ poliza, onClose }) {
         nueva_tarifa: nueva,
         fecha_inicio: fechaInicio,
         fecha_fin: fechaFin,
+        id_transportista: idTransportista || null,
       });
-      const actualizadas = await realApi.viajesTarifasPoliza(poliza.codigo, {
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
-      });
+      const params = { fecha_inicio: fechaInicio, fecha_fin: fechaFin };
+      if (idTransportista) params.id_transportista = idTransportista;
+      const actualizadas = await realApi.viajesTarifasPoliza(poliza.codigo, params);
       setTarifas(actualizadas);
       setSel(null); setNuevaTarifa(''); setResult(r);
     } catch (e) {
@@ -135,10 +149,25 @@ export default function RetarifarModal({ poliza, onClose }) {
           value={fechaInicio} onChange={cambiarFecha(setFechaInicio)} />
         <Input label="Fecha final" name="fechaFinRetarifa" type="date" required
           min={fechaInicio || undefined} value={fechaFin} onChange={cambiarFecha(setFechaFin)} />
+        {/* [V9 §4] Permite retarifar solo los envíos de un transportista. */}
+        <Select label="Transportista" name="transportistaRetarifa" value={idTransportista}
+          onChange={cambiarTransportista} placeholder="Todos los transportistas"
+          options={transportistas.map((t) => ({
+            value: t.codigo,
+            label: `${t.nombre_comercial} (${t.num_envios} envío${Number(t.num_envios) === 1 ? '' : 's'})`,
+          }))} />
         <Button variant="secondary" icon="🔍" onClick={consultar} disabled={loading || !rangoValido}>
           {loading ? 'Consultando...' : 'Consultar tarifas'}
         </Button>
       </div>
+
+      {consultado && (
+        <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 10px' }}>
+          Alcance: <b>{idTransportista
+            ? (transportistas.find((t) => String(t.codigo) === String(idTransportista))?.nombre_comercial || 'transportista')
+            : 'todos los transportistas'}</b> de la póliza en el rango indicado.
+        </p>
+      )}
 
       <div className="table-wrapper">
         <div className="table-scroll">

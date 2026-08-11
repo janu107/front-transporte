@@ -14,6 +14,7 @@ import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters';
 import { imprimirReporteDiesel } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 const ESTADO_OPTIONS = [
   { value: 'AMBAS', label: 'Ambas' },
@@ -56,6 +57,29 @@ export default function ReporteArrastreDieselPage() {
 
   const detalleDe = (idFactura) => (data?.detalle || []).filter((d) => d.id_factura === idFactura);
 
+  // [V9 §6] Exportación del arrastre. Sin la columna de precio, igual que el
+  // encabezado en pantalla y en la impresión.
+  const exportar = () => {
+    const porFactura = new Map((data?.facturas || []).map((x) => [x.id_factura, x]));
+    const filas = (data?.detalle || []).map((d) => ({ ...d, fac: porFactura.get(d.id_factura) || {} }));
+    exportarExcel('Arrastre de Diesel', [
+      { label: 'Factura', get: (r) => r.fac.num_factura ?? '' },
+      { label: 'Producto', get: (r) => r.fac.producto ?? '' },
+      { label: 'Vale', get: (r) => r.num_vale },
+      { label: 'Fecha', get: (r) => formatDate(r.fecha_vale) },
+      { label: 'Transportista', get: (r) => r.transportista },
+      { label: 'Placa', get: (r) => r.placa },
+      { label: 'Póliza', get: (r) => r.poliza },
+      { label: 'Estado póliza', get: (r) => r.estado_poliza },
+      { label: 'Galones', get: (r) => Number(r.galones || 0) },
+      { label: 'Valor', get: (r) => Number(r.valor || 0) },
+    ], filas, {
+      meta: [['Usuario', user?.nombre || user?.usuario || ''],
+        ['Estado de póliza', f.estado_poliza],
+        ['Galones', data?.totales?.total_galones], ['Total', data?.totales?.total_valor_general]],
+    });
+  };
+
   return (
     <div>
       <PageHeader title="Arrastre de Diesel" description="Diesel despachado agrupado por factura de compra (por estado de póliza y factura)." />
@@ -72,7 +96,9 @@ export default function ReporteArrastreDieselPage() {
             onChange={(v) => setField('factura', v)} options={facturaOptions} placeholder="Todas las facturas" />
         </div>
         <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
-        {data && <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteDiesel(data, f, user?.nombre || user?.usuario || '')}>Imprimir</Button>}
+        {data && <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.detalle?.length}>Exportar Excel</Button>}
+        {/* El último parámetro oculta la columna Precio en el encabezado de factura. */}
+        {data && <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteDiesel(data, f, user?.nombre || user?.usuario || '', true)}>Imprimir</Button>}
       </div>
 
       {/* Leyenda */}
@@ -97,8 +123,9 @@ export default function ReporteArrastreDieselPage() {
                 <table className="data-table">
                   <thead>
                     <tr style={{ background: '#1f3d5c' }}>
+                      {/* [V9 §2] El precio de compra del galón no se muestra en este reporte. */}
                       <th colSpan={8} style={{ color: '#fff' }}>
-                        Factura {fac.num_factura} · {fac.producto} · comprados {formatNumber(fac.galones_comprados)} · precio {formatCurrency(fac.precio_galon)} · saldo {formatNumber(fac.saldo)} · despachados {formatNumber(fac.galones_despachados)} · total {formatCurrency(fac.total_valor)}
+                        Factura {fac.num_factura} · {fac.producto} · comprados {formatNumber(fac.galones_comprados)} · saldo {formatNumber(fac.saldo)} · despachados {formatNumber(fac.galones_despachados)} · total {formatCurrency(fac.total_valor)}
                       </th>
                     </tr>
                     <tr>

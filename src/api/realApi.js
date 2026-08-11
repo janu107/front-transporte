@@ -105,6 +105,19 @@ export const realApi = {
     return unwrap(await axiosClient.post('/viajes/validar', body));
   },
 
+  // [V9 §1] Carga masiva de viajes locales (aplicar:false = vista previa).
+  async viajesCargaMasiva(body) {
+    return unwrap(await axiosClient.post('/viajes/carga-masiva', body));
+  },
+  // [V9 §3] Puntos de embarque que tuvo una póliza.
+  async viajesPuntosPoliza(idPoliza) {
+    return unwrap(await axiosClient.get(`/viajes/poliza/${idPoliza}/puntos`));
+  },
+  // [V9 §4] Transportistas con envíos en la póliza (para Retarifar).
+  async viajesTransportistasPoliza(idPoliza, params = {}) {
+    return unwrap(await axiosClient.get(`/viajes/poliza/${idPoliza}/transportistas`, { params }));
+  },
+
   // [2026-08 §2] Retarifar: tarifas usadas por la póliza y recálculo masivo del valor.
   async viajesTarifasPoliza(idPoliza, params = {}) {
     return unwrap(await axiosClient.get(`/viajes/poliza/${idPoliza}/tarifas`, { params }));
@@ -152,6 +165,10 @@ export const realApi = {
   },
   async liquidacionV2Revertir(idLiquidacion, motivo) {
     return unwrap(await axiosClient.post(`/liquidacion/v2/revertir/${idLiquidacion}`, { motivo }));
+  },
+  // [V9 §7] Sobregiros por liquidación y transportista (solo consulta).
+  async liquidacionV2SobregirosDetalle() {
+    return unwrap(await axiosClient.get('/liquidacion/v2/sobregiros/detalle'));
   },
   async liquidacionV2Sobregiros() {
     return unwrap(await axiosClient.get('/liquidacion/v2/sobregiros'));

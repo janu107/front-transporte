@@ -39,6 +39,7 @@ export default function DetalleFacturasPage() {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(null);
+  const [editando, setEditando] = useState(null); // [V9 §8] vale en edición
   const [confirmRow, setConfirmRow] = useState(null);
   const [term, setTerm] = useState('');
 
@@ -93,16 +94,35 @@ export default function DetalleFacturasPage() {
   }, [camionSel, pilotos]);
 
   const precio = facturaSel ? Number(facturaSel.precio || 0) : 0;
-  const saldo = facturaSel ? Number(facturaSel.saldo || 0) : 0;
+  // [V9 §8] Al editar, la cantidad que el propio vale ya tiene reservada vuelve a
+  // estar disponible (el servidor hace lo mismo antes de validar), así que se
+  // suma al saldo cuando se mantiene la misma factura.
+  const reservadoPropio = editando && String(editando.id_factura_vale) === String(values.id_factura_vale)
+    ? Number(editando.cantidad || 0) : 0;
+  const saldo = facturaSel ? Number(facturaSel.saldo || 0) + reservadoPropio : 0;
   const cantidad = num(values.cantidad);
   const total = Number((cantidad * precio).toFixed(2));
 
   const setField = (name, value) => { setValues((p) => ({ ...p, [name]: value })); setErrors((p) => ({ ...p, [name]: undefined })); };
   const onChangeCamion = (v) => { setValues((p) => ({ ...p, id_camion: v, id_piloto: '' })); setErrors((p) => ({ ...p, id_camion: undefined, id_piloto: undefined })); };
 
-  const resetFormulario = () => { setValues(EMPTY); setErrors({}); setSaved(null); };
+  const resetFormulario = () => { setValues(EMPTY); setErrors({}); setSaved(null); setEditando(null); };
   const abrirNuevo = () => { resetFormulario(); setMessage(null); setModalOpen(true); };
   const cerrarModal = () => { setModalOpen(false); resetFormulario(); };
+
+  // [V9 §8] Edición de un vale manual ya registrado.
+  const abrirEditar = (row) => {
+    setEditando(row);
+    setValues({
+      id_factura_vale: row.id_factura_vale ?? '',
+      id_poliza: row.id_poliza ?? '',
+      id_camion: row.id_camion ?? '',
+      id_piloto: row.id_piloto ?? '',
+      fecha: row.fecha ? String(row.fecha).slice(0, 10) : '',
+      cantidad: row.cantidad ?? '',
+    });
+    setErrors({}); setSaved(null); setMessage(null); setModalOpen(true);
+  };
 
   const validar = () => {
     const e = {};
@@ -123,11 +143,16 @@ export default function DetalleFacturasPage() {
     setSaving(true); setMessage(null);
     try {
       const payload = { ...values, id_transportista: camionSel ? camionSel.id_transportista : null };
-      const res = await realApi.create('detalleFactura', payload);
+      // Al editar, el servidor reajusta el saldo de la factura (devuelve la
+      // cantidad anterior y descuenta la nueva) dentro de una transacción.
+      const res = editando
+        ? await realApi.update('detalleFactura', editando.correlativo, payload)
+        : await realApi.create('detalleFactura', payload);
       setSaved(res); // [P14 i/j/k] no cierra el modal: se conserva para imprimir / Nuevo
       // refresca facturas para reflejar el saldo descontado
       realApi.list('facturasVales').then(setFacturas).catch(() => {});
       await cargar();
+      if (editando) notify('success', 'Vale actualizado correctamente.');
     } catch (err) {
       notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo guardar el vale.');
     } finally { setSaving(false); }
@@ -206,8 +231,12 @@ export default function DetalleFacturasPage() {
                   <td data-label="Estado"><Badge value={r.estado || 'ACTIVO'} /></td>
                   <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
+                    {/* [V9 §8] Solo los vales manuales activos se pueden editar. */}
                     {String(r.estado).toUpperCase() !== 'ANULADO' && String(r.origen).toUpperCase() === 'M' && (
-                      <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                      <>
+                        <button style={accionBtn} title="Editar vale" aria-label="Editar vale" onClick={() => abrirEditar(r)}>✏️</button>
+                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                      </>
                     )}
                   </td>
                 </tr>
@@ -222,7 +251,7 @@ export default function DetalleFacturasPage() {
         isOpen={modalOpen}
         onClose={cerrarModal}
         size="lg"
-        title="Nuevo vale (detalle de factura)"
+        title={editando ? `Editar vale ${editando.num_vale}` : 'Nuevo vale (detalle de factura)'}
         footer={saved ? (
           <>
             <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
@@ -241,8 +270,15 @@ export default function DetalleFacturasPage() {
             ✅ Vale guardado correctamente. Número asignado: <b>{saved.num_vale}</b>. Puede imprimir o presionar «Nuevo».
           </div>
         )}
+        {editando && !saved && (
+          <div className="alert alert-info" style={{ marginTop: 0, marginBottom: 12 }}>
+            Al guardar se reajusta el saldo de la factura: se devuelve la cantidad
+            anterior ({formatNumber(editando.cantidad)}) y se descuenta la nueva.
+          </div>
+        )}
         <div className="form-grid">
-          <ReadOnly label="Número de vale" value={saved ? saved.num_vale : '(se asigna al guardar)'} />
+          <ReadOnly label="Número de vale"
+            value={editando ? editando.num_vale : (saved ? saved.num_vale : '(se asigna al guardar)')} />
           <SearchableSelect label="Factura / vale (activa)" name="id_factura_vale" required value={values.id_factura_vale}
             onChange={(v) => setField('id_factura_vale', v)} options={facturaOptions} error={errors.id_factura_vale}
             placeholder="Buscar factura (número, saldo)..." />

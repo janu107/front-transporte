@@ -14,6 +14,7 @@ import realApi from '../../api/realApi';
 import useAuth from '../../hooks/useAuth';
 import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters';
 import { imprimirReporteDiesel } from '../../utils/impresionDocs';
+import { exportarExcel } from '../../utils/excel';
 
 const TIPO_OPTIONS = [
   { value: 'TODO', label: 'Todos' },
@@ -68,6 +69,30 @@ export default function ReporteDieselPage() {
 
   const detalleDe = (idFactura) => (data?.detalle || []).filter((d) => d.id_factura === idFactura);
 
+  // [V9 §6] Exporta el detalle de vales con los datos de su factura.
+  const exportar = () => {
+    const porFactura = new Map((data?.facturas || []).map((x) => [x.id_factura, x]));
+    const filas = (data?.detalle || []).map((d) => ({ ...d, fac: porFactura.get(d.id_factura) || {} }));
+    exportarExcel('Reporte de Diesel por Factura', [
+      { label: 'Factura', get: (r) => r.fac.num_factura ?? '' },
+      { label: 'Producto', get: (r) => r.fac.producto ?? '' },
+      { label: 'Precio galón', get: (r) => Number(r.fac.precio_galon || 0) },
+      { label: 'Vale', get: (r) => r.num_vale },
+      { label: 'Fecha', get: (r) => formatDate(r.fecha_vale) },
+      { label: 'Transportista', get: (r) => r.transportista },
+      { label: 'Placa', get: (r) => r.placa },
+      { label: 'Póliza', get: (r) => r.poliza },
+      { label: 'Estado póliza', get: (r) => r.estado_poliza },
+      { label: 'Galones', get: (r) => Number(r.galones || 0) },
+      { label: 'Valor', get: (r) => Number(r.valor || 0) },
+    ], filas, {
+      meta: [['Usuario', user?.nombre || user?.usuario || ''],
+        ['Período', [f.fecha_ini, f.fecha_fin].filter(Boolean).join(' al ')],
+        ['Estado de póliza', f.estado_poliza],
+        ['Galones', data?.totales?.total_galones], ['Total', data?.totales?.total_valor_general]],
+    });
+  };
+
   return (
     <div>
       <PageHeader title="Reporte de Diesel por Factura" description="Vales de combustible agrupados por factura de compra." />
@@ -90,6 +115,7 @@ export default function ReporteDieselPage() {
         <Input label="Desde" name="fecha_ini" type="date" value={f.fecha_ini} onChange={(e) => setField('fecha_ini', e.target.value)} />
         <Input label="Hasta" name="fecha_fin" type="date" value={f.fecha_fin} onChange={(e) => setField('fecha_fin', e.target.value)} />
         <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
+        {data && <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.detalle?.length}>Exportar Excel</Button>}
         {data && <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteDiesel(data, f, user?.nombre || user?.usuario || '')}>Imprimir</Button>}
       </div>
 

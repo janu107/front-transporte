@@ -199,3 +199,32 @@
   .liq-item-head { flex-wrap: wrap; }
   .liq-item-monto { font-size: var(--fs-md); }
 }
+
+/* ============ Carga masiva de viajes locales [V9 §1] ============ */
+.carga-cab {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--space-4); flex-wrap: wrap;
+  padding: var(--space-4); margin-bottom: var(--space-3);
+  background: var(--surface-2); border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+.carga-acciones { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.carga-lbl { font-size: var(--fs-xs); color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.carga-poliza { font-size: var(--fs-lg); font-weight: 700; color: var(--color-azul-oscuro); }
+.carga-val { font-weight: 700; font-size: var(--fs-md); }
+.carga-val--ok { color: #15803d; }
+.carga-val--error { color: var(--brand-red); }
+
+.carga-ayuda { font-size: var(--fs-sm); color: var(--color-text-muted); margin: 0 0 var(--space-4); }
+
+.carga-resumen {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  gap: var(--space-4); margin-bottom: var(--space-4);
+  padding: var(--space-4); background: var(--surface-2);
+  border: 1px solid var(--color-border); border-radius: var(--radius);
+}
+
+.carga-sec { margin: var(--space-5) 0 var(--space-2); font-size: var(--fs-base); font-weight: 700; }
+.carga-sec--error { color: var(--brand-red); }
+.carga-fila-error td { background: #fdf1f1; }
+.carga-vacio { color: var(--color-text-muted); font-size: var(--fs-base); text-align: center; padding: var(--space-7) var(--space-4); margin: 0; }

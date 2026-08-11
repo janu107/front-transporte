@@ -488,7 +488,9 @@ export function imprimirReporteAnticiposPoliza(data, usuario = '') {
 // data: { facturas, detalle, totales }; filtros: { fecha_ini, fecha_fin, ... }; usuario: string
 // [v6 §6] Vertical (carta), agrupado por factura, sombrea los vales de pólizas
 // liquidadas. El filtro de estado de póliza (Activa/Liquidada/Ambas) va en la pantalla.
-export function imprimirReporteDiesel(data, filtros = {}, usuario = '') {
+// [V9 §2] `ocultarPrecio` quita la columna Precio del encabezado de factura
+// (lo usa Arrastre de Diesel; el Reporte de Diesel la sigue mostrando).
+export function imprimirReporteDiesel(data, filtros = {}, usuario = '', ocultarPrecio = false) {
   const estilos = `
     @page { size: 8.5in 11in; margin: 0.5in; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1f3d5c; padding-bottom: 4px; }
@@ -521,10 +523,12 @@ export function imprimirReporteDiesel(data, filtros = {}, usuario = '') {
     return `<div class="grp">
       <table class="fac"><tr>
         <th>Factura</th><th>Producto</th><th>Fecha</th><th class="n">Comprados</th>
-        <th class="n">Precio</th><th class="n">Saldo</th><th>Estado</th><th class="n">Despachados</th><th class="n">Total</th>
+        ${ocultarPrecio ? '' : '<th class="n">Precio</th>'}
+        <th class="n">Saldo</th><th>Estado</th><th class="n">Despachados</th><th class="n">Total</th>
       </tr>
       <tr><td>${esc(f.num_factura)}</td><td>${esc(f.producto)}</td><td>${esc(f.fecha_factura ? String(f.fecha_factura).slice(0, 10) : '')}</td>
-        <td class="n">${Number(f.galones_comprados).toFixed(2)}</td><td class="n">${q(f.precio_galon)}</td>
+        <td class="n">${Number(f.galones_comprados).toFixed(2)}</td>
+        ${ocultarPrecio ? '' : `<td class="n">${q(f.precio_galon)}</td>`}
         <td class="n">${Number(f.saldo).toFixed(2)}</td><td>${esc(f.estado_factura)}</td>
         <td class="n">${Number(f.galones_despachados).toFixed(2)}</td><td class="n">${q(f.total_valor)}</td></tr>
       </table>
@@ -737,21 +741,32 @@ export function imprimirValeCombustible(datos) {
   // [v8 §5] MEDIA CARTA en el ancho de la hoja carta (vertical): las 2 copias
   // (original + duplicado) van lado a lado ocupando la mitad superior; el resto de
   // la hoja queda libre para cortar.
+  // [V9 §9] El bloque de la factura (cantidad, valor y total) baja dentro de la
+  // media hoja: antes quedaba pegado a los datos del piloto y sobraba espacio en
+  // blanco. Ahora la copia se reparte en tres zonas —encabezado, tabla y firmas—
+  // con espaciadores flexibles, y la tabla se ve más holgada.
   const estilos = `
     @page { size: 8.5in 11in; margin: 0.35in; }
     .hoja { display: flex; gap: 0; height: 5.2in; }
-    .vale { width: 50%; height: 5.2in; box-sizing: border-box; overflow: hidden; padding: 8px 12px; border-right: 1px dashed #555; font-size: 11px; }
+    .vale {
+      width: 50%; height: 5.2in; box-sizing: border-box; overflow: hidden;
+      padding: 8px 12px; border-right: 1px dashed #555; font-size: 11px;
+      display: flex; flex-direction: column;
+    }
     .vale:last-child { border-right: none; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; }
     .no { text-align: right; } .no .n { font-size: 15px; font-weight: 800; }
     .valea { font-size: 15px; font-weight: 800; margin: 4px 0; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; margin-top: 4px; }
     .lbl { font-weight: 700; }
-    table.det { width: 100%; border-collapse: collapse; margin-top: 6px; }
-    table.det th, table.det td { border: 1px solid #000; padding: 2px 4px; font-size: 10px; }
+    /* Empuja la tabla hacia la parte baja de la copia. */
+    .empuje { flex: 1 1 auto; min-height: 10px; }
+    table.det { width: 100%; border-collapse: collapse; }
+    table.det th, table.det td { border: 1px solid #000; padding: 5px 6px; font-size: 10.5px; }
     table.det th { background: #f0f0f0; }
-    .tot { text-align: right; font-weight: 800; margin-top: 4px; }
-    .firma { border-top: 1px solid #000; margin-top: 22px; padding-top: 2px; width: 70%; font-size: 10px; }
+    .tot { text-align: right; font-weight: 800; margin-top: 5px; font-size: 11.5px; }
+    .firmas { margin-top: 14px; }
+    .firma { border-top: 1px solid #000; margin-top: 20px; padding-top: 2px; width: 70%; font-size: 10px; }
     .copia { font-size: 9px; color: #444; margin-top: 2px; }
   `;
   const p = partesFecha(datos.fecha);
@@ -773,6 +788,9 @@ export function imprimirValeCombustible(datos) {
       </div>
       <div><span class="lbl">PROPIETARIO:</span> ${esc(datos.transportista)}</div>
       <div><span class="lbl">PILOTO:</span> ${esc(datos.piloto)}</div>
+
+      <div class="empuje"></div>
+
       <table class="det">
         <tr><th>Cant.</th><th>Factura</th><th>Valor</th><th>Total</th></tr>
         <tr>
@@ -783,9 +801,12 @@ export function imprimirValeCombustible(datos) {
         </tr>
       </table>
       <div class="tot">TOTAL Q: ${q(datos.total)}</div>
-      <div class="firma">FIRMA AUT.: SETRASA</div>
-      <div class="firma">RECIBÍ CONFORME:</div>
-      <div class="copia">${etiqueta}</div>
+
+      <div class="firmas">
+        <div class="firma">FIRMA AUT.: SETRASA</div>
+        <div class="firma">RECIBÍ CONFORME:</div>
+        <div class="copia">${etiqueta}</div>
+      </div>
     </div>`;
   imprimir(`Vale de Combustible ${datos.numero || ''}`, estilos, `<div class="hoja">${copias.map(vale).join('')}</div>`);
 }
