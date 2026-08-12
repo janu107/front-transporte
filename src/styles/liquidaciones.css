@@ -200,6 +200,29 @@
   .liq-item-monto { font-size: var(--fs-md); }
 }
 
+/* ============ Retarifar [V9] ============
+   El valor de la nueva tarifa queda pegado al pie del modal, siempre visible
+   aunque la tabla de tarifas sea larga. */
+.retarifa-pie {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin: var(--space-4) calc(-1 * var(--space-6)) calc(-1 * var(--space-6));
+  padding: var(--space-4) var(--space-6);
+  background: var(--surface);
+  border-top: 1px solid var(--color-border);
+}
+.retarifa-pie .retarifa-valor { margin-bottom: 0; min-width: 220px; }
+.retarifa-nota { flex: 1; min-width: 200px; font-size: var(--fs-sm); color: var(--color-text-muted); padding-bottom: 10px; }
+
+@media (max-width: 640px) {
+  .retarifa-pie { margin-left: calc(-1 * var(--space-5)); margin-right: calc(-1 * var(--space-5)); padding: var(--space-4) var(--space-5); }
+}
+
 /* ============ Carga masiva de viajes locales [V9 §1] ============ */
 .carga-cab {
   display: flex; align-items: flex-end; justify-content: space-between;

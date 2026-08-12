@@ -144,21 +144,23 @@ export default function RetarifarModal({ poliza, onClose }) {
         <b> peso × porcentaje de pagos × nueva tarifa</b> y se guarda en el detalle de la póliza.
       </p>
 
+      {/* El botón de consulta va antes del transportista: primero se consulta el
+          rango y luego se afina por transportista sobre lo consultado. */}
       <div className="form-grid" style={{ marginBottom: 14, alignItems: 'flex-end' }}>
         <Input label="Fecha de inicio" name="fechaInicioRetarifa" type="date" required
           value={fechaInicio} onChange={cambiarFecha(setFechaInicio)} />
         <Input label="Fecha final" name="fechaFinRetarifa" type="date" required
           min={fechaInicio || undefined} value={fechaFin} onChange={cambiarFecha(setFechaFin)} />
-        {/* [V9 §4] Permite retarifar solo los envíos de un transportista. */}
+        <Button variant="secondary" icon="🔍" onClick={consultar} disabled={loading || !rangoValido}>
+          {loading ? 'Consultando...' : 'Consultar tarifas'}
+        </Button>
+        {/* Vacío = todos los transportistas de la póliza. */}
         <Select label="Transportista" name="transportistaRetarifa" value={idTransportista}
           onChange={cambiarTransportista} placeholder="Todos los transportistas"
           options={transportistas.map((t) => ({
             value: t.codigo,
             label: `${t.nombre_comercial} (${t.num_envios} envío${Number(t.num_envios) === 1 ? '' : 's'})`,
           }))} />
-        <Button variant="secondary" icon="🔍" onClick={consultar} disabled={loading || !rangoValido}>
-          {loading ? 'Consultando...' : 'Consultar tarifas'}
-        </Button>
       </div>
 
       {consultado && (
@@ -219,7 +221,9 @@ export default function RetarifarModal({ poliza, onClose }) {
         </div>
       </div>
 
-      <div className="form-grid" style={{ marginTop: 14, alignItems: 'flex-end' }}>
+      {/* El valor de la nueva tarifa queda FIJO al pie del modal: antes la tabla
+          lo empujaba fuera de la vista y había que desplazarse para encontrarlo. */}
+      <div className="retarifa-pie">
         <Input
           label="Valor de la nueva tarifa"
           name="nuevaTarifa"
@@ -229,16 +233,16 @@ export default function RetarifarModal({ poliza, onClose }) {
           value={nuevaTarifa}
           onChange={(e) => setNuevaTarifa(e.target.value)}
           placeholder="Ej. 0.85"
+          className="retarifa-valor"
         />
-        {seleccionada && nuevaTarifa !== '' && Number.isFinite(nueva) && (
-          <div className="form-field">
-            <label className="form-label">Vista previa</label>
-            <div style={{ fontSize: 13, color: '#374151', paddingTop: 8 }}>
-              Se recalcularán <b>{formatNumber(seleccionada.num_envios, 0)}</b> envío(s) con la
-              tarifa <b>{seleccionada.id_tarifa_embarque}</b>.
-            </div>
-          </div>
-        )}
+        <div className="retarifa-nota">
+          {seleccionada
+            ? (nuevaTarifa !== '' && Number.isFinite(nueva)
+              ? <>Se recalcularán <b>{formatNumber(seleccionada.num_envios, 0)}</b> envío(s) de la
+                tarifa <b>{seleccionada.id_tarifa_embarque}</b>.</>
+              : <>Tarifa <b>{seleccionada.id_tarifa_embarque}</b> seleccionada: escriba el valor nuevo.</>)
+            : 'Seleccione una tarifa de la tabla para habilitar el cálculo.'}
+        </div>
       </div>
     </Modal>
   );

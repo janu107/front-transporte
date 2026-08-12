@@ -231,12 +231,13 @@ export default function DetalleFacturasPage() {
                   <td data-label="Estado"><Badge value={r.estado || 'ACTIVO'} /></td>
                   <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
-                    {/* [V9 §8] Solo los vales manuales activos se pueden editar. */}
+                    {/* [V9] Cualquier vale vigente se puede corregir; la anulación
+                        sigue reservada a los vales manuales. */}
+                    {String(r.estado).toUpperCase() !== 'ANULADO' && (
+                      <button style={accionBtn} title="Editar vale" aria-label="Editar vale" onClick={() => abrirEditar(r)}>✏️</button>
+                    )}
                     {String(r.estado).toUpperCase() !== 'ANULADO' && String(r.origen).toUpperCase() === 'M' && (
-                      <>
-                        <button style={accionBtn} title="Editar vale" aria-label="Editar vale" onClick={() => abrirEditar(r)}>✏️</button>
-                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
-                      </>
+                      <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                     )}
                   </td>
                 </tr>

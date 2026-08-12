@@ -82,18 +82,24 @@ export async function leerExcel(archivo) {
   return XLSX.utils.sheet_to_json(hoja, { header: 1, blankrows: false, defval: '' });
 }
 
-/** Descarga una plantilla de ejemplo para la carga masiva de viajes locales. */
+/**
+ * Descarga la plantilla de la carga masiva de viajes, con una fila de ejemplo
+ * por cada tipo: C (carta de porte, sin número de envío) y V (viaje local, con
+ * el número que se quiere conservar).
+ */
 export async function descargarPlantillaViajes() {
   const XLSX = await cargarXLSX();
   const datos = [
-    ['LICENCIA', 'TIPCA', 'PLACA', 'PUNTO', 'PESO', 'FECHA', 'VALOR'],
-    ['1234567890101', 'CABEZAL', 'P123ABC', 235, 12500.5, '31/07/2026', 1250.75],
+    ['LICENCIA', 'ENVIO', 'TIPO', 'PLACA', 'PUNTO', 'PESO', 'CANTIDAD_BULTO', 'FECHA', 'VALOR'],
+    ['1234567890101', '', 'C', 'P-123ABC', 235, 12500.5, 15, '31/07/2026', 1250.75],
+    ['1234567890102', '3779761', 'V', 'C-456DEF', 235, 8000, 10, '31/07/2026', 800],
   ];
   const hoja = XLSX.utils.aoa_to_sheet(datos);
-  hoja['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+  hoja['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 10 },
+    { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 12 }];
   const libro = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(libro, hoja, 'Viajes');
-  XLSX.writeFile(libro, 'plantilla-carga-viajes-locales.xlsx');
+  XLSX.writeFile(libro, 'plantilla-carga-viajes.xlsx');
 }
 
 export default { exportarExcel, leerExcel, descargarPlantillaViajes };

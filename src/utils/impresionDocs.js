@@ -16,7 +16,17 @@ const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => (
 ));
 
 function partesFecha(fecha) {
-  const d = fecha ? new Date(fecha) : new Date();
+  let d;
+  if (!fecha) d = new Date();
+  else if (fecha instanceof Date) d = fecha;
+  else {
+    // Una fecha "AAAA-MM-DD" la interpreta el navegador como medianoche UTC y,
+    // al leerla en hora local (Guatemala, GMT-6), retrocede un día. Se arma como
+    // fecha local para que el documento imprima el día correcto.
+    const s = String(fecha);
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(s);
+  }
   if (Number.isNaN(d.getTime())) return { dia: '--', mes: '--', anio: '----', mesNombre: '' };
   return { dia: String(d.getDate()).padStart(2, '0'), mes: String(d.getMonth() + 1).padStart(2, '0'), anio: d.getFullYear(), mesNombre: MESES[d.getMonth()] };
 }
@@ -741,72 +751,127 @@ export function imprimirValeCombustible(datos) {
   // [v8 §5] MEDIA CARTA en el ancho de la hoja carta (vertical): las 2 copias
   // (original + duplicado) van lado a lado ocupando la mitad superior; el resto de
   // la hoja queda libre para cortar.
-  // [V9 §9] El bloque de la factura (cantidad, valor y total) baja dentro de la
-  // media hoja: antes quedaba pegado a los datos del piloto y sobraba espacio en
-  // blanco. Ahora la copia se reparte en tres zonas —encabezado, tabla y firmas—
-  // con espaciadores flexibles, y la tabla se ve más holgada.
+  // [V9] Formato del sistema anterior: número en recuadro, CÓDIGO y UNIDAD
+  // enmarcados con su rótulo encima, DÍA/MES/AÑO en tres casillas, la tabla de
+  // detalle con cuerpo alto y el pie con TOTAL Q, firma y recibí conforme.
   const estilos = `
-    @page { size: 8.5in 11in; margin: 0.35in; }
-    .hoja { display: flex; gap: 0; height: 5.2in; }
+    @page { size: 8.5in 11in; margin: 0.3in; }
+    .hoja { display: flex; gap: 0; height: 5.4in; }
     .vale {
-      width: 50%; height: 5.2in; box-sizing: border-box; overflow: hidden;
-      padding: 8px 12px; border-right: 1px dashed #555; font-size: 11px;
+      width: 50%; height: 5.4in; box-sizing: border-box; overflow: hidden;
+      padding: 6px 10px; border-right: 1px dashed #000; font-size: 10px;
       display: flex; flex-direction: column;
     }
     .vale:last-child { border-right: none; }
-    .cab { display: flex; justify-content: space-between; align-items: flex-start; }
-    .no { text-align: right; } .no .n { font-size: 15px; font-weight: 800; }
-    .valea { font-size: 15px; font-weight: 800; margin: 4px 0; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; margin-top: 4px; }
-    .lbl { font-weight: 700; }
-    /* Empuja la tabla hacia la parte baja de la copia. */
-    .empuje { flex: 1 1 auto; min-height: 10px; }
-    table.det { width: 100%; border-collapse: collapse; }
-    table.det th, table.det td { border: 1px solid #000; padding: 5px 6px; font-size: 10.5px; }
-    table.det th { background: #f0f0f0; }
-    .tot { text-align: right; font-weight: 800; margin-top: 5px; font-size: 11.5px; }
-    .firmas { margin-top: 14px; }
-    .firma { border-top: 1px solid #000; margin-top: 20px; padding-top: 2px; width: 70%; font-size: 10px; }
-    .copia { font-size: 9px; color: #444; margin-top: 2px; }
+
+    /* Encabezado: logo + "No." con el número enmarcado */
+    .cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+    .sum { font-size: 7.5px; text-align: right; letter-spacing: .04em; }
+    .no-linea { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+    .no-lbl { font-size: 16px; font-weight: 700; }
+    .no-caja { border: 1px solid #000; padding: 1px 12px; font-size: 16px; font-weight: 700; font-style: italic; }
+    .impreso { font-size: 6.5px; text-align: right; margin-top: 1px; }
+
+    .valea { font-size: 15px; font-weight: 800; margin: 3px 0 4px; }
+    .valea span { font-weight: 400; }
+
+    /* CÓDIGO / UNIDAD: rótulo centrado sobre una casilla */
+    .campos { display: flex; gap: 14px; }
+    .campo { flex: 1; text-align: center; }
+    .campo .rot { font-size: 9px; font-weight: 700; letter-spacing: .03em; }
+    .campo .caja { border: 1px solid #000; padding: 1px 4px; font-size: 10px; text-align: center; }
+
+    /* DÍA | MES | AÑO + "A CUENTA DE" a la derecha */
+    .fecha-fila { display: flex; align-items: flex-end; gap: 10px; margin-top: 4px; }
+    .fecha-bloque { display: flex; gap: 0; }
+    .fecha-celda { text-align: center; }
+    .fecha-celda .rot { font-size: 9px; font-weight: 700; }
+    .fecha-celda .caja { border: 1px solid #000; padding: 1px 6px; font-size: 10px; }
+    .cuenta { flex: 1; text-align: center; }
+    .cuenta .valor { font-size: 10px; border-bottom: 1px solid #000; padding-bottom: 1px; }
+    .cuenta .rot { font-size: 9px; font-weight: 700; font-style: italic; }
+
+    .dato { margin-top: 3px; font-size: 10px; }
+    .dato b { font-weight: 700; }
+
+    /* Detalle con cuerpo alto, como el formato anterior */
+    table.det { width: 100%; border-collapse: collapse; margin-top: 5px; }
+    table.det th, table.det td { border: 1px solid #000; font-size: 9.5px; padding: 2px 4px; }
+    table.det th { font-style: italic; font-weight: 700; text-align: center; }
+    table.det td.n { text-align: right; }
+    table.det tr.cuerpo td { height: 1.55in; vertical-align: top; }
+
+    /* Pie: copia a la izquierda, TOTAL Q a la derecha */
+    .pie-tot { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+    .copia { font-size: 8px; }
+    .tot-caja { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 11px; }
+    .firma { margin-top: 10px; font-size: 10px; display: flex; align-items: flex-end; gap: 4px; }
+    .firma .linea { flex: 1; border-bottom: 1px solid #000; height: 11px; }
   `;
   const p = partesFecha(datos.fecha);
   const impreso = partesFecha(new Date());
+  const hora = new Date().toLocaleTimeString('es-GT', { hour12: false });
   const copias = ['ORIGINAL CLIENTE', 'DUPLICADO'];
+
   const vale = (etiqueta) => `
     <div class="vale">
       <div class="cab">
-        <img src="${logoAbsUrl()}" alt="SETRASA" style="height:30px" />
-        <div class="no">SUMINISTRO<br/>No. <span class="n">${esc(datos.numero)}</span><br/>
-          <span style="font-size:8px">Impreso: ${impreso.dia}/${impreso.mes}/${impreso.anio} ${new Date().toLocaleTimeString('es-GT', { hour12: false })}</span></div>
+        <img src="${logoAbsUrl()}" alt="SETRASA" style="height:26px" />
+        <div>
+          <div class="sum">SUMINISTRO</div>
+          <div class="no-linea">
+            <span class="no-lbl">No.</span>
+            <span class="no-caja">${esc(datos.numero)}</span>
+          </div>
+          <div class="impreso">Impreso: ${impreso.dia}/${impreso.mes}/${impreso.anio} ${hora}</div>
+        </div>
       </div>
-      <div class="valea">VALE A: ${esc(datos.bomba)}</div>
-      <div class="grid2">
-        <div><span class="lbl">CÓDIGO:</span> ${esc(datos.nitTransportista)}</div>
-        <div><span class="lbl">UNIDAD:</span> ${esc(datos.placa)}</div>
-        <div><span class="lbl">DÍA/MES/AÑO:</span> ${p.dia}/${p.mesNombre}/${p.anio}</div>
-        <div><span class="lbl">A CUENTA DE:</span> ${esc(datos.poliza)}</div>
-      </div>
-      <div><span class="lbl">PROPIETARIO:</span> ${esc(datos.transportista)}</div>
-      <div><span class="lbl">PILOTO:</span> ${esc(datos.piloto)}</div>
 
-      <div class="empuje"></div>
+      <div class="valea">VALE A: <span>${esc(datos.bomba)}</span></div>
+
+      <div class="campos">
+        <div class="campo">
+          <div class="rot">CODIGO</div>
+          <div class="caja">${esc(datos.nitTransportista)}</div>
+        </div>
+        <div class="campo">
+          <div class="rot">UNIDAD</div>
+          <div class="caja">${esc(datos.placa)}</div>
+        </div>
+      </div>
+
+      <div class="fecha-fila">
+        <div class="fecha-bloque">
+          <div class="fecha-celda"><div class="rot">DIA</div><div class="caja">${p.dia}</div></div>
+          <div class="fecha-celda"><div class="rot">MES</div><div class="caja">${p.mesNombre}</div></div>
+          <div class="fecha-celda"><div class="rot">AÑO</div><div class="caja">${p.anio}</div></div>
+        </div>
+        <div class="cuenta">
+          <div class="valor">${esc(datos.poliza)}</div>
+          <div class="rot">A CUENTA DE</div>
+        </div>
+      </div>
+
+      <div class="dato"><b>PROPIETARIO:</b> ${esc(datos.transportista)}</div>
+      <div class="dato"><b>PILOTO:</b> ${esc(datos.piloto)}</div>
 
       <table class="det">
-        <tr><th>Cant.</th><th>Factura</th><th>Valor</th><th>Total</th></tr>
-        <tr>
+        <tr><th style="width:14%">Cant</th><th>Factura.</th><th style="width:20%">Valor.</th><th style="width:22%">Total.</th></tr>
+        <tr class="cuerpo">
           <td>${esc(datos.cantidad)}</td>
           <td>${esc(datos.factura)}</td>
-          <td>${q(datos.valor)}</td>
-          <td>${q(datos.total)}</td>
+          <td class="n">${formatNum(datos.valor)}</td>
+          <td class="n">${formatNum(datos.total)}</td>
         </tr>
       </table>
-      <div class="tot">TOTAL Q: ${q(datos.total)}</div>
 
-      <div class="firmas">
-        <div class="firma">FIRMA AUT.: SETRASA</div>
-        <div class="firma">RECIBÍ CONFORME:</div>
-        <div class="copia">${etiqueta}</div>
+      <div class="pie-tot">
+        <span class="copia">${etiqueta}</span>
+        <span class="tot-caja">TOTAL Q: <span>${formatNum(datos.total)}</span></span>
       </div>
+
+      <div class="firma"><b>FIRMA AUT.:</b> <span class="linea"></span></div>
+      <div class="firma"><b>RECIBI CONFORME:</b> <span class="linea"></span></div>
     </div>`;
   imprimir(`Vale de Combustible ${datos.numero || ''}`, estilos, `<div class="hoja">${copias.map(vale).join('')}</div>`);
 }
