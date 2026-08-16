@@ -41,7 +41,8 @@ export const MODULOS = {
   ubicacionBomba: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
   productos: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
   bombas: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
-  tarifaEmbarque: ['ADMIN', 'OPERA_LIQUIDACION'],
+  // Todos leen las tarifas (el registro de viajes las necesita); solo ADMIN edita.
+  tarifaEmbarque: TODOS,
 
   empresas: ['ADMIN'],
   parametros: ['ADMIN'],

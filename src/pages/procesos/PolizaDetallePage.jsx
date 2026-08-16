@@ -93,18 +93,30 @@ export default function PolizaDetallePage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      // Si un catálogo falla se avisa en pantalla: antes se quedaba vacío en
+      // silencio y el buscador solo decía "Sin resultados", sin explicar por qué.
+      const fallidos = [];
+      const traer = (recurso, nombre) => realApi.list(recurso).catch(() => {
+        fallidos.push(nombre);
+        return [];
+      });
       const [po, ca, tr, pi, ta] = await Promise.all([
-        realApi.list('polizas').catch(() => []),
-        realApi.list('camiones').catch(() => []),
-        realApi.list('transportistas').catch(() => []),
-        realApi.list('pilotos').catch(() => []),
-        realApi.list('tarifaEmbarque').catch(() => []),
+        traer('polizas', 'pólizas'),
+        traer('camiones', 'camiones'),
+        traer('transportistas', 'transportistas'),
+        traer('pilotos', 'pilotos'),
+        traer('tarifaEmbarque', 'tarifas de embarque'),
       ]);
       setPolizas(po); setCamiones(ca); setTransportistas(tr); setPilotos(pi); setTarifas(ta);
+      if (fallidos.length) {
+        notify('error', `No se pudo cargar el catálogo de ${fallidos.join(', ')}. `
+          + 'Vuelva a entrar a la pantalla; si sigue igual, avise al administrador.');
+      }
       await cargarViajes();
       setLoading(false);
     })();
-  }, [cargarViajes]);
+    // `notify` es estable (useCallback sin dependencias); no reejecuta el efecto.
+  }, [cargarViajes, notify]);
 
   // ---- Opciones ----
   const polizaOptions = useMemo(
