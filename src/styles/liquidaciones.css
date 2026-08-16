@@ -251,3 +251,23 @@
 .carga-sec--error { color: var(--brand-red); }
 .carga-fila-error td { background: #fdf1f1; }
 .carga-vacio { color: var(--color-text-muted); font-size: var(--fs-base); text-align: center; padding: var(--space-7) var(--space-4); margin: 0; }
+
+/* ============ Asignación de roles a un usuario ============ */
+.roles-lista { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.rol-item {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.rol-item:hover { border-color: var(--outline); background: var(--surface-2); }
+.rol-item.activo { border-color: var(--brand-red); background: var(--primary-container); }
+.rol-item input { margin-top: 3px; flex-shrink: 0; width: 17px; height: 17px; }
+.rol-item > span { display: flex; flex-direction: column; gap: 2px; }
+
+.rol-nombre { font-weight: 700; font-size: var(--fs-base); color: var(--color-azul-oscuro); }
+.rol-desc { font-size: var(--fs-sm); color: var(--color-text-muted); }
+.rol-ops { font-size: var(--fs-xs); color: var(--color-text-muted); font-style: italic; }

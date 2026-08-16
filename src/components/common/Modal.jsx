@@ -17,21 +17,28 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' })
   const triggerRef = useRef(null);
   const titleId = useRef(`modal-title-${(modalIdSeq += 1)}`);
 
+  // Foco: SOLO al abrir y al cerrar. Depende únicamente de `isOpen`.
+  // Si aquí se incluyera `onClose` (una función que las pantallas recrean en
+  // cada render), el efecto volvería a correr con cada tecla y el focus()
+  // le quitaría el cursor al campo que se está escribiendo.
   useEffect(() => {
     if (!isOpen) return undefined;
     triggerRef.current = document.activeElement;
-    // Enfoca el diálogo al abrir (accesible por teclado desde ya).
     dialogRef.current?.focus();
-
-    const onKey = (e) => e.key === 'Escape' && onClose?.();
-    document.addEventListener('keydown', onKey);
     return () => {
-      document.removeEventListener('keydown', onKey);
       // Devuelve el foco al control que abrió el modal (si sigue en el DOM).
       if (triggerRef.current && document.contains(triggerRef.current)) {
         triggerRef.current.focus();
       }
     };
+  }, [isOpen]);
+
+  // Cierre con Escape: este sí necesita la versión vigente de onClose.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;

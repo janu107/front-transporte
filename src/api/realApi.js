@@ -105,6 +105,14 @@ export const realApi = {
     return unwrap(await axiosClient.post('/viajes/validar', body));
   },
 
+  // Roles por usuario (un renglón por usuario) y asignación de varios a la vez.
+  async usuarioRolPorUsuario() {
+    return unwrap(await axiosClient.get('/usuario-rol/por-usuario'));
+  },
+  async usuarioRolAsignar(idUsuario, roles) {
+    return unwrap(await axiosClient.put(`/usuario-rol/usuario/${idUsuario}`, { roles }));
+  },
+
   // [V9 §1] Carga masiva de viajes locales (aplicar:false = vista previa).
   async viajesCargaMasiva(body) {
     return unwrap(await axiosClient.post('/viajes/carga-masiva', body));

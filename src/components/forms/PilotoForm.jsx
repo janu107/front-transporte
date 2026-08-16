@@ -4,6 +4,7 @@
  */
 import Input from '../common/Input';
 import Select from '../common/Select';
+import SearchableSelect from '../common/SearchableSelect';
 import { ESTADO_OPTIONS_BASICO, TIPO_LICENCIA_OPTIONS } from '../../utils/constants';
 
 export function PilotoForm({ values, setField, errors, transportistaOptions = [] }) {
@@ -13,8 +14,10 @@ export function PilotoForm({ values, setField, errors, transportistaOptions = []
         onChange={(e) => setField('nombres', e.target.value)} required error={errors.nombres} />
       <Input label="Apellidos" name="apellidos" value={values.apellidos}
         onChange={(e) => setField('apellidos', e.target.value)} error={errors.apellidos} />
-      <Select label="Transportista" name="id_transportista" value={values.id_transportista}
-        onChange={(e) => setField('id_transportista', e.target.value)} options={transportistaOptions}
+      {/* Buscable: la lista de transportistas es larga y encontrarlos a mano era lento. */}
+      <SearchableSelect label="Transportista" name="id_transportista" value={values.id_transportista}
+        onChange={(v) => setField('id_transportista', v)} options={transportistaOptions}
+        placeholder="Escriba para buscar transportista..."
         required error={errors.id_transportista} />
       <Input label="Licencia" name="licencia" value={values.licencia}
         onChange={(e) => setField('licencia', e.target.value)} error={errors.licencia} />

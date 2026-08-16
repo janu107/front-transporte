@@ -16,14 +16,14 @@ import { ROUTES } from '../routes/routePaths';
 export function PrivateLayout() {
   const { user } = useAuth();
   const location = useLocation();
-  const permitidas = rutasPermitidas(user?.rol); // null => ADMIN (sin restricción)
+  // Rutas que el rol puede abrir, según la matriz de permisos. El servidor
+  // valida igual; esto solo evita mostrar una pantalla que daría 403.
+  const permitidas = rutasPermitidas(user);
+  const path = location.pathname;
+  const ok = path === ROUTES.dashboard
+    || permitidas.some((p) => path === p || path.startsWith(`${p}/`));
 
-  if (permitidas) {
-    const path = location.pathname;
-    const ok = path === ROUTES.dashboard
-      || permitidas.some((p) => path === p || path.startsWith(`${p}/`));
-    if (!ok) return <Navigate to={ROUTES.dashboard} replace />;
-  }
+  if (!ok) return <Navigate to={ROUTES.dashboard} replace />;
 
   return <AppLayout />;
 }

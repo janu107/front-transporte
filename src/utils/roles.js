@@ -1,40 +1,57 @@
 /**
- * roles.js — [v8] Reglas de visibilidad/acceso por rol (frontend).
- * Debe coincidir con la política del backend (index.routes.js):
- *   ADMIN     -> todo
- *   OPERADOR  -> Principal + Catálogos + Procesos + Liquidaciones
- *   CONSULTOR -> Principal + Catálogos (solo lectura)
+ * roles.js — Visibilidad del menú y de las acciones según el rol.
+ *
+ * Delega en la matriz de permisos (utils/permisos.js), que es el espejo de la
+ * política del servidor. Antes había una lista fija de grupos por rol; con los
+ * roles nuevos (OPERA_VIAJES, OPERA_VALES, OPERA_LIQUIDACION, CONSULTAS) el
+ * permiso se decide submenú por submenú.
  */
 import { MENU } from '../data/menuItems';
+import { puedeVerRuta, moduloDeRuta, esSoloLectura as soloLecturaModulo, puedeEliminar as puedeBorrarModulo, rolesDe } from './permisos';
 
-export const GRUPOS_POR_ROL = {
-  OPERADOR: ['Principal', 'Catálogos', 'Procesos', 'Liquidaciones'],
-  CONSULTOR: ['Principal', 'Catálogos'],
-};
-
-/** Títulos de grupos de menú permitidos para el rol; null = todos (ADMIN). */
-export function gruposPermitidos(rol) {
-  const r = String(rol || '').toUpperCase();
-  return GRUPOS_POR_ROL[r] || null;
+/**
+ * Grupos del menú con al menos un submenú visible para el usuario.
+ * @returns {string[]} títulos de grupo
+ */
+export function gruposPermitidos(user) {
+  return MENU
+    .filter((g) => g.items.some((it) => puedeVerRuta(user, it.path)))
+    .map((g) => g.title);
 }
 
-/** Rutas (paths) permitidas para el rol; null = todas (ADMIN). */
-export function rutasPermitidas(rol) {
-  const rolNormalizado = String(rol || '').toUpperCase();
-  const permitidos = gruposPermitidos(rol);
-  if (!permitidos) return null;
+/** Menú filtrado: solo los grupos e ítems que el usuario puede abrir. */
+export function menuPermitido(user) {
+  return MENU
+    .map((g) => ({ ...g, items: g.items.filter((it) => puedeVerRuta(user, it.path)) }))
+    .filter((g) => g.items.length > 0);
+}
+
+/** Rutas que el usuario puede abrir (para el guard de navegación). */
+export function rutasPermitidas(user) {
   const rutas = [];
-  MENU.forEach((g) => {
-    if (permitidos.includes(g.title)) {
-      g.items
-        .filter((it) => !it.roles || it.roles.includes(rolNormalizado))
-        .forEach((it) => rutas.push(it.path));
-    }
-  });
+  MENU.forEach((g) => g.items.forEach((it) => {
+    if (puedeVerRuta(user, it.path)) rutas.push(it.path);
+  }));
   return rutas;
 }
 
-/** True si el rol es de solo consulta (no puede crear/editar/eliminar). */
-export function esSoloLectura(rol) {
-  return String(rol || '').toUpperCase() === 'CONSULTOR';
+/** ¿La ruta actual es accesible para el usuario? */
+export function puedeAbrir(user, ruta) {
+  const modulo = moduloDeRuta(ruta);
+  return modulo ? puedeVerRuta(user, ruta) || puedeVerRuta(user, ruta.split('/').slice(0, 3).join('/')) : false;
 }
+
+/**
+ * ¿El usuario solo puede consultar en el módulo de esta ruta?
+ * Se usa para ocultar los botones de crear / editar / eliminar.
+ */
+export function esSoloLectura(user, ruta) {
+  return soloLecturaModulo(user, ruta ? moduloDeRuta(ruta) : null);
+}
+
+/** ¿Puede eliminar en el módulo de esta ruta? (solo ADMIN) */
+export function puedeEliminar(user, ruta) {
+  return puedeBorrarModulo(user, ruta ? moduloDeRuta(ruta) : null);
+}
+
+export { rolesDe };

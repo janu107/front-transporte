@@ -19,6 +19,7 @@
  *  - canDelete(row): habilita/inhabilita borrado por fila (opcional)
  */
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import PageHeader from '../layout/PageHeader';
 import SearchBar from './SearchBar';
 import DataTable from './DataTable';
@@ -30,7 +31,7 @@ import useCrudMock from '../../hooks/useCrudMock';
 import useSearch from '../../hooks/useSearch';
 import useModal from '../../hooks/useModal';
 import useAuth from '../../hooks/useAuth';
-import { esSoloLectura } from '../../utils/roles';
+import { esSoloLectura, puedeEliminar } from '../../utils/roles';
 import { imprimirReporteGenerico } from '../../utils/impresionDocs';
 import { exportarExcel } from '../../utils/excel';
 
@@ -56,8 +57,11 @@ export function CrudPage({
   const { items, loading, message, create, update, remove, patchEstado } = useCrudMock(recurso);
   const { term, setTerm, filtered } = useSearch(items, searchFields);
   const { user } = useAuth();
-  // [v8] CONSULTOR: solo lectura (sin crear/editar/eliminar). Puede imprimir.
-  const readonly = esSoloLectura(user?.rol);
+  const location = useLocation();
+  // Permisos del módulo de esta pantalla: quien solo consulta no ve los botones
+  // de crear/editar, y solo ADMIN ve el de eliminar. Igual lo valida el servidor.
+  const readonly = esSoloLectura(user, location.pathname);
+  const conBorrado = puedeEliminar(user, location.pathname);
   const modal = useModal();
   const confirm = useModal();
 
@@ -170,7 +174,8 @@ export function CrudPage({
           <RowActions
             extra={extraActions ? extraActions(row) : undefined}
             onEdit={() => openEdit(row)}
-            onDelete={() => confirm.open(row)}
+            // Eliminar/anular solo para quien tiene ese permiso (ADMIN).
+            onDelete={conBorrado ? () => confirm.open(row) : undefined}
             deleteIcon={deleteMode === 'anular' ? '🚫' : '🗑️'}
             deleteTitle={deleteMode === 'anular' ? 'Anular' : 'Eliminar'}
           />

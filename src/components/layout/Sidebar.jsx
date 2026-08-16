@@ -6,10 +6,9 @@
  */
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { MENU } from '../../data/menuItems';
 import { APP_NAME } from '../../utils/constants';
 import useAuth from '../../hooks/useAuth';
-import { gruposPermitidos } from '../../utils/roles';
+import { menuPermitido } from '../../utils/roles';
 import Logo from '../common/Logo';
 
 const tituloBtn = {
@@ -19,10 +18,9 @@ const tituloBtn = {
 
 export function Sidebar({ open, onNavigate }) {
   const { user } = useAuth();
-  const rol = String(user?.rol || '').toUpperCase();
-  // [v8 §8] Grupos visibles según el rol (ADMIN ve todo).
-  const permitidos = gruposPermitidos(user?.rol); // null => ADMIN / sin restricción
-  const grupos = permitidos ? MENU.filter((g) => permitidos.includes(g.title)) : MENU;
+  // Menú filtrado por la matriz de permisos: se ocultan los submenús que el rol
+  // no puede abrir y los grupos que quedan sin opciones.
+  const grupos = menuPermitido(user);
 
   // Conjunto de grupos contraídos (por título). Por defecto todos expandidos.
   const [colapsados, setColapsados] = useState(() => new Set());
@@ -45,8 +43,7 @@ export function Sidebar({ open, onNavigate }) {
 
       <nav className="sidebar-nav">
         {grupos.map((group) => {
-          const items = group.items.filter((item) => !item.roles || item.roles.includes(rol));
-          if (!items.length) return null;
+          const items = group.items; // ya vienen filtrados por permisos
           const colapsado = colapsados.has(group.title);
           return (
             <div key={group.title} className="nav-group">
