@@ -57,7 +57,8 @@ export const MODULOS = {
   detalleFacturas: ['ADMIN', 'OPERA_VALES', 'CONSULTAS'],
 
   liquidacionGeneracion: ['ADMIN', 'OPERA_LIQUIDACION'],
-  liquidacionReversion: ['ADMIN', 'OPERA_LIQUIDACION'],
+  // La reversión de liquidaciones es exclusiva de ADMIN.
+  liquidacionReversion: ['ADMIN'],
   liquidacionHistorial: ['ADMIN', 'OPERA_LIQUIDACION'],
   liquidacionSobregiros: ['ADMIN', 'OPERA_LIQUIDACION'],
 
@@ -127,6 +128,35 @@ export const MODULO_POR_RUTA = {
   [ROUTES.historial]: 'historial',
 };
 
+/**
+ * Restricciones extra para los roles NO administradores (espejo del backend).
+ *   registrar -> consultan y dan de alta, pero no modifican ni anulan: en la
+ *                lista solo les queda «imprimir».
+ *   consultar -> solo lectura, sin acciones sobre los registros.
+ */
+export const RESTRICCION_NO_ADMIN = {
+  detallePolizas: 'registrar',
+  anticipos: 'registrar',
+  detalleFacturas: 'registrar',
+  polizas: 'consultar',
+  tarifaEmbarque: 'consultar',
+};
+
+const OPS_RESTRINGIDAS = {
+  registrar: ['SELECT', 'INSERT'],
+  consultar: ['SELECT'],
+};
+
+/** Operaciones efectivas de un rol dentro de un módulo. */
+function operacionesEn(rol, modulo) {
+  const base = OPERACIONES_POR_ROL[rol] || [];
+  if (rol === 'ADMIN') return base;
+  const restriccion = RESTRICCION_NO_ADMIN[modulo];
+  if (!restriccion) return base;
+  const permitidas = OPS_RESTRINGIDAS[restriccion] || [];
+  return base.filter((op) => permitidas.includes(op));
+}
+
 /** Roles del usuario, en mayúsculas (acepta `roles` o el `rol` único). */
 export function rolesDe(user) {
   if (!user) return [];
@@ -147,8 +177,13 @@ export function puedeOperar(user, modulo, operacion) {
   if (!permitidos) return false;
   const op = String(operacion || 'SELECT').toUpperCase();
   return rolesDe(user).some(
-    (r) => permitidos.includes(r) && (OPERACIONES_POR_ROL[r] || []).includes(op)
+    (r) => permitidos.includes(r) && operacionesEn(r, modulo).includes(op)
   );
+}
+
+/** ¿Es ADMIN? (control total: editar, anular y eliminar en cualquier módulo) */
+export function esAdmin(user) {
+  return rolesDe(user).includes('ADMIN');
 }
 
 /** ¿Puede abrir esta ruta del menú? */

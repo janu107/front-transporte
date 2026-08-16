@@ -16,7 +16,9 @@ import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TablePager from '../../components/common/TablePager';
 import usePagination from '../../hooks/usePagination';
+import useAuth from '../../hooks/useAuth';
 import realApi from '../../api/realApi';
+import { esAdmin } from '../../utils/roles';
 import { lookup, formatDate, formatNumber, formatCurrency } from '../../utils/formatters';
 import { imprimirValeCombustible } from '../../utils/impresionDocs';
 
@@ -24,6 +26,9 @@ const EMPTY = { id_factura_vale: '', id_poliza: '', id_camion: '', id_piloto: ''
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 export default function DetalleFacturasPage() {
+  const { user } = useAuth();
+  // Solo ADMIN edita o anula vales; los demás roles registran e imprimen.
+  const admin = esAdmin(user);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -231,12 +236,12 @@ export default function DetalleFacturasPage() {
                   <td data-label="Estado"><Badge value={r.estado || 'ACTIVO'} /></td>
                   <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
-                    {/* [V9] Cualquier vale vigente se puede corregir; la anulación
-                        sigue reservada a los vales manuales. */}
-                    {String(r.estado).toUpperCase() !== 'ANULADO' && (
+                    {/* Editar y anular: solo ADMIN. La anulación además sigue
+                        reservada a los vales manuales. */}
+                    {admin && String(r.estado).toUpperCase() !== 'ANULADO' && (
                       <button style={accionBtn} title="Editar vale" aria-label="Editar vale" onClick={() => abrirEditar(r)}>✏️</button>
                     )}
-                    {String(r.estado).toUpperCase() !== 'ANULADO' && String(r.origen).toUpperCase() === 'M' && (
+                    {admin && String(r.estado).toUpperCase() !== 'ANULADO' && String(r.origen).toUpperCase() === 'M' && (
                       <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                     )}
                   </td>

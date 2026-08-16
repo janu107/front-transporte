@@ -11,10 +11,15 @@ import RetarifarModal from '../../components/forms/RetarifarModal';
 import CargaMasivaViajesModal from '../../components/forms/CargaMasivaViajesModal';
 import Badge from '../../components/common/Badge';
 import useRelated, { toOptions } from '../../hooks/useRelated';
+import useAuth from '../../hooks/useAuth';
+import { esAdmin } from '../../utils/roles';
 import { lookup, formatDate, formatNumber } from '../../utils/formatters';
 import { validateForm, required } from '../../utils/validators';
 
 export default function PolizasPage() {
+  const { user } = useAuth();
+  // Solo ADMIN edita o anula pólizas; los demás roles solo hacen carga masiva.
+  const admin = esAdmin(user);
   const { empresas = [], productos = [] } = useRelated({ empresas: 'empresas', productos: 'productos' });
   const empresaOptions = toOptions(empresas, { value: 'codigo', label: 'nombre' });
   const productoOptions = toOptions(productos);
@@ -64,16 +69,19 @@ export default function PolizasPage() {
         renderForm={(props) => <PolizaForm {...props} empresaOptions={empresaOptions} productoOptions={productoOptions} />}
         extraActions={(row) => (
           <>
-            {/* [V9 §1] Carga masiva de viajes locales desde Excel. */}
+            {/* La carga masiva de viajes queda para todos los roles. */}
             <button type="button" className="icon-btn" title="Carga masiva de viajes locales"
               aria-label="Carga masiva de viajes locales"
               onClick={() => setCargaRow(row)}>
               📂
             </button>
-            <button type="button" className="icon-btn" title="Retarifar (recalcular valores de envíos)"
-              aria-label="Retarifar" onClick={() => setRetarifarRow(row)}>
-              🏷️
-            </button>
+            {/* Retarifar cambia importes ya registrados: exclusivo de ADMIN. */}
+            {admin && (
+              <button type="button" className="icon-btn" title="Retarifar (recalcular valores de envíos)"
+                aria-label="Retarifar" onClick={() => setRetarifarRow(row)}>
+                🏷️
+              </button>
+            )}
           </>
         )}
       />

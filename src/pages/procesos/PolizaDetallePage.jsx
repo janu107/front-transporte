@@ -24,7 +24,9 @@ import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TablePager from '../../components/common/TablePager';
 import usePagination from '../../hooks/usePagination';
+import useAuth from '../../hooks/useAuth';
 import realApi from '../../api/realApi';
+import { esAdmin } from '../../utils/roles';
 import { lookup, formatDate, formatNumber, formatCurrency } from '../../utils/formatters';
 import { TIPO_VIAJE_OPTIONS } from '../../utils/constants';
 import { imprimirCartaPorte } from '../../utils/impresionDocs';
@@ -38,6 +40,9 @@ const EMPTY = {
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
 export default function PolizaDetallePage() {
+  const { user } = useAuth();
+  // Solo ADMIN puede editar o anular viajes; los demás roles registran e imprimen.
+  const admin = esAdmin(user);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -439,10 +444,15 @@ export default function PolizaDetallePage() {
                     <td data-label="Estado"><Badge value={r.estado} /></td>
                     <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button style={accionBtn} title="Imprimir Carta de Porte" aria-label="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}>🖨️</button>
-                      <button style={accionBtn} title="Editar peso (recalcula el valor)" aria-label="Editar peso" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
-                      <button style={accionBtn} title="Editar viaje" aria-label="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
-                      {String(r.estado).toUpperCase() !== 'ANULADO' && (
-                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                      {/* Editar peso, editar y anular: exclusivo de ADMIN. */}
+                      {admin && (
+                        <>
+                          <button style={accionBtn} title="Editar peso (recalcula el valor)" aria-label="Editar peso" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
+                          <button style={accionBtn} title="Editar viaje" aria-label="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
+                          {String(r.estado).toUpperCase() !== 'ANULADO' && (
+                            <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                          )}
+                        </>
                       )}
                     </td>
                   </tr>

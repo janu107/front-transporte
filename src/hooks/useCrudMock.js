@@ -19,10 +19,15 @@ export function useCrudMock(recurso) {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null); // { type: 'success'|'error', text }
 
+  // Los avisos de éxito se ocultan solos; los ERRORES no, para que dé tiempo de
+  // leerlos (antes desaparecían en 3.5 s y el usuario no alcanzaba a verlos).
   const notify = useCallback((type, text) => {
     setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3500);
+    if (type !== 'error') setTimeout(() => setMessage(null), 3500);
   }, []);
+
+  /** Limpia el aviso actual (p. ej. al abrir un formulario). */
+  const clearMessage = useCallback(() => setMessage(null), []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -124,7 +129,10 @@ export function useCrudMock(recurso) {
     [recurso, notify]
   );
 
-  return { items, loading, message, load, create, update, remove, patchEstado, changePassword, notify };
+  return {
+    items, loading, message, load, create, update, remove,
+    patchEstado, changePassword, notify, clearMessage,
+  };
 }
 
 export default useCrudMock;

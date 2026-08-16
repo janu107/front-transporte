@@ -55,3 +55,4 @@ export function puedeEliminar(user, ruta) {
 }
 
 export { rolesDe };
+export { esAdmin } from './permisos';

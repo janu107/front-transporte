@@ -21,7 +21,7 @@ import { validateForm, required, email } from '../../utils/validators';
 const EMPTY = { usuario: '', nombre: '', correo: '', puesto: '', fecha_inicio: '', estado: 'ACTIVO', contrasena: '' };
 
 export default function UsuariosPage() {
-  const { items, loading, message, create, update, patchEstado, changePassword } = useCrudMock('usuarios');
+  const { items, loading, message, create, update, patchEstado, changePassword, clearMessage } = useCrudMock('usuarios');
   const { term, setTerm, filtered } = useSearch(items, ['usuario', 'nombre', 'correo', 'puesto']);
   const modal = useModal();
   const pwdModal = useModal();
@@ -38,8 +38,8 @@ export default function UsuariosPage() {
     setErrors((p) => ({ ...p, [name]: undefined }));
   };
 
-  const openNew = () => { setValues(EMPTY); setErrors({}); modal.open(null); };
-  const openEdit = (row) => { setValues({ ...EMPTY, ...row, contrasena: '' }); setErrors({}); modal.open(row); };
+  const openNew = () => { setValues(EMPTY); setErrors({}); clearMessage(); modal.open(null); };
+  const openEdit = (row) => { setValues({ ...EMPTY, ...row, contrasena: '' }); setErrors({}); clearMessage(); modal.open(row); };
 
   const handleSave = async () => {
     const rules = {
@@ -135,6 +135,11 @@ export default function UsuariosPage() {
           </>
         }
       >
+        {/* El error se muestra DENTRO del modal: si va en la página queda
+            detrás del diálogo y el usuario no ve por qué no se guardó. */}
+        {message?.type === 'error' && (
+          <div className="alert alert-error" style={{ marginTop: 0 }}>{message.text}</div>
+        )}
         <UsuarioForm values={values} setField={setField} errors={errors} isEdit={isEdit} />
       </Modal>
 

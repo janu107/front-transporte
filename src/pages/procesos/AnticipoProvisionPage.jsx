@@ -16,7 +16,9 @@ import SearchBar from '../../components/common/SearchBar';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TablePager from '../../components/common/TablePager';
 import usePagination from '../../hooks/usePagination';
+import useAuth from '../../hooks/useAuth';
 import realApi from '../../api/realApi';
+import { esAdmin } from '../../utils/roles';
 import { toOptions } from '../../hooks/useRelated';
 import { lookup, formatDate, formatCurrency } from '../../utils/formatters';
 import { imprimirValeAnticipo } from '../../utils/impresionDocs';
@@ -28,6 +30,9 @@ const EMPTY = {
 const ESTADO_OPTIONS = [{ value: 'ACTIVO', label: 'ACTIVO' }, { value: 'ANULADO', label: 'ANULADO' }];
 
 export default function AnticipoProvisionPage() {
+  const { user } = useAuth();
+  // Solo ADMIN edita o anula anticipos; los demás roles registran e imprimen.
+  const admin = esAdmin(user);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -253,9 +258,14 @@ export default function AnticipoProvisionPage() {
                     <td data-label="Estado"><Badge value={r.estado} /></td>
                     <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
-                      <button style={accionBtn} title="Editar" aria-label="Editar" onClick={() => abrirEditar(r)}>✏️</button>
-                      {String(r.estado).toUpperCase() !== 'ANULADO' && (
-                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                      {/* Editar y anular: exclusivo de ADMIN. */}
+                      {admin && (
+                        <>
+                          <button style={accionBtn} title="Editar" aria-label="Editar" onClick={() => abrirEditar(r)}>✏️</button>
+                          {String(r.estado).toUpperCase() !== 'ANULADO' && (
+                            <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                          )}
+                        </>
                       )}
                     </td>
                   </tr>

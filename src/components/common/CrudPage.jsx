@@ -54,7 +54,7 @@ export function CrudPage({
   printable = true,
   extraActions, // (row) => JSX: acciones adicionales por fila (antes de editar/eliminar)
 }) {
-  const { items, loading, message, create, update, remove, patchEstado } = useCrudMock(recurso);
+  const { items, loading, message, create, update, remove, patchEstado, clearMessage } = useCrudMock(recurso);
   const { term, setTerm, filtered } = useSearch(items, searchFields);
   const { user } = useAuth();
   const location = useLocation();
@@ -96,12 +96,14 @@ export function CrudPage({
   const openNew = () => {
     setValues(emptyRecord);
     setErrors({});
+    clearMessage();
     modal.open(null);
   };
 
   const openEdit = (row) => {
     setValues({ ...emptyRecord, ...row });
     setErrors({});
+    clearMessage();
     modal.open(row);
   };
 
@@ -170,10 +172,12 @@ export function CrudPage({
         data={filtered}
         loading={loading}
         idField={idField}
-        renderActions={readonly ? undefined : (row) => (
+        // La columna se muestra si el rol puede editar o si la pantalla aporta
+        // acciones propias (p. ej. la carga masiva de Pólizas, permitida a todos).
+        renderActions={(readonly && !extraActions) ? undefined : (row) => (
           <RowActions
             extra={extraActions ? extraActions(row) : undefined}
-            onEdit={() => openEdit(row)}
+            onEdit={readonly ? undefined : () => openEdit(row)}
             // Eliminar/anular solo para quien tiene ese permiso (ADMIN).
             onDelete={conBorrado ? () => confirm.open(row) : undefined}
             deleteIcon={deleteMode === 'anular' ? '🚫' : '🗑️'}
@@ -198,6 +202,11 @@ export function CrudPage({
           </>
         }
       >
+        {/* El error va DENTRO del modal: en la página quedaría detrás del
+            diálogo y no se vería por qué no se guardó. */}
+        {message?.type === 'error' && (
+          <div className="alert alert-error" style={{ marginTop: 0 }}>{message.text}</div>
+        )}
         {renderForm({ values, setField, errors, isEdit })}
       </Modal>
 
