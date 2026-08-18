@@ -350,6 +350,10 @@ export function imprimirReporteArrastre(data, filtros = {}, usuario = '') {
     tfoot td { font-weight: 700; }
   `;
   const r = data.resumen || {};
+  // El período se toma del rango que devolvió el servidor; los filtros del
+  // formulario pueden venir vacíos porque las fechas ya son opcionales.
+  const ini = data.rango?.fecha_inicio || filtros.fecha_inicio || '';
+  const fin = data.rango?.fecha_fin || filtros.fecha_fin || '';
   const gruposHtml = (data.grupos || []).map((g) => `
     <div class="grp-tit">${esc(g.descripcion)}</div>
     <table>
@@ -373,7 +377,7 @@ export function imprimirReporteArrastre(data, filtros = {}, usuario = '') {
       <div class="meta">
         Póliza: ${esc(data.poliza?.nombre_poliza)} (${esc(data.poliza?.estado)})<br/>
         ${data.punto_embarque ? `Punto: ${esc(data.punto_embarque.descripcion)}<br/>` : ''}
-        Del ${esc(filtros.fecha_inicio || '')} al ${esc(filtros.fecha_fin || '')}<br/>
+        Del ${esc(ini)} al ${esc(fin)}${data.rango?.automatico ? ' (todo el historial)' : ''}<br/>
         Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>Impreso: ${fechaHoraImpresion()}
       </div>
     </div>

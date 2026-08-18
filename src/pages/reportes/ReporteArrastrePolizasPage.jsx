@@ -57,11 +57,16 @@ export default function ReporteArrastrePolizasPage() {
   const generar = async () => {
     setMessage(null);
     if (!f.poliza_id) { setMessage({ type: 'error', text: 'Debe seleccionar una póliza.' }); return; }
-    if (!f.fecha_inicio || !f.fecha_fin) { setMessage({ type: 'error', text: 'Las fechas inicial y final son obligatorias.' }); return; }
-    if (f.fecha_inicio > f.fecha_fin) { setMessage({ type: 'error', text: 'La fecha inicial no puede ser posterior a la final.' }); return; }
+    if (f.fecha_inicio && f.fecha_fin && f.fecha_inicio > f.fecha_fin) {
+      setMessage({ type: 'error', text: 'La fecha inicial no puede ser posterior a la final.' }); return;
+    }
     setLoading(true);
     try {
-      const params = { poliza_id: f.poliza_id, fecha_inicio: f.fecha_inicio, fecha_fin: f.fecha_fin };
+      // Las fechas son opcionales: la que se deje vacía la deduce el servidor
+      // del primer/último viaje de la póliza.
+      const params = { poliza_id: f.poliza_id };
+      if (f.fecha_inicio) params.fecha_inicio = f.fecha_inicio;
+      if (f.fecha_fin) params.fecha_fin = f.fecha_fin;
       if (f.punto_embarque_id) params.punto_embarque_id = f.punto_embarque_id;
       setData(await realApi.reporteArrastrePolizas(params));
     } catch (e) {
@@ -89,7 +94,10 @@ export default function ReporteArrastrePolizasPage() {
     ], filas, {
       meta: [['Usuario', user?.nombre || user?.usuario || ''],
         ['Póliza', data?.poliza?.nombre_poliza],
-        ['Período', [f.fecha_inicio, f.fecha_fin].filter(Boolean).join(' al ')],
+        // El período sale del rango que aplicó el servidor, no del formulario:
+        // si el usuario no escribió fechas, ahí es donde está el rango real.
+        ['Período', [data?.rango?.fecha_inicio, data?.rango?.fecha_fin]
+          .filter(Boolean).map((d) => formatDate(d)).join(' al ')],
         ['Piezas', data?.totales?.total_piezas], ['Peso kg', data?.totales?.total_peso_kg]],
     });
   };
@@ -114,8 +122,12 @@ export default function ReporteArrastrePolizasPage() {
             placeholder={!f.poliza_id ? 'Elija primero la póliza'
               : (puntoOptions.length ? `Todos (${puntoOptions.length})` : 'La póliza no tiene puntos')} />
         </div>
-        <Input label="Desde" name="fecha_inicio" type="date" value={f.fecha_inicio} onChange={(e) => setField('fecha_inicio', e.target.value)} />
-        <Input label="Hasta" name="fecha_fin" type="date" value={f.fecha_fin} onChange={(e) => setField('fecha_fin', e.target.value)} />
+        <Input label="Desde (opcional)" name="fecha_inicio" type="date" value={f.fecha_inicio}
+          onChange={(e) => setField('fecha_inicio', e.target.value)}
+          title="Si la deja vacía se toma la fecha del primer viaje de la póliza" />
+        <Input label="Hasta (opcional)" name="fecha_fin" type="date" value={f.fecha_fin}
+          onChange={(e) => setField('fecha_fin', e.target.value)}
+          title="Si la deja vacía se toma la fecha del último viaje de la póliza" />
         <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
         {data && (
           <>
@@ -133,7 +145,8 @@ export default function ReporteArrastrePolizasPage() {
         <div className="card"><div className="card-body">Generando reporte...</div></div>
       ) : !data ? (
         <div className="card"><div className="card-body" style={{ color: '#6b7280' }}>
-          Seleccione una póliza y un rango de fechas, luego presione «Generar».
+          Seleccione una póliza y presione «Generar». Si no indica fechas se toma
+          todo el historial, desde el primer viaje hasta el último.
         </div></div>
       ) : (
         <>
@@ -143,6 +156,13 @@ export default function ReporteArrastrePolizasPage() {
                 {data.poliza.nombre_poliza} <span style={{ fontWeight: 400, color: '#6b7280' }}>({data.poliza.estado})</span>
                 {data.punto_embarque && <> · Punto: {data.punto_embarque.descripcion}</>}
               </h3>
+              {/* Período aplicado: si no se escribieron fechas, aquí se ve cuál tomó. */}
+              {data.rango?.fecha_inicio && (
+                <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 10 }}>
+                  <b>Período:</b> {formatDate(data.rango.fecha_inicio)} al {formatDate(data.rango.fecha_fin)}
+                  {data.rango.automatico && ' (todo el historial de la póliza)'}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 10, fontSize: 13 }}>
                 <div>
                   <b>Piezas de la póliza:</b> {formatNumber(r.cantidad_piezas_poliza, 0)}<br />

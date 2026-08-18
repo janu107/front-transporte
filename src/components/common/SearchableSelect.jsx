@@ -64,15 +64,24 @@ export function SearchableSelect({
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
-  const choose = (opt) => {
+  const choose = (opt, { soltarFoco = true } = {}) => {
     onChange(opt.value);
     cerrar();
-    // Se suelta el foco para que la lista no se reabra sola tras elegir.
-    inputRef.current?.blur();
+    // Se suelta el foco para que la lista no se reabra sola tras elegir. Con
+    // Tab no se hace: el navegador ya está llevando el foco al campo siguiente.
+    if (soltarFoco) inputRef.current?.blur();
   };
 
   const onKey = (e) => {
     if (disabled) return;
+    // Tab confirma lo que se está filtrando y deja seguir al campo siguiente,
+    // para llenar el formulario completo sin soltar el teclado. No se hace
+    // preventDefault: el salto de foco lo da el navegador.
+    if (e.key === 'Tab') {
+      if (open && escribiendo && visibles[hi]) choose(visibles[hi], { soltarFoco: false });
+      else cerrar();
+      return;
+    }
     if (!open && (e.key === 'ArrowDown' || e.key === 'Enter')) { setOpen(true); return; }
     if (e.key === 'ArrowDown') { e.preventDefault(); setHi((h) => Math.min(h + 1, visibles.length - 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)); }
@@ -101,6 +110,10 @@ export function SearchableSelect({
         aria-autocomplete="list"
         onChange={(e) => { setQuery(e.target.value); setEscribiendo(true); setOpen(true); setHi(0); }}
         onFocus={() => { if (!disabled) { setOpen(true); setHi(0); } }}
+        // Al salir del campo (con Tab o clic) la lista no debe quedar abierta
+        // tapando lo que sigue. El clic en una opción usa onMouseDown, que se
+        // adelanta al blur, así que elegir con el ratón sigue funcionando.
+        onBlur={cerrar}
         onKeyDown={onKey}
       />
       {open && !disabled && (
