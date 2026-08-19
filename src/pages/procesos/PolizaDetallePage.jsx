@@ -125,10 +125,19 @@ export default function PolizaDetallePage() {
       .map((p) => ({ value: p.codigo, label: p.nombre_poliza })),
     [polizas]
   );
+  // Ordenadas por CÓDIGO ascendente, y con `buscar` limitado a código, origen,
+  // destino y descripción: así al teclear un número se busca la tarifa y no los
+  // dígitos del valor en quetzales, que antes ensuciaban el resultado.
   const tarifaOptions = useMemo(
     () => tarifas
       .filter((t) => String(t.estado).toUpperCase() === 'ACTIVO')
-      .map((t) => ({ value: t.codigo, label: `${t.codigo} · ${t.origen || '—'} → ${t.destino || '—'} · Q${t.valor}` })),
+      .slice()
+      .sort((a, b) => Number(a.codigo) - Number(b.codigo))
+      .map((t) => ({
+        value: t.codigo,
+        label: `${t.codigo} · ${t.origen || '—'} → ${t.destino || '—'} · Q${t.valor}`,
+        buscar: [t.codigo, t.origen, t.destino, t.descripcion].filter(Boolean).join(' '),
+      })),
     [tarifas]
   );
   const camionOptions = useMemo(() => camiones.map((c) => ({ value: c.codigo, label: c.placa })), [camiones]);
@@ -176,6 +185,12 @@ export default function PolizaDetallePage() {
   const piezasLive = num(values.cantidad_bultos_piezas);
   const saldoDisponible = resumen ? piezasMax : null;
   const saldoTrasViaje = resumen ? piezasMax - piezasLive : null;
+
+  // La suma de los envíos nunca puede pasar de las piezas de la póliza: si ya no
+  // queda saldo se avisa y se bloquea Guardar, en vez de dejar intentar y que el
+  // servidor lo rechace después de haber llenado todo el formulario.
+  const limiteAlcanzado = Boolean(resumen) && piezasMax <= 0;
+  const excedeSaldo = Boolean(resumen) && piezasLive > piezasMax;
 
   // ---- Resumen de la póliza ----
   const cargarResumen = useCallback(async (idPoliza) => {
@@ -324,6 +339,9 @@ export default function PolizaDetallePage() {
       // [4.4] NO se cierra el modal: se conserva el resultado para imprimir / presionar Nuevo.
       setSaved(res);
       await cargarViajes();
+      // El saldo y el desglose del pie tienen que reflejar el envío recién
+      // grabado: el modal queda abierto y desde ahí se registra el siguiente.
+      await cargarResumen(values.id_poliza);
     } catch (err) {
       // Error de negocio del servidor (saldo, póliza no abierta, etc.)
       notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo guardar el viaje.');
@@ -351,6 +369,7 @@ export default function PolizaDetallePage() {
       notify('success', 'Peso actualizado; el valor se recalculó automáticamente.');
       setPesoEdit(null);
       await cargarViajes();
+      if (String(resumen?.id_poliza) === String(row.id_poliza)) await cargarResumen(row.id_poliza);
     } catch (err) {
       notify('error', err?.userMessage || err?.response?.data?.message || 'No se pudo actualizar el peso.');
     } finally {
@@ -378,6 +397,8 @@ export default function PolizaDetallePage() {
       await realApi.patchEstado('viajes', row.correlativo, 'ANULADO');
       notify('success', 'Viaje anulado.');
       await cargarViajes();
+      // Anular libera las piezas del envío: el saldo vuelve a subir.
+      if (String(resumen?.id_poliza) === String(row.id_poliza)) await cargarResumen(row.id_poliza);
     } catch (err) {
       notify('error', err?.userMessage || 'No se pudo anular el viaje.');
     }
@@ -493,7 +514,10 @@ export default function PolizaDetallePage() {
         ) : (
           <>
             <Button variant="secondary" onClick={cerrarModal} disabled={saving}>Cancelar</Button>
-            <Button variant="primary" icon="💾" onClick={guardar} disabled={saving}>
+            <Button variant="primary" icon="💾" onClick={guardar}
+              disabled={saving || limiteAlcanzado || excedeSaldo}
+              title={limiteAlcanzado ? 'La póliza ya no tiene saldo de piezas'
+                : (excedeSaldo ? 'Las piezas superan el saldo disponible' : undefined)}>
               {saving ? 'Guardando...' : 'Guardar'}
             </Button>
           </>
@@ -584,11 +608,74 @@ export default function PolizaDetallePage() {
           </div>
         )}
 
-        {/* Totales (como en el legacy) */}
+        {/* Aviso de límite: la póliza ya no admite más piezas. */}
+        {limiteAlcanzado && (
+          <div className="alert alert-error" style={{ marginTop: 10 }}>
+            El saldo de esta póliza llegó a su límite: ya se despacharon las{' '}
+            {formatNumber(resumen.cantidad_piezas, 0)} piezas. No se pueden registrar más envíos.
+          </div>
+        )}
+        {!limiteAlcanzado && excedeSaldo && (
+          <div className="alert alert-error" style={{ marginTop: 10 }}>
+            Las piezas de este envío ({formatNumber(piezasLive, 0)}) superan el saldo
+            disponible ({formatNumber(piezasMax, 0)}).
+          </div>
+        )}
+
+        {/* Totales (como en el legacy) + desglose por punto de embarque. Todo se
+            obtiene sumando los envíos ACTIVOS; la póliza nunca se modifica. */}
         <div style={totalesBox}>
           <Total label="Saldo de piezas" value={saldoDisponible == null ? '—' : formatNumber(saldoTrasViaje, 0)}
             hint={saldoDisponible == null ? 'Seleccione póliza' : `disponible: ${formatNumber(saldoDisponible, 0)}`} />
           <Total label="Viajes realizados" value={resumen ? formatNumber(resumen.viajes_realizados, 0) : '—'} />
+
+          {resumen && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                Consumo por punto de embarque
+              </div>
+              <table style={tablaPuntos}>
+                <thead>
+                  <tr>
+                    <th style={thPunto}>Punto de embarque</th>
+                    <th style={thNum}>Viajes</th>
+                    <th style={thNum}>Piezas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resumen.puntos?.length ? resumen.puntos.map((pt) => (
+                    <tr key={pt.id_tarifa_embarque ?? 'sin-punto'}>
+                      <td style={tdPunto}>{pt.descripcion}</td>
+                      <td style={tdNum}>{formatNumber(pt.viajes, 0)}</td>
+                      <td style={tdNum}>{formatNumber(pt.piezas, 0)}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td style={{ ...tdPunto, color: '#9ca3af' }} colSpan={3}>
+                        Esta póliza aún no tiene envíos registrados.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td style={{ ...tdPunto, fontWeight: 700 }}>Total de la póliza</td>
+                    <td style={{ ...tdNum, fontWeight: 700 }}>{formatNumber(resumen.viajes_realizados, 0)}</td>
+                    <td style={{ ...tdNum, fontWeight: 700 }}>
+                      {formatNumber(resumen.piezas_usadas, 0)} de {formatNumber(resumen.cantidad_piezas, 0)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ ...tdPunto, fontWeight: 700 }}>Saldo de piezas</td>
+                    <td style={tdNum} />
+                    <td style={{ ...tdNum, fontWeight: 700, color: limiteAlcanzado ? '#c1121f' : '#1a1a1a' }}>
+                      {formatNumber(resumen.saldo_piezas, 0)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
         </div>
       </Modal>
 
@@ -641,6 +728,18 @@ const accionBtn = {
   minWidth: 40, minHeight: 40, padding: 8, borderRadius: '50%',
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
 };
+const tablaPuntos = {
+  width: '100%', borderCollapse: 'collapse', fontSize: 12.5, background: '#fff',
+  border: '1px solid #eceef1', borderRadius: 6,
+};
+const thPunto = {
+  textAlign: 'left', padding: '5px 8px', color: '#6b7280', fontWeight: 600,
+  borderBottom: '1px solid #eceef1',
+};
+const thNum = { ...thPunto, textAlign: 'right', whiteSpace: 'nowrap' };
+const tdPunto = { padding: '5px 8px', borderTop: '1px solid #f3f4f6' };
+const tdNum = { ...tdPunto, textAlign: 'right', whiteSpace: 'nowrap' };
+
 const totalesBox = {
   display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 12,
   padding: '10px 14px', background: '#f8f9fb', borderRadius: 8, border: '1px solid #eceef1',

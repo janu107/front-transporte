@@ -31,6 +31,15 @@ const avisoStyle = {
   position: 'sticky', bottom: 0,
 };
 
+/** Minúsculas, sin acentos y con los separadores convertidos en espacios. */
+function normalizar(texto) {
+  return String(texto ?? '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
 export function SearchableSelect({
   label, name, value, onChange, options = [],
   placeholder = 'Buscar...', required = false, error, disabled = false, className = '',
@@ -43,26 +52,58 @@ export function SearchableSelect({
   const [hi, setHi] = useState(0);
   const ref = useRef(null);
   const inputRef = useRef(null);
+  const listaRef = useRef(null);
+  // Marca un clic iniciado DENTRO del componente (típicamente en la barra de
+  // desplazamiento de la lista) para no confundirlo con salirse del campo.
+  const clicDentro = useRef(false);
 
   const selected = options.find((o) => String(o.value) === String(value)) || null;
 
+  // Búsqueda por palabras sueltas: se ignoran acentos y separadores y basta con
+  // que aparezcan TODAS las escritas, en cualquier orden. Así "arizona-sidegua"
+  // o "sidegua arizona" encuentran "PREDIO ARIZONA → SIDEGUA", que con una
+  // comparación literal no aparecía nunca.
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter((o) => String(o.label).toLowerCase().includes(q));
+    const palabras = normalizar(query).split(' ').filter(Boolean);
+    if (palabras.length === 0) return options;
+    const q = palabras.join(' ');
+    const coinciden = [];
+    options.forEach((o, i) => {
+      const texto = normalizar(o.buscar ?? o.label);
+      if (!palabras.every((w) => texto.includes(w))) return;
+      // Lo que EMPIEZA por lo escrito va primero: al teclear un código, esa
+      // tarifa encabeza la lista en vez de perderse entre las que lo contienen.
+      const rango = texto.startsWith(q) ? 0 : (texto.includes(` ${q}`) ? 1 : 2);
+      coinciden.push({ o, rango, i });
+    });
+    coinciden.sort((a, b) => (a.rango - b.rango) || (a.i - b.i));
+    return coinciden.map((x) => x.o);
   }, [options, query]);
 
   // Solo se renderiza un tramo: el resto se alcanza escribiendo.
   const visibles = useMemo(() => filtered.slice(0, MAX_VISIBLES), [filtered]);
   const ocultas = filtered.length - visibles.length;
 
-  const cerrar = () => { setOpen(false); setEscribiendo(false); setQuery(''); };
+  const cerrar = () => {
+    setOpen(false); setEscribiendo(false); setQuery(''); clicDentro.current = false;
+  };
 
   useEffect(() => {
     const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) cerrar(); };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
+
+  // Con ↑ ↓ la opción resaltada tiene que verse: la lista solo muestra unas
+  // pocas a la vez y antes el resalte se iba fuera de la vista, dando la
+  // impresión de que las flechas no hacían nada.
+  useEffect(() => {
+    if (!open) return;
+    // Se comprueba el método antes de llamarlo: si fallara aquí, el error se
+    // daría durante el render y tumbaría toda la pantalla, no solo el scroll.
+    const opcion = listaRef.current?.children?.[hi];
+    if (typeof opcion?.scrollIntoView === 'function') opcion.scrollIntoView({ block: 'nearest' });
+  }, [hi, open]);
 
   const choose = (opt, { soltarFoco = true } = {}) => {
     onChange(opt.value);
@@ -90,7 +131,8 @@ export function SearchableSelect({
   };
 
   return (
-    <div className={`form-field ${className}`} ref={ref} style={{ position: 'relative' }}>
+    <div className={`form-field ${className}`} ref={ref} style={{ position: 'relative' }}
+      onMouseDown={() => { clicDentro.current = true; }}>
       {label && (
         <label className="form-label" htmlFor={name}>
           {label}{required && <span className="req">*</span>}
@@ -110,14 +152,18 @@ export function SearchableSelect({
         aria-autocomplete="list"
         onChange={(e) => { setQuery(e.target.value); setEscribiendo(true); setOpen(true); setHi(0); }}
         onFocus={() => { if (!disabled) { setOpen(true); setHi(0); } }}
-        // Al salir del campo (con Tab o clic) la lista no debe quedar abierta
-        // tapando lo que sigue. El clic en una opción usa onMouseDown, que se
-        // adelanta al blur, así que elegir con el ratón sigue funcionando.
-        onBlur={cerrar}
+        // Al salir del campo (con Tab o clic afuera) la lista no debe quedar
+        // abierta tapando lo que sigue. Pero arrastrar la barra de
+        // desplazamiento también quita el foco, y ahí cerrarla dejaba la lista
+        // imposible de recorrer con el ratón: en ese caso se devuelve el foco.
+        onBlur={() => {
+          if (clicDentro.current) { clicDentro.current = false; inputRef.current?.focus(); return; }
+          cerrar();
+        }}
         onKeyDown={onKey}
       />
       {open && !disabled && (
-        <ul style={listStyle} role="listbox">
+        <ul style={listStyle} role="listbox" ref={listaRef}>
           {visibles.length === 0 ? (
             <li style={{ padding: '8px 10px', color: '#9ca3af', fontSize: 13 }}>Sin resultados</li>
           ) : visibles.map((o, i) => (

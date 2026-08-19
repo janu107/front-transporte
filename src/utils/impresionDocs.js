@@ -133,15 +133,18 @@ function imprimir(titulo, estilos, cuerpo) {
 
 /* ============================ CARTA DE PORTE (P11) ============================ */
 // datos: { numero, fecha, origen, destino, piloto, placa, cantidad, tc, contiene, poliza }
-// [P11b] Tamaño carta: Original + Duplicado 1 en la página 1, Duplicado 2 en la página 2.
+// Tamaño carta: UNA copia por hoja (Original, Duplicado 1 y Duplicado 2 = 3 hojas).
 // [P11e/f] "Señor" y "Para ser transportado de" = ORIGEN;  [P11g] "A" = DESTINO.
 export function imprimirCartaPorte(datos) {
-  // [v8 §1] Cada copia con ALTURA FIJA = media hoja, para que 2 quepan por página y
-  // se pueda cortar justo a la mitad sin que la de abajo se traslape.
+  // Antes iban dos copias por hoja (media hoja cada una), así que de tres copias
+  // salían solo dos papeles. Ahora cada copia abre su propia hoja: se imprimen
+  // tres, una por página, y ya no hay que cortarlas por la mitad.
   const estilos = `
     @page { size: 8.5in 11in; margin: 0.3in; }
-    .carta { border: 2px solid #000; padding: 10px 16px; height: 4.9in; box-sizing: border-box; overflow: hidden; margin-bottom: 0.1in; }
-    .carta.brk { page-break-after: always; margin-bottom: 0; }
+    .carta { border: 2px solid #000; padding: 10px 16px; min-height: 4.9in; box-sizing: border-box; }
+    /* El salto va ANTES de cada copia salvo la primera: así no queda una hoja
+       en blanco al final, como pasaría con page-break-after en la última. */
+    .carta + .carta { page-break-before: always; }
     .cab { display: flex; justify-content: space-between; align-items: flex-start; }
     .predio { font-size: 10px; max-width: 300px; margin-top: 4px; }
     .titulo { text-align: right; }
@@ -158,8 +161,8 @@ export function imprimirCartaPorte(datos) {
     .copia { font-style: italic; font-weight: 700; font-size: 12px; margin-top: 6px; }
   `;
   const p = partesFecha(datos.fecha);
-  const carta = (etiqueta, brk) => `
-    <div class="carta ${brk ? 'brk' : ''}">
+  const carta = (etiqueta) => `
+    <div class="carta">
       <div class="cab">
         <div>
           <img src="${logoAbsUrl()}" alt="SETRASA" style="height:38px;width:auto" />
@@ -195,8 +198,8 @@ export function imprimirCartaPorte(datos) {
         <div class="imp"><b>IMPORTANTE:</b> Todas las mercaderías viajan por su cuenta y riesgo, por lo que sugerimos asegurarlas con la Aseguradora de su confianza.</div>
       </div>
     </div>`;
-  // Página 1: ORIGINAL + DUPLICADO 1 (con salto tras el 2do). Página 2: DUPLICADO 2.
-  const cuerpo = carta('ORIGINAL', false) + carta('DUPLICADO 1', true) + carta('DUPLICADO 2', false);
+  // Tres copias = tres hojas.
+  const cuerpo = ['ORIGINAL', 'DUPLICADO 1', 'DUPLICADO 2'].map(carta).join('');
   imprimir(`Carta de Porte ${datos.numero || ''}`, estilos, cuerpo);
 }
 
