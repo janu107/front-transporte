@@ -174,21 +174,32 @@ export default function PolizaDetallePage() {
     return Number((Number(pesoEdit.peso || 0) * 0.022046 * vt).toFixed(2));
   }, [pesoEdit, tarifas]);
 
-  // Piezas máximas para ESTE viaje: el saldo ya descuenta todos los viajes;
-  // al editar, se le suma lo que este viaje ya tenía reservado.
+  // El saldo es POR PÓLIZA Y PUNTO DE EMBARQUE: los puntos son tramos que
+  // recorren las mismas piezas, así que cada uno tiene su propio saldo contra
+  // el total de la póliza. Mientras no se elija tarifa, el tramo está sin
+  // estrenar y dispone de todas las piezas.
+  const puntoSel = useMemo(
+    () => (resumen?.puntos || []).find(
+      (pt) => String(pt.id_tarifa_embarque) === String(values.id_tarifa_embarque)
+    ) || null,
+    [resumen, values.id_tarifa_embarque]
+  );
+
+  // Piezas máximas para ESTE viaje: el saldo del tramo elegido; al editar se le
+  // suma lo que este viaje ya tenía reservado en ese mismo tramo.
   const piezasMax = useMemo(() => {
     if (!resumen) return Infinity;
     const propias = editing ? num(editing.cantidad_bultos_piezas) : 0;
-    return num(resumen.saldo_piezas) + propias;
-  }, [resumen, editing]);
+    const saldoPunto = puntoSel ? num(puntoSel.saldo) : num(resumen.cantidad_piezas);
+    return saldoPunto + propias;
+  }, [resumen, editing, puntoSel]);
 
   const piezasLive = num(values.cantidad_bultos_piezas);
   const saldoDisponible = resumen ? piezasMax : null;
   const saldoTrasViaje = resumen ? piezasMax - piezasLive : null;
 
-  // La suma de los envíos nunca puede pasar de las piezas de la póliza: si ya no
-  // queda saldo se avisa y se bloquea Guardar, en vez de dejar intentar y que el
-  // servidor lo rechace después de haber llenado todo el formulario.
+  // Si el tramo elegido ya no admite más piezas se avisa y se bloquea Guardar,
+  // en vez de dejar llenar todo el formulario para que el servidor lo rechace.
   const limiteAlcanzado = Boolean(resumen) && piezasMax <= 0;
   const excedeSaldo = Boolean(resumen) && piezasLive > piezasMax;
 
@@ -611,28 +622,38 @@ export default function PolizaDetallePage() {
         {/* Aviso de límite: la póliza ya no admite más piezas. */}
         {limiteAlcanzado && (
           <div className="alert alert-error" style={{ marginTop: 10 }}>
-            El saldo de esta póliza llegó a su límite: ya se despacharon las{' '}
-            {formatNumber(resumen.cantidad_piezas, 0)} piezas. No se pueden registrar más envíos.
+            Este punto de embarque llegó a su límite: ya movió las{' '}
+            {formatNumber(resumen.cantidad_piezas, 0)} piezas de la póliza. Elija otro punto
+            de embarque o revise los envíos registrados.
           </div>
         )}
         {!limiteAlcanzado && excedeSaldo && (
           <div className="alert alert-error" style={{ marginTop: 10 }}>
             Las piezas de este envío ({formatNumber(piezasLive, 0)}) superan el saldo
-            disponible ({formatNumber(piezasMax, 0)}).
+            disponible de este punto de embarque ({formatNumber(piezasMax, 0)} de{' '}
+            {formatNumber(resumen.cantidad_piezas, 0)}).
           </div>
         )}
 
         {/* Totales (como en el legacy) + desglose por punto de embarque. Todo se
             obtiene sumando los envíos ACTIVOS; la póliza nunca se modifica. */}
         <div style={totalesBox}>
-          <Total label="Saldo de piezas" value={saldoDisponible == null ? '—' : formatNumber(saldoTrasViaje, 0)}
-            hint={saldoDisponible == null ? 'Seleccione póliza' : `disponible: ${formatNumber(saldoDisponible, 0)}`} />
+          <Total
+            label={puntoSel ? 'Saldo del punto de embarque' : 'Saldo de piezas'}
+            value={saldoDisponible == null ? '—' : formatNumber(saldoTrasViaje, 0)}
+            hint={saldoDisponible == null ? 'Seleccione póliza'
+              : `disponible: ${formatNumber(saldoDisponible, 0)}`
+                + (values.id_tarifa_embarque ? '' : ' · elija la tarifa')} />
           <Total label="Viajes realizados" value={resumen ? formatNumber(resumen.viajes_realizados, 0) : '—'} />
 
           {resumen && (
             <div style={{ gridColumn: '1 / -1' }}>
               <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
                 Consumo por punto de embarque
+                <span style={{ color: '#9ca3af' }}>
+                  {' '}— cada punto tiene su propio saldo sobre las{' '}
+                  {formatNumber(resumen.cantidad_piezas, 0)} piezas de la póliza
+                </span>
               </div>
               <table style={tablaPuntos}>
                 <thead>
@@ -640,37 +661,45 @@ export default function PolizaDetallePage() {
                     <th style={thPunto}>Punto de embarque</th>
                     <th style={thNum}>Viajes</th>
                     <th style={thNum}>Piezas</th>
+                    <th style={thNum}>Saldo</th>
                   </tr>
                 </thead>
                 <tbody>
                   {resumen.puntos?.length ? resumen.puntos.map((pt) => (
-                    <tr key={pt.id_tarifa_embarque ?? 'sin-punto'}>
-                      <td style={tdPunto}>{pt.descripcion}</td>
+                    <tr key={pt.id_tarifa_embarque ?? 'sin-punto'}
+                      style={pt === puntoSel ? { background: 'rgba(193,18,31,0.06)' } : undefined}>
+                      <td style={{ ...tdPunto, fontWeight: pt === puntoSel ? 700 : undefined }}>
+                        {pt.descripcion}
+                      </td>
                       <td style={tdNum}>{formatNumber(pt.viajes, 0)}</td>
                       <td style={tdNum}>{formatNumber(pt.piezas, 0)}</td>
+                      {/* Saldo corriente: lo que queda de la póliza después
+                          de este punto y de los anteriores. */}
+                      <td style={tdNum}>{formatNumber(pt.saldo, 0)}</td>
                     </tr>
                   )) : (
                     <tr>
-                      <td style={{ ...tdPunto, color: '#9ca3af' }} colSpan={3}>
+                      <td style={{ ...tdPunto, color: '#9ca3af' }} colSpan={4}>
                         Esta póliza aún no tiene envíos registrados.
                       </td>
                     </tr>
                   )}
                 </tbody>
                 <tfoot>
+                  {/* Suma de movimientos de todos los tramos. NO es un saldo: las
+                      mismas piezas pasan por varios puntos, así que este total
+                      puede superar las piezas de la póliza sin que haya error. */}
                   <tr>
-                    <td style={{ ...tdPunto, fontWeight: 700 }}>Total de la póliza</td>
+                    <td style={{ ...tdPunto, fontWeight: 700 }}>Total de movimientos</td>
                     <td style={{ ...tdNum, fontWeight: 700 }}>{formatNumber(resumen.viajes_realizados, 0)}</td>
-                    <td style={{ ...tdNum, fontWeight: 700 }}>
-                      {formatNumber(resumen.piezas_usadas, 0)} de {formatNumber(resumen.cantidad_piezas, 0)}
-                    </td>
+                    <td style={{ ...tdNum, fontWeight: 700 }}>{formatNumber(resumen.piezas_usadas, 0)}</td>
+                    <td style={tdNum} />
                   </tr>
                   <tr>
-                    <td style={{ ...tdPunto, fontWeight: 700 }}>Saldo de piezas</td>
+                    <td style={{ ...tdPunto, fontWeight: 700 }}>Piezas de la póliza</td>
                     <td style={tdNum} />
-                    <td style={{ ...tdNum, fontWeight: 700, color: limiteAlcanzado ? '#c1121f' : '#1a1a1a' }}>
-                      {formatNumber(resumen.saldo_piezas, 0)}
-                    </td>
+                    <td style={{ ...tdNum, fontWeight: 700 }}>{formatNumber(resumen.cantidad_piezas, 0)}</td>
+                    <td style={tdNum} />
                   </tr>
                 </tfoot>
               </table>
