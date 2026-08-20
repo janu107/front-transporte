@@ -193,6 +193,9 @@ select.form-control { cursor: pointer; }
   animation: scaleIn 0.24s var(--ease-ios);
 }
 .modal.modal-lg { max-width: 780px; }
+/* Para vistas previas con tablas anchas (p. ej. la carga masiva de viajes),
+   donde columnas como el motivo del error necesitan espacio para leerse. */
+.modal.modal-xl { max-width: 1180px; }
 .modal.modal-sm { max-width: 440px; }
 .modal-header {
   display: flex;

@@ -112,7 +112,7 @@ export default function CargaMasivaViajesModal({ poliza, onClose, onCargado }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="lg"
+      size="xl"
       title={poliza ? `Carga masiva de viajes locales — ${poliza.nombre_poliza}` : 'Carga masiva'}
       footer={
         <>
@@ -168,8 +168,13 @@ export default function CargaMasivaViajesModal({ poliza, onClose, onCargado }) {
       {/* Filas listas para cargar */}
       {previa?.filas?.length > 0 && (
         <>
-          <h4 className="carga-sec">Viajes a cargar</h4>
-          <div className="table-wrapper"><div className="table-scroll" style={{ maxHeight: 260 }}>
+          {/* Plegable: con muchos errores lo importante es leerlos, así que esta
+              lista arranca cerrada y les cede la altura. */}
+          <details open={!previa.errores?.length} className="carga-plegable">
+            <summary className="carga-sec">
+              Viajes a cargar ({formatNumber(previa.filas.length, 0)})
+            </summary>
+          <div className="table-wrapper"><div className="table-scroll" style={{ maxHeight: '42vh' }}>
             <table className="data-table">
               <thead><tr>
                 <th>Tipo</th><th>Envío</th><th>Nit transportista</th><th>Placa</th><th>Piloto</th>
@@ -198,6 +203,7 @@ export default function CargaMasivaViajesModal({ poliza, onClose, onCargado }) {
               </tbody>
             </table>
           </div></div>
+          </details>
         </>
       )}
 
@@ -207,19 +213,20 @@ export default function CargaMasivaViajesModal({ poliza, onClose, onCargado }) {
           <h4 className="carga-sec carga-sec--error">
             Filas con error ({previa.errores.length}) — no se cargarán
           </h4>
-          <div className="table-wrapper"><div className="table-scroll" style={{ maxHeight: 200 }}>
+          <div className="table-wrapper"><div className="table-scroll" style={{ maxHeight: '58vh' }}>
             <table className="data-table">
               <thead><tr>
                 <th>Fila</th><th>Tipo</th><th>Envío</th><th>Licencia</th><th>Placa</th>
-                <th>Punto</th><th>Fecha</th><th>Motivo</th>
+                <th>Punto</th><th>Fecha</th><th style={{ minWidth: 260 }}>Motivo</th>
               </tr></thead>
               <tbody>
                 {previa.errores.map((e) => (
                   <tr key={e.fila} className="carga-fila-error">
                     <td>{e.fila}</td><td>{String(e.tipo ?? '')}</td><td>{String(e.envio ?? '')}</td>
                     <td>{String(e.licencia)}</td><td>{String(e.placa)}</td>
-                    <td>{String(e.punto)}</td><td>{String(e.fecha)}</td>
-                    <td>{e.motivo}</td>
+                    <td>{String(e.punto)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(e.fecha) || String(e.fecha ?? '')}</td>
+                    <td style={{ minWidth: 260 }}>{e.motivo}</td>
                   </tr>
                 ))}
               </tbody>

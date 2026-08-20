@@ -1,7 +1,7 @@
 /**
  * Modal.jsx
  * Modal genérico para crear/editar. Título dinámico, contenido y footer por props.
- * size: 'sm' | 'md' (default) | 'lg'
+ * size: 'sm' | 'md' (default) | 'lg' | 'xl'
  *
  * En móvil (≤640px) se convierte en una hoja (bottom-sheet) casi de pantalla
  * completa vía CSS (forms.css); el comportamiento y las props no cambian.
@@ -43,7 +43,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' })
 
   if (!isOpen) return null;
 
-  const sizeClass = size === 'lg' ? 'modal-lg' : size === 'sm' ? 'modal-sm' : '';
+  const sizeClass = { xl: 'modal-xl', lg: 'modal-lg', sm: 'modal-sm' }[size] || '';
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
