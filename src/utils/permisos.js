@@ -54,6 +54,10 @@ export const MODULOS = {
   facturas: ['ADMIN', 'OPERA_LIQUIDACION'],
 
   detallePolizas: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
+  // Corregir el peso de un envío (y recalcular su valor) es una operación
+  // acotada: la tienen los roles que registran y liquidan viajes, aunque no
+  // puedan editar el resto del envío.
+  detallePolizasPeso: ['ADMIN', 'OPERA_VIAJES', 'OPERA_LIQUIDACION'],
   anticipos: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
   detalleFacturas: ['ADMIN', 'OPERA_VALES', 'CONSULTAS'],
 
@@ -208,6 +212,11 @@ export function moduloDeRuta(ruta) {
 export function esSoloLectura(user, modulo) {
   if (!modulo) return !puedeOperarAlgo(user, 'INSERT');
   return !puedeOperar(user, modulo, 'INSERT') && !puedeOperar(user, modulo, 'UPDATE');
+}
+
+/** ¿Puede corregir el peso de un envío? (ADMIN, OPERA_VIAJES y OPERA_LIQUIDACION) */
+export function puedeEditarPeso(user) {
+  return puedeOperar(user, 'detallePolizasPeso', 'UPDATE');
 }
 
 /** ¿Puede eliminar en el módulo? (solo ADMIN, según la matriz) */

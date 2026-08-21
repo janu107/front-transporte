@@ -100,6 +100,13 @@ export const realApi = {
     return unwrap(await axiosClient.get(`/viajes/resumen/${idPoliza}`));
   },
 
+  // Corrige SOLO el peso de un envío; el servidor recalcula el valor. Va por su
+  // propia ruta para que los roles operativos puedan usarla sin tener permiso
+  // de editar el envío completo.
+  async viajeActualizarPeso(id, peso) {
+    return unwrap(await axiosClient.patch(`/viajes/${id}/peso`, { peso }));
+  },
+
   // Registro de Viajes: valida piezas vs saldo y calcula el valor (M2).
   async viajeValidar(body) {
     return unwrap(await axiosClient.post('/viajes/validar', body));

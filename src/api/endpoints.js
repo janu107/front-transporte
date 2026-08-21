@@ -81,6 +81,7 @@ export const ENDPOINTS = {
     create: '/viajes', // POST
     update: (id) => `/viajes/${id}`, // PUT
     estado: (id) => `/viajes/${id}/estado`, // PATCH
+    peso: (id) => `/viajes/${id}/peso`, // PATCH (solo el peso; recalcula el valor)
     resumen: (idPoliza) => `/viajes/resumen/${idPoliza}`, // GET
   },
 

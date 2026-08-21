@@ -26,7 +26,7 @@ import TablePager from '../../components/common/TablePager';
 import usePagination from '../../hooks/usePagination';
 import useAuth from '../../hooks/useAuth';
 import realApi from '../../api/realApi';
-import { esAdmin } from '../../utils/roles';
+import { esAdmin, puedeEditarPeso } from '../../utils/roles';
 import { lookup, formatDate, formatNumber, formatCurrency } from '../../utils/formatters';
 import { TIPO_VIAJE_OPTIONS } from '../../utils/constants';
 import { imprimirCartaPorte } from '../../utils/impresionDocs';
@@ -43,6 +43,9 @@ export default function PolizaDetallePage() {
   const { user } = useAuth();
   // Solo ADMIN puede editar o anular viajes; los demás roles registran e imprimen.
   const admin = esAdmin(user);
+  // Corregir el peso es una acción aparte: la tienen también OPERA_VIAJES y
+  // OPERA_LIQUIDACION, aunque no puedan editar ni anular el envío.
+  const editaPeso = puedeEditarPeso(user);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -368,15 +371,10 @@ export default function PolizaDetallePage() {
     setPesoSaving(true);
     try {
       const row = pesoEdit.row;
-      const payload = {
-        num_envio: row.num_envio, tipo: row.tipo, id_poliza: row.id_poliza,
-        id_tarifa_embarque: row.id_tarifa_embarque, id_camion: row.id_camion,
-        num_tc: row.num_tc, id_piloto: row.id_piloto,
-        fecha: row.fecha ? String(row.fecha).slice(0, 10) : row.fecha,
-        cantidad_bultos_piezas: row.cantidad_bultos_piezas,
-        peso: pesoEdit.peso, observaciones: row.observaciones, estado: row.estado,
-      };
-      await realApi.update('viajes', row.correlativo, payload);
+      // Solo se manda el peso: el servidor recalcula el valor y deja intacto el
+      // resto del envío. Antes se reenviaba la fila completa con un PUT, que los
+      // roles operativos no tienen permitido.
+      await realApi.viajeActualizarPeso(row.correlativo, pesoEdit.peso);
       notify('success', 'Peso actualizado; el valor se recalculó automáticamente.');
       setPesoEdit(null);
       await cargarViajes();
@@ -488,10 +486,12 @@ export default function PolizaDetallePage() {
                     <td data-label="Estado"><Badge value={r.estado} /></td>
                     <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button style={accionBtn} title="Imprimir Carta de Porte" aria-label="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}>🖨️</button>
-                      {/* Editar peso, editar y anular: exclusivo de ADMIN. */}
+                      {editaPeso && String(r.estado).toUpperCase() !== 'ANULADO' && (
+                        <button style={accionBtn} title="Editar peso (recalcula el valor)" aria-label="Editar peso" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
+                      )}
+                      {/* Editar y anular el envío: exclusivo de ADMIN. */}
                       {admin && (
                         <>
-                          <button style={accionBtn} title="Editar peso (recalcula el valor)" aria-label="Editar peso" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
                           <button style={accionBtn} title="Editar viaje" aria-label="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
                           {String(r.estado).toUpperCase() !== 'ANULADO' && (
                             <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
