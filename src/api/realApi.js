@@ -107,6 +107,17 @@ export const realApi = {
     return unwrap(await axiosClient.patch(`/viajes/${id}/peso`, { peso }));
   },
 
+  // Reportes por transportista sobre pólizas activas.
+  async transportistasReporte() {
+    return unwrap(await axiosClient.get('/reportes/transportista/lista'));
+  },
+  async reporteTransportista(params) {
+    return unwrap(await axiosClient.get('/reportes/transportista', { params }));
+  },
+  async reportePolizasTransportistas() {
+    return unwrap(await axiosClient.get('/reportes/polizas-transportistas'));
+  },
+
   // Registro de Viajes: valida piezas vs saldo y calcula el valor (M2).
   async viajeValidar(body) {
     return unwrap(await axiosClient.post('/viajes/validar', body));

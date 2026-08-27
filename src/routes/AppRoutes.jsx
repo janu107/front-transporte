@@ -72,6 +72,8 @@ import ReporteCamionesPage from '../pages/reportes/ReporteCamionesPage';
 import ReportePolizasPage from '../pages/reportes/ReportePolizasPage';
 import ReporteFacturasPage from '../pages/reportes/ReporteFacturasPage';
 import ReporteArrastrePolizasPage from '../pages/reportes/ReporteArrastrePolizasPage';
+import ReporteTransportistaPage from '../pages/reportes/ReporteTransportistaPage';
+import ReportePolizasTransportistasPage from '../pages/reportes/ReportePolizasTransportistasPage';
 import ReporteViajesPolizaPage from '../pages/reportes/ReporteViajesPolizaPage';
 
 // Historial (tablas his_*)
@@ -154,6 +156,8 @@ export function AppRoutes() {
           <Route path={ROUTES.reportePolizas} element={<ReportePolizasPage />} />
           <Route path={ROUTES.reporteFacturas} element={<ReporteFacturasPage />} />
           <Route path={ROUTES.reporteArrastrePolizas} element={<ReporteArrastrePolizasPage />} />
+          <Route path={ROUTES.reporteTransportista} element={<ReporteTransportistaPage />} />
+          <Route path={ROUTES.reportePolizasTransportistas} element={<ReportePolizasTransportistasPage />} />
           <Route path={ROUTES.reporteViajesPoliza} element={<ReporteViajesPolizaPage />} />
 
           {/* Historial (tablas his_*) */}

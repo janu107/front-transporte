@@ -71,6 +71,8 @@ export const ROUTES = {
   reportePolizas: '/reportes/polizas',
   reporteFacturas: '/reportes/facturas',
   reporteArrastrePolizas: '/reportes/arrastre-polizas',
+  reporteTransportista: '/reportes/transportista',
+  reportePolizasTransportistas: '/reportes/polizas-transportistas',
   reporteViajesPoliza: '/reportes/viajes-poliza',
 
   // Historial (tablas his_*)

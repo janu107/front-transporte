@@ -31,7 +31,7 @@ import useCrudMock from '../../hooks/useCrudMock';
 import useSearch from '../../hooks/useSearch';
 import useModal from '../../hooks/useModal';
 import useAuth from '../../hooks/useAuth';
-import { esSoloLectura, puedeEliminar } from '../../utils/roles';
+import { puedeCrearEn, puedeEditarEn, puedeEliminar } from '../../utils/roles';
 import { imprimirReporteGenerico } from '../../utils/impresionDocs';
 import { exportarExcel } from '../../utils/excel';
 
@@ -58,9 +58,11 @@ export function CrudPage({
   const { term, setTerm, filtered } = useSearch(items, searchFields);
   const { user } = useAuth();
   const location = useLocation();
-  // Permisos del módulo de esta pantalla: quien solo consulta no ve los botones
-  // de crear/editar, y solo ADMIN ve el de eliminar. Igual lo valida el servidor.
-  const readonly = esSoloLectura(user, location.pathname);
+  // Permisos del módulo de esta pantalla, separados a propósito: hay roles que
+  // pueden dar de alta pero no modificar lo ya registrado (p. ej. OPERA_VIAJES en
+  // Pólizas). Si se juntaran, se le mostraría un lápiz que el servidor rechaza.
+  const conAlta = puedeCrearEn(user, location.pathname);
+  const conEdicion = puedeEditarEn(user, location.pathname);
   const conBorrado = puedeEliminar(user, location.pathname);
   const modal = useModal();
   const confirm = useModal();
@@ -145,8 +147,8 @@ export function CrudPage({
       <PageHeader
         title={title}
         description={description}
-        actionLabel={readonly ? undefined : newLabel}
-        onAction={readonly ? undefined : openNew}
+        actionLabel={conAlta ? newLabel : undefined}
+        onAction={conAlta ? openNew : undefined}
       />
 
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
@@ -172,12 +174,12 @@ export function CrudPage({
         data={filtered}
         loading={loading}
         idField={idField}
-        // La columna se muestra si el rol puede editar o si la pantalla aporta
-        // acciones propias (p. ej. la carga masiva de Pólizas, permitida a todos).
-        renderActions={(readonly && !extraActions) ? undefined : (row) => (
+        // La columna se muestra si el rol puede editar o borrar, o si la pantalla
+        // aporta acciones propias (p. ej. la carga masiva de Pólizas).
+        renderActions={(!conEdicion && !conBorrado && !extraActions) ? undefined : (row) => (
           <RowActions
             extra={extraActions ? extraActions(row) : undefined}
-            onEdit={readonly ? undefined : () => openEdit(row)}
+            onEdit={conEdicion ? () => openEdit(row) : undefined}
             // Eliminar/anular solo para quien tiene ese permiso (ADMIN).
             onDelete={conBorrado ? () => confirm.open(row) : undefined}
             deleteIcon={deleteMode === 'anular' ? '🚫' : '🗑️'}

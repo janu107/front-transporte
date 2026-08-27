@@ -1113,3 +1113,157 @@ export function imprimirResumenLiquidacionTransportista(datos, filtros = {}, usu
     </table>`;
   imprimir('Resumen por Liquidación de Transportista', estilos, cuerpo);
 }
+
+/* ============ REPORTE POR TRANSPORTISTA (pólizas activas) ============ */
+// data: { transportista, filas, totales } tal como lo devuelve el servidor.
+export function imprimirReporteTransportista(data, usuario = '') {
+  const estilos = `
+    @page { size: 8.5in 11in; margin: 0.5in; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start;
+           border-bottom: 2px solid #1f3d5c; padding-bottom: 6px; }
+    .tit { color: #1f3d5c; font-weight: 800; font-size: 14px; }
+    .meta { font-size: 9px; text-align: right; color: #333; }
+    .transp { font-family: 'Courier New', monospace; font-size: 15px; font-weight: 700;
+              margin: 10px 0 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    th { background: #e5e7eb; padding: 4px 6px; text-align: left; border: 1px solid #9ca3af; }
+    td { padding: 3px 6px; border: 1px solid #d1d5db; }
+    .n { text-align: right; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    tfoot td { font-weight: 700; background: #f3f4f6; }
+    .neg { color: #c1121f; }
+  `;
+  const t = data.totales || {};
+  const filas = (data.filas || []).map((f, i) => `
+    <tr>
+      <td class="n">${i + 1}</td>
+      <td>${esc(f.nombre_poliza)}</td>
+      <td class="n">${Number(f.viajes || 0)}</td>
+      <td class="n">${formatNum(f.peso_qq)}</td>
+      <td class="n">${formatNum(f.flete)}</td>
+      <td class="n">${formatNum(f.anticipo)}</td>
+      <td class="n">${formatNum(f.diesel)}</td>
+      <td class="n">${formatNum(f.aceite)}</td>
+      <td class="n ${Number(f.saldo) < 0 ? 'neg' : ''}">${formatNum(f.saldo)}</td>
+    </tr>`).join('');
+
+  const cuerpo = `
+    <div class="cab">
+      <div>
+        <img src="${logoAbsUrl()}" style="height:36px"/>
+        <div class="tit">RESUMEN Por Transportistas de Pólizas Activas</div>
+      </div>
+      <div class="meta">
+        Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>
+        Fecha: ${fechaHoraImpresion()}
+      </div>
+    </div>
+    <div class="transp">TRANSPORTISTA: ${esc(data.transportista?.nit)} - ${esc(data.transportista?.nombre_comercial)}</div>
+    <table>
+      <thead><tr>
+        <th class="n">NO.</th><th>PÓLIZA</th><th class="n">VIAJES</th><th class="n">PESO qq</th>
+        <th class="n">FLETE</th><th class="n">ANTICIPO</th><th class="n">DIESEL</th>
+        <th class="n">ACEITE</th><th class="n">SALDO</th>
+      </tr></thead>
+      <tbody>${filas || '<tr><td colspan="9">Sin movimientos en pólizas activas.</td></tr>'}</tbody>
+      <tfoot><tr>
+        <td class="n">${Number(t.polizas || 0)}</td><td></td>
+        <td class="n">${Number(t.viajes || 0)}</td>
+        <td class="n">${formatNum(t.peso_qq)}</td>
+        <td class="n">${formatNum(t.flete)}</td>
+        <td class="n">${formatNum(t.anticipo)}</td>
+        <td class="n">${formatNum(t.diesel)}</td>
+        <td class="n">${formatNum(t.aceite)}</td>
+        <td class="n ${Number(t.saldo) < 0 ? 'neg' : ''}">${formatNum(t.saldo)}</td>
+      </tr></tfoot>
+    </table>`;
+  imprimir(`Reporte por Transportista ${data.transportista?.nombre_comercial || ''}`, estilos, cuerpo);
+}
+
+/* ====== RESUMEN DE PÓLIZAS ACTIVAS POR TRANSPORTISTA (horizontal) ====== */
+// Hoja HORIZONTAL. Si hay más pólizas de las que caben a lo ancho, se reparten
+// en varias hojas; cada hoja lleva su propio total por póliza y el total de las
+// pólizas que muestra, y la última cierra con el total general.
+const POLIZAS_POR_HOJA = 8;
+
+export function imprimirPolizasPorTransportista(data, usuario = '') {
+  const estilos = `
+    @page { size: 11in 8.5in; margin: 0.4in; }
+    .cab { display: flex; justify-content: space-between; align-items: flex-start;
+           border-bottom: 2px solid #1f3d5c; padding-bottom: 5px; }
+    .tit { color: #1f3d5c; font-weight: 800; font-size: 13px; }
+    .meta { font-size: 8.5px; text-align: right; color: #333; }
+    .hoja { page-break-after: always; }
+    .hoja:last-child { page-break-after: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 8.5px; margin-top: 8px; }
+    th { background: #e5e7eb; padding: 3px 4px; border: 1px solid #9ca3af; text-align: right; }
+    th.txt { text-align: left; }
+    td { padding: 2px 4px; border: 1px solid #d1d5db; text-align: right; }
+    td.txt { text-align: left; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    tfoot td { font-weight: 700; background: #f3f4f6; }
+    .vacio { color: #9ca3af; }
+    .general { margin-top: 10px; text-align: right; font-size: 11px; font-weight: 800; color: #1f3d5c; }
+  `;
+
+  const polizas = data.polizas || [];
+  const filas = data.filas || [];
+  // Se reparten las pólizas en grupos que quepan a lo ancho de la hoja.
+  const grupos = [];
+  for (let i = 0; i < polizas.length; i += POLIZAS_POR_HOJA) {
+    grupos.push(polizas.slice(i, i + POLIZAS_POR_HOJA));
+  }
+  if (grupos.length === 0) grupos.push([]);
+
+  const hojas = grupos.map((grupo, idx) => {
+    // Total de la fila DENTRO de esta hoja: así cada página cuadra sola.
+    const totalFila = (f) => grupo.reduce((s, p) => s + Number(f.valores?.[p.codigo] || 0), 0);
+    const cuerpoFilas = filas.map((f) => `
+      <tr>
+        <td class="txt">${esc(f.nit || '—')}</td>
+        <td class="txt">${esc(f.nombre)}</td>
+        ${grupo.map((p) => {
+    const v = Number(f.valores?.[p.codigo] || 0);
+    return `<td>${v ? formatNum(v) : '<span class="vacio">-</span>'}</td>`;
+  }).join('')}
+        <td>${formatNum(totalFila(f))}</td>
+      </tr>`).join('');
+
+    const totalHoja = filas.reduce((s, f) => s + totalFila(f), 0);
+
+    return `
+    <div class="hoja">
+      <div class="cab">
+        <div>
+          <img src="${logoAbsUrl()}" style="height:32px"/>
+          <div class="tit">RESUMEN de Pólizas Activas por Transportista</div>
+        </div>
+        <div class="meta">
+          Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>
+          Fecha: ${fechaHoraImpresion()}<br/>
+          Hoja ${idx + 1} de ${grupos.length}
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th class="txt">NIT</th><th class="txt">NOMBRE</th>
+          ${grupo.map((p) => `<th>${esc(p.nombre_poliza)}</th>`).join('')}
+          <th>TOTAL</th>
+        </tr></thead>
+        <tbody>${cuerpoFilas || `<tr><td class="txt" colspan="${grupo.length + 3}">Sin viajes activos.</td></tr>`}</tbody>
+        <tfoot><tr>
+          <td class="txt"></td><td class="txt">Total por póliza</td>
+          ${grupo.map((p) => `<td>${formatNum(data.totales_por_poliza?.[p.codigo] || 0)}</td>`).join('')}
+          <td>${formatNum(totalHoja)}</td>
+        </tr></tfoot>
+      </table>
+      ${idx === grupos.length - 1
+    ? `<div class="general">TOTAL GENERAL DE TODAS LAS PÓLIZAS: Q ${formatNum(data.total_general)}</div>`
+    : ''}
+    </div>`;
+  }).join('');
+
+  imprimir('Pólizas Activas por Transportista', estilos, hojas);
+}

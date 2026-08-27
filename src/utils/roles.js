@@ -7,7 +7,13 @@
  * permiso se decide submenú por submenú.
  */
 import { MENU } from '../data/menuItems';
-import { puedeVerRuta, moduloDeRuta, esSoloLectura as soloLecturaModulo, puedeEliminar as puedeBorrarModulo, rolesDe } from './permisos';
+import {
+  puedeVerRuta, moduloDeRuta, rolesDe,
+  esSoloLectura as soloLecturaModulo,
+  puedeEliminar as puedeBorrarModulo,
+  puedeCrear as puedeCrearModulo,
+  puedeEditar as puedeEditarModulo,
+} from './permisos';
 
 /**
  * Grupos del menú con al menos un submenú visible para el usuario.
@@ -47,6 +53,18 @@ export function puedeAbrir(user, ruta) {
  */
 export function esSoloLectura(user, ruta) {
   return soloLecturaModulo(user, ruta ? moduloDeRuta(ruta) : null);
+}
+
+/** ¿Puede dar de alta en el módulo de esta ruta? */
+export function puedeCrearEn(user, ruta) {
+  const modulo = ruta ? moduloDeRuta(ruta) : null;
+  return modulo ? puedeCrearModulo(user, modulo) : false;
+}
+
+/** ¿Puede modificar lo ya registrado en el módulo de esta ruta? */
+export function puedeEditarEn(user, ruta) {
+  const modulo = ruta ? moduloDeRuta(ruta) : null;
+  return modulo ? puedeEditarModulo(user, modulo) : false;
 }
 
 /** ¿Puede eliminar en el módulo de esta ruta? (solo ADMIN) */

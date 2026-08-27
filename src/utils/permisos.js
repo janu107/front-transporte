@@ -71,6 +71,10 @@ export const MODULOS = {
   reporteDiesel: ['ADMIN', 'OPERA_VALES', 'OPERA_LIQUIDACION', 'CONSULTAS'],
   arrastreDiesel: ['ADMIN', 'OPERA_VALES', 'OPERA_LIQUIDACION', 'CONSULTAS'],
   arrastrePolizas: TODOS,
+  // Reportes nuevos por transportista: los ve quien registra viajes,
+  // quien liquida y quien solo consulta.
+  reporteTransportista: ['ADMIN', 'OPERA_VIAJES', 'OPERA_LIQUIDACION', 'CONSULTAS'],
+  polizasPorTransportista: ['ADMIN', 'OPERA_VIAJES', 'OPERA_LIQUIDACION', 'CONSULTAS'],
   viajesPorPoliza: TODOS,
   polizasPendientes: TODOS,
   anticiposTransportistas: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
@@ -125,6 +129,8 @@ export const MODULO_POR_RUTA = {
   [ROUTES.reporteDiesel]: 'reporteDiesel',
   [ROUTES.reporteArrastreDiesel]: 'arrastreDiesel',
   [ROUTES.reporteArrastrePolizas]: 'arrastrePolizas',
+  [ROUTES.reporteTransportista]: 'reporteTransportista',
+  [ROUTES.reportePolizasTransportistas]: 'polizasPorTransportista',
   [ROUTES.reporteViajesPoliza]: 'viajesPorPoliza',
   [ROUTES.reportePolizasPendientes]: 'polizasPendientes',
   [ROUTES.reporteAnticiposPoliza]: 'anticiposTransportistas',
@@ -143,7 +149,8 @@ export const RESTRICCION_NO_ADMIN = {
   detallePolizas: 'registrar',
   anticipos: 'registrar',
   detalleFacturas: 'registrar',
-  polizas: 'consultar',
+  // Pólizas: OPERA_VIAJES da de alta nuevas; los demás roles solo consultan.
+  polizas: { OPERA_VIAJES: 'registrar', POR_DEFECTO: 'consultar' },
   tarifaEmbarque: 'consultar',
 };
 
@@ -158,7 +165,14 @@ function operacionesEn(rol, modulo) {
   if (rol === 'ADMIN') return base;
   const restriccion = RESTRICCION_NO_ADMIN[modulo];
   if (!restriccion) return base;
-  const permitidas = OPS_RESTRINGIDAS[restriccion] || [];
+  // La restricción puede ser la misma para todos (cadena) o distinta por rol
+  // (objeto con POR_DEFECTO), como en Pólizas: OPERA_VIAJES registra y el resto
+  // solo consulta.
+  const clave = typeof restriccion === 'string'
+    ? restriccion
+    : (restriccion[rol] || restriccion.POR_DEFECTO);
+  if (!clave) return base;
+  const permitidas = OPS_RESTRINGIDAS[clave] || [];
   return base.filter((op) => permitidas.includes(op));
 }
 
@@ -212,6 +226,16 @@ export function moduloDeRuta(ruta) {
 export function esSoloLectura(user, modulo) {
   if (!modulo) return !puedeOperarAlgo(user, 'INSERT');
   return !puedeOperar(user, modulo, 'INSERT') && !puedeOperar(user, modulo, 'UPDATE');
+}
+
+/** ¿Puede dar de alta en el módulo? (botón «+ Nuevo») */
+export function puedeCrear(user, modulo) {
+  return puedeOperar(user, modulo, 'INSERT');
+}
+
+/** ¿Puede modificar lo ya registrado? (lápiz de editar) */
+export function puedeEditar(user, modulo) {
+  return puedeOperar(user, modulo, 'UPDATE');
 }
 
 /** ¿Puede corregir el peso de un envío? (ADMIN, OPERA_VIAJES y OPERA_LIQUIDACION) */
