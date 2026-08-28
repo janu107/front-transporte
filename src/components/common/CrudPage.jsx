@@ -18,7 +18,7 @@
  *  - anularEstado: estado a aplicar cuando deleteMode='anular' (default 'ANULADA')
  *  - canDelete(row): habilita/inhabilita borrado por fila (opcional)
  */
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import PageHeader from '../layout/PageHeader';
 import SearchBar from './SearchBar';
@@ -27,6 +27,7 @@ import Modal from './Modal';
 import Button from './Button';
 import ConfirmDialog from './ConfirmDialog';
 import RowActions from './RowActions';
+import realApi from '../../api/realApi';
 import useCrudMock from '../../hooks/useCrudMock';
 import useSearch from '../../hooks/useSearch';
 import useModal from '../../hooks/useModal';
@@ -67,6 +68,48 @@ export function CrudPage({
   const modal = useModal();
   const confirm = useModal();
 
+  // Estados que la columna admite DE VERDAD. Las tablas de producción no son
+  // todas iguales (unas usan ENUM con su propia lista) y una lista fija en la
+  // pantalla termina ofreciendo valores que la base rechaza al guardar.
+  const [estadosBD, setEstadosBD] = useState(null);
+  useEffect(() => {
+    let vigente = true;
+    (async () => {
+      try {
+        const r = await realApi.estadosPermitidos(recurso);
+        if (vigente && r?.valores?.length) setEstadosBD(r.valores);
+      } catch {
+        // Si no se puede consultar, cada pantalla usa sus valores de siempre.
+      }
+    })();
+    return () => { vigente = false; };
+  }, [recurso]);
+
+  const estadoOptions = useMemo(
+    () => (estadosBD ? estadosBD.map((v) => ({ value: v, label: v })) : null),
+    [estadosBD]
+  );
+
+  /** El estado con el que esta tabla "anula", según lo que tenga disponible. */
+  const estadoAnular = useMemo(() => {
+    if (!estadosBD) return anularEstado;
+    const mayus = estadosBD.map((v) => v.toUpperCase());
+    const preferido = ['ANULADA', 'ANULADO', 'INACTIVO', 'INACTIVA']
+      .find((v) => mayus.includes(v));
+    if (preferido) return estadosBD[mayus.indexOf(preferido)];
+    // Sin ninguno de esos, sirve cualquiera que no sea el estado activo.
+    return estadosBD.find((v) => v.toUpperCase() !== 'ACTIVO') || anularEstado;
+  }, [estadosBD, anularEstado]);
+
+  /** Ajusta el estado inicial de un registro nuevo a uno que la base acepte. */
+  const conEstadoValido = (registro) => {
+    if (!estadosBD || registro.estado === undefined) return registro;
+    const mayus = estadosBD.map((v) => v.toUpperCase());
+    if (mayus.includes(String(registro.estado).toUpperCase())) return registro;
+    const activo = estadosBD[mayus.indexOf('ACTIVO')];
+    return { ...registro, estado: activo || estadosBD[0] };
+  };
+
   // [v6 §2] Imprime el listado actual (filtrado) con el formato de reporte estándar
   // (logo, usuario/terminal, fecha). Usa las columnas visibles de la tabla.
   const columnasSalida = () => (columns || []).map((c) => ({
@@ -96,7 +139,7 @@ export function CrudPage({
   };
 
   const openNew = () => {
-    setValues(emptyRecord);
+    setValues(conEstadoValido(emptyRecord));
     setErrors({});
     clearMessage();
     modal.open(null);
@@ -135,7 +178,7 @@ export function CrudPage({
   const handleConfirmDelete = async () => {
     const row = confirm.data;
     if (deleteMode === 'anular') {
-      await patchEstado(row[idField], anularEstado);
+      await patchEstado(row[idField], estadoAnular);
     } else {
       await remove(row[idField]);
     }
@@ -209,7 +252,9 @@ export function CrudPage({
         {message?.type === 'error' && (
           <div className="alert alert-error" style={{ marginTop: 0 }}>{message.text}</div>
         )}
-        {renderForm({ values, setField, errors, isEdit })}
+        {/* `estadoOptions` va solo si se pudo consultar: así el formulario
+            conserva su lista por defecto cuando no se sabe. */}
+        {renderForm({ values, setField, errors, isEdit, estadoOptions: estadoOptions || undefined })}
       </Modal>
 
       <ConfirmDialog
