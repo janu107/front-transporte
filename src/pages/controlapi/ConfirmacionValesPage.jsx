@@ -224,6 +224,10 @@ export default function ConfirmacionValesPage() {
         id_producto: Number(facturaSel.id_producto), // producto de la factura seleccionada
         id_bomba: Number(facturaSel.id_bomba), // bomba de la factura seleccionada
         id_poliza: Number(form.idPoliza),
+        // La factura contra la que se cobra. Antes no se mandaba y el proceso
+        // elegía otra por su cuenta, así que el vale salía impreso con un
+        // número de factura distinto al que se había seleccionado.
+        id_factura_vale: Number(facturaSel.codigo),
       };
       const apiId = selected.api_id;
       const numero = selected.api_numero;
@@ -232,7 +236,13 @@ export default function ConfirmacionValesPage() {
       const correoTxt = r.correo_enviado
         ? ` Correo enviado a ${r.correo || 'transportista'}.`
         : (r.correo_error ? ` (Correo NO enviado: ${r.correo_error})` : '');
-      notify('success', `${r.mensaje || 'Despacho confirmado.'}${correoTxt}`);
+      // Si el cobro no quedó en la factura elegida hay que decirlo: el vale se
+      // imprime con la factura real, y esa diferencia no puede pasar callada.
+      if (r.aviso_factura) {
+        notify('error', r.aviso_factura);
+      } else {
+        notify('success', `${r.mensaje || 'Despacho confirmado.'}${correoTxt}`);
+      }
       // [v8 §4] Guarda el despacho confirmado para imprimir el vale generado.
       setUltimoConfirmado({ apiId, numero });
       // Limpia y recarga (cierra el modal)
