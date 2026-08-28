@@ -6,14 +6,14 @@
 import { useEffect } from 'react';
 import Input from '../common/Input';
 import Select from '../common/Select';
-import { ESTADO_OPTIONS_FACTURA } from '../../utils/constants';
+import { ESTADO_OPTIONS_FACTURA_VALE } from '../../utils/constants';
 
 export function FacturaValeForm({
   values, setField, errors, isEdit = false,
   productoOptions = [], bombaOptions = [],
   // Los estados los decide la pantalla según lo que admita la columna; la
   // lista fija queda solo como respaldo.
-  estadoOptions = ESTADO_OPTIONS_FACTURA,
+  estadoOptions = ESTADO_OPTIONS_FACTURA_VALE,
 }) {
   // [2026-08 §7] El SALDO es el saldo REAL de la factura (se va consumiendo con los
   // vales); NO debe recalcularse al editar, porque pisaba el saldo real con

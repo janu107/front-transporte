@@ -46,6 +46,15 @@ export const ESTADO_OPTIONS_FACTURA = [
   { value: 'ANULADA', label: 'ANULADA' },
 ];
 
+// Facturas de combustible (man_facturas_vales). La factura debe quedar ACTIVO
+// para poder emitirle vales; INACTIVO la deja fuera de uso. Es el respaldo por
+// si no se puede consultar a la base qué admite la columna.
+export const ESTADO_OPTIONS_FACTURA_VALE = [
+  { value: 'ACTIVO', label: 'ACTIVO' },
+  { value: 'INACTIVO', label: 'INACTIVO' },
+  { value: 'LIQUIDADO', label: 'LIQUIDADO' },
+];
+
 export const ESTADO_OPTIONS_LIQUIDACION = [
   { value: 'PENDIENTE', label: 'PENDIENTE' },
   { value: 'LIQUIDADA', label: 'LIQUIDADA' },
