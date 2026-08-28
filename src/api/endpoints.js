@@ -58,6 +58,7 @@ export const ENDPOINTS = {
     create: (recurso) => `/mantenimientos/${recurso}`,
     update: (recurso, id) => `/mantenimientos/${recurso}/${id}`,
     remove: (recurso, id) => `/mantenimientos/${recurso}/${id}`,
+    estados: (recurso) => `/mantenimientos/${recurso}/estados`, // GET
   },
 
   // Procesos (recurso: poliza-detalle | anticipo-provision | detalle-facturas | liquidaciones)

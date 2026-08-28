@@ -8,7 +8,13 @@ import Input from '../common/Input';
 import Select from '../common/Select';
 import { ESTADO_OPTIONS_FACTURA } from '../../utils/constants';
 
-export function FacturaValeForm({ values, setField, errors, isEdit = false, productoOptions = [], bombaOptions = [] }) {
+export function FacturaValeForm({
+  values, setField, errors, isEdit = false,
+  productoOptions = [], bombaOptions = [],
+  // Los estados los decide la pantalla según lo que admita la columna; la
+  // lista fija queda solo como respaldo.
+  estadoOptions = ESTADO_OPTIONS_FACTURA,
+}) {
   // [2026-08 §7] El SALDO es el saldo REAL de la factura (se va consumiendo con los
   // vales); NO debe recalcularse al editar, porque pisaba el saldo real con
   // unidades×precio y por eso no cuadraba con lo que se ve en el listado.
@@ -37,7 +43,8 @@ export function FacturaValeForm({ values, setField, errors, isEdit = false, prod
       <Input label="Saldo" name="saldo" type="number" min={0} step="0.01" value={values.saldo}
         onChange={(e) => setField('saldo', e.target.value)} error={errors.saldo} />
       <Select label="Estado" name="estado" value={values.estado}
-        onChange={(e) => setField('estado', e.target.value)} options={ESTADO_OPTIONS_FACTURA} required error={errors.estado} />
+        onChange={(e) => setField('estado', e.target.value)}
+        options={estadoOptions} required error={errors.estado} />
       <Input className="col-span-2" label="Descripción de compra" name="descripcion_compra" value={values.descripcion_compra}
         onChange={(e) => setField('descripcion_compra', e.target.value)} error={errors.descripcion_compra} />
     </div>

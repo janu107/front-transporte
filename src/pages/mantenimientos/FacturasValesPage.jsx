@@ -1,7 +1,10 @@
 /**
  * FacturasValesPage.jsx — man_facturas_vales. Selects de producto y bomba.
  */
+import { useEffect, useState } from 'react';
 import CrudPage from '../../components/common/CrudPage';
+import realApi from '../../api/realApi';
+import { ESTADO_OPTIONS_FACTURA } from '../../utils/constants';
 import FacturaValeForm from '../../components/forms/FacturaValeForm';
 import Badge from '../../components/common/Badge';
 import useRelated, { toOptions } from '../../hooks/useRelated';
@@ -12,6 +15,23 @@ export default function FacturasValesPage() {
   const { productos = [], bombas = [] } = useRelated({ productos: 'productos', bombas: 'bombas' });
   const productoOptions = toOptions(productos);
   const bombaOptions = toOptions(bombas);
+
+  // El select de estado se arma con lo que la columna admite de verdad. En
+  // producción no siempre es la misma lista, y al mandar un valor que la base
+  // no acepta el error que devolvía MySQL no decía nada útil.
+  const [estadoOptions, setEstadoOptions] = useState(ESTADO_OPTIONS_FACTURA);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await realApi.estadosPermitidos('facturasVales');
+        if (r?.valores?.length) {
+          setEstadoOptions(r.valores.map((v) => ({ value: v, label: v })));
+        }
+      } catch {
+        // Si no se puede consultar, se deja la lista de siempre.
+      }
+    })();
+  }, []);
 
   const columns = [
     { key: 'codigo', label: 'Código' },
@@ -34,7 +54,8 @@ export default function FacturasValesPage() {
       anularEstado="ANULADA"
       columns={columns}
       searchFields={['codigo', 'factura', 'descripcion_compra', 'fecha', 'saldo', 'estado']}
-      emptyRecord={{ factura: '', id_producto: '', id_bomba: '', descripcion_compra: '', fecha: '', unidades: 0, precio: 0, saldo: 0, estado: 'PENDIENTE' }}
+      // El estado inicial es el primero que la base admita.
+      emptyRecord={{ factura: '', id_producto: '', id_bomba: '', descripcion_compra: '', fecha: '', unidades: 0, precio: 0, saldo: 0, estado: estadoOptions[0]?.value || 'PENDIENTE' }}
       validate={(v) =>
         validateForm(v, {
           factura: [required('La factura es obligatoria')],
@@ -45,7 +66,10 @@ export default function FacturasValesPage() {
           precio: [nonNegative('No puede ser negativo')],
         })
       }
-      renderForm={(props) => <FacturaValeForm {...props} productoOptions={productoOptions} bombaOptions={bombaOptions} />}
+      renderForm={(props) => (
+        <FacturaValeForm {...props} productoOptions={productoOptions}
+          bombaOptions={bombaOptions} estadoOptions={estadoOptions} />
+      )}
     />
   );
 }

@@ -107,6 +107,12 @@ export const realApi = {
     return unwrap(await axiosClient.patch(`/viajes/${id}/peso`, { peso }));
   },
 
+  // Estados que la columna admite de verdad, para armar el select con esos y no
+  // con una lista fija que la base podría rechazar.
+  async estadosPermitidos(recurso) {
+    return unwrap(await axiosClient.get(`${pathOf(recurso)}/estados`));
+  },
+
   // Reportes por transportista sobre pólizas activas.
   async transportistasReporte() {
     return unwrap(await axiosClient.get('/reportes/transportista/lista'));
