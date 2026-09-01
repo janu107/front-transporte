@@ -253,6 +253,17 @@ export default function ConfirmacionValesPage() {
       realApi.list('facturasVales').then(setFacturas).catch(() => {});
     } catch (e) {
       notify('error', e?.userMessage || e?.response?.data?.message || 'No se pudo confirmar el servicio de despacho.');
+      // Si la factura elegida dejó de servir (otro usuario la liquidó justo
+      // antes), se recarga el desplegable y se limpia la selección para que se
+      // vuelva a elegir sobre datos frescos.
+      if (e?.response?.data?.details?.recargar_facturas) {
+        try {
+          setFacturas(await realApi.list('facturasVales'));
+        } catch {
+          // Si tampoco se puede recargar, queda el aviso de arriba.
+        }
+        setForm((prev) => ({ ...prev, idFactura: '' }));
+      }
     } finally {
       setConfirming(false);
     }
