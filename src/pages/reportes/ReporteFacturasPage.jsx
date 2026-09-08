@@ -23,7 +23,7 @@ export default function ReporteFacturasPage() {
     { key: 'fecha', label: 'Fecha', render: (r) => formatDate(r.fecha), print: (r) => formatDate(r.fecha) },
     { key: 'unidades', label: 'Galones', render: (r) => formatNumber(r.unidades), print: (r) => formatNumber(r.unidades) },
     { key: 'precio', label: 'Precio', render: (r) => formatCurrency(r.precio), print: (r) => formatCurrency(r.precio) },
-    { key: 'saldo', label: 'Saldo', render: (r) => formatNumber(r.saldo), print: (r) => formatNumber(r.saldo) },
+    { key: 'saldo', label: 'Saldo (gal)', render: (r) => formatNumber(r.saldo), print: (r) => formatNumber(r.saldo) },
     { key: 'estado', label: 'Estado', render: (r) => <Badge value={r.estado} />, print: (r) => r.estado },
   ];
 

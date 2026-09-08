@@ -10,6 +10,7 @@ export function Input({
   type = 'text',
   required = false,
   error,
+  hint,
   placeholder,
   className = '',
   ...rest
@@ -33,6 +34,7 @@ export function Input({
         {...rest}
       />
       {error && <div className="field-error">{error}</div>}
+      {!error && hint && <div className="field-hint">{hint}</div>}
     </div>
   );
 }

@@ -1205,6 +1205,8 @@ export function imprimirPolizasPorTransportista(data, usuario = '') {
     tr { page-break-inside: avoid; }
     tfoot td { font-weight: 700; background: #f3f4f6; }
     .vacio { color: #9ca3af; }
+    /* Saldo negativo: se le adelantó más de lo que generó. */
+    td.neg { color: #c1121f; }
     .general { margin-top: 10px; text-align: right; font-size: 11px; font-weight: 800; color: #1f3d5c; }
   `;
 
@@ -1226,7 +1228,11 @@ export function imprimirPolizasPorTransportista(data, usuario = '') {
         <td class="txt">${esc(f.nombre)}</td>
         ${grupo.map((p) => {
     const v = Number(f.valores?.[p.codigo] || 0);
-    return `<td>${v ? formatNum(v) : '<span class="vacio">-</span>'}</td>`;
+    // Guion solo si no hubo cruce. Un saldo en cero sí se imprime: hubo
+    // movimiento y el flete alcanzó justo para los descuentos.
+    const sinCruce = f.detalles?.[p.codigo] === undefined && !v;
+    if (sinCruce) return '<td><span class="vacio">-</span></td>';
+    return `<td${v < 0 ? ' class="neg"' : ''}>${formatNum(v)}</td>`;
   }).join('')}
         <td>${formatNum(totalFila(f))}</td>
       </tr>`).join('');
@@ -1238,7 +1244,7 @@ export function imprimirPolizasPorTransportista(data, usuario = '') {
       <div class="cab">
         <div>
           <img src="${logoAbsUrl()}" style="height:32px"/>
-          <div class="tit">RESUMEN de Pólizas Activas por Transportista</div>
+          <div class="tit">SALDOS por Transportista y Póliza (pólizas activas)</div>
         </div>
         <div class="meta">
           Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>
@@ -1260,7 +1266,7 @@ export function imprimirPolizasPorTransportista(data, usuario = '') {
         </tr></tfoot>
       </table>
       ${idx === grupos.length - 1
-    ? `<div class="general">TOTAL GENERAL DE TODAS LAS PÓLIZAS: Q ${formatNum(data.total_general)}</div>`
+    ? `<div class="general">SALDO GENERAL DE TODAS LAS PÓLIZAS: Q ${formatNum(data.total_general)}</div>`
     : ''}
     </div>`;
   }).join('');

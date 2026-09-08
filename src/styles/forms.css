@@ -144,6 +144,13 @@ select.form-control { cursor: pointer; }
   font-weight: 500;
 }
 
+/* Aclaración bajo un campo: unidades, equivalencias, lo ya consumido. */
+.field-hint {
+  color: var(--text-muted, #6b7280);
+  font-size: var(--fs-xs);
+  margin-top: 5px;
+}
+
 .search-input { position: relative; min-width: 280px; }
 .search-input input { padding-left: 40px; border-radius: var(--radius-control); background: var(--surface); }
 .search-input .search-icon {
