@@ -24,7 +24,26 @@ export default function FacturasValesPage() {
     // con su unidad, junto a las unidades compradas para poder compararlos.
     { key: 'unidades', label: 'Unidades', render: (v) => `${formatNumber(v)} gal` },
     { key: 'precio', label: 'Precio/gal', render: (v) => formatCurrency(v) },
-    { key: 'saldo', label: 'Saldo (gal)', render: (v) => `${formatNumber(v)} gal` },
+    // Lo despachado sale de la cuenta del área: SUM(cantidad) de los vales
+    // ACTIVOS de la factura. Lo calcula el servidor.
+    { key: 'despachado', label: 'Despachados', render: (v) => `${formatNumber(v || 0)} gal` },
+    {
+      key: 'saldo',
+      label: 'Saldo (gal)',
+      // Si el guardado no cuadra con unidades − despachados, se marca en la
+      // misma celda: es el rastro del saldo que se llevaba en quetzales.
+      render: (v, row) => {
+        const calc = row?.saldo_calculado;
+        const cuadra = calc === undefined || calc === null
+          || Math.abs(Number(v) - Number(calc)) < 0.01;
+        return cuadra ? `${formatNumber(v)} gal` : (
+          <span title={`Según la cuenta debería ser ${formatNumber(calc)} gal`}
+            style={{ color: '#8d1019', fontWeight: 600 }}>
+            {formatNumber(v)} gal ⚠ ({formatNumber(calc)})
+          </span>
+        );
+      },
+    },
     { key: 'estado', label: 'Estado', render: (v) => <Badge value={v} /> },
   ];
 

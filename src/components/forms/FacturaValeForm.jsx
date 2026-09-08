@@ -33,6 +33,18 @@ export function FacturaValeForm({
   const precio = Number(values.precio) || 0;
   const saldo = Number(values.saldo) || 0;
 
+  // Lo YA DESPACHADO lo calcula el servidor con la cuenta del área:
+  //   SUM(cantidad) de los vales en estado ACTIVO de esta factura.
+  // Viene en el listado, así que al editar se sabe el saldo que DEBERÍA tener y
+  // se puede avisar si el guardado no cuadra, en vez de dar por bueno un número
+  // que quizá quedó de cuando el saldo se llevaba en quetzales.
+  const tieneCuenta = values.despachado !== undefined && values.despachado !== null;
+  const despachado = Number(values.despachado) || 0;
+  const saldoCuenta = tieneCuenta
+    ? Number((unidades - despachado).toFixed(2))
+    : null;
+  const descuadre = isEdit && tieneCuenta && Math.abs(saldo - saldoCuenta) >= 0.01;
+
   return (
     <div className="form-grid">
       <Input label="Factura" name="factura" value={values.factura}
@@ -52,9 +64,28 @@ export function FacturaValeForm({
       <Input label="Saldo (galones por despachar)" name="saldo" type="number" min={0} step="0.01"
         value={values.saldo}
         onChange={(e) => setField('saldo', e.target.value)} error={errors.saldo}
-        hint={isEdit
-          ? `Despachados: ${formatNumber(Math.max(unidades - saldo, 0))} gal de ${formatNumber(unidades)} gal`
-          : 'Arranca igual a las unidades compradas'} />
+        hint={!isEdit ? 'Arranca igual a las unidades compradas'
+          : tieneCuenta
+            ? `Despachados ${formatNumber(despachado)} gal de ${formatNumber(unidades)} gal`
+              + ` → según la cuenta el saldo es ${formatNumber(saldoCuenta)} gal`
+            : `De ${formatNumber(unidades)} gal compradas`} />
+
+      {/* El saldo guardado no coincide con unidades − despachados. Se avisa y se
+          deja arreglar de una vez, sin tener que correr nada en la base. */}
+      {descuadre && (
+        <div className="col-span-2 alert alert-warning" style={{ margin: 0 }}>
+          El saldo guardado es <b>{formatNumber(saldo)} gal</b>, pero la cuenta da{' '}
+          <b>{formatNumber(saldoCuenta)} gal</b>{' '}
+          ({formatNumber(unidades)} compradas − {formatNumber(despachado)} despachados).
+          {Math.abs(saldo - unidades * precio) < 1
+            && ' El valor guardado es unidades × precio: quedó de cuando el saldo se llevaba en quetzales.'}
+          {' '}
+          <button type="button" className="btn-link"
+            onClick={() => setField('saldo', saldoCuenta)}>
+            Usar {formatNumber(saldoCuenta)}
+          </button>
+        </div>
+      )}
       <Select label="Estado" name="estado" value={values.estado}
         onChange={(e) => setField('estado', e.target.value)}
         options={estadoOptions} required error={errors.estado} />

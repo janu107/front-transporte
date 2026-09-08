@@ -264,6 +264,19 @@ img { max-width: 100%; }
 .alert-success { background: #e4f7ea; color: #106b34; }
 .alert-error { background: #fde3e5; color: #8d1019; }
 .alert-info { background: #eef0f3; color: #333; }
+.alert-warning { background: #fdf3d8; color: #7a5200; }
+
+/* Acción dentro de un texto: se ve como enlace, no como botón. */
+.btn-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
 
 /* ----- Animaciones ----- */
 @keyframes fadeIn {
