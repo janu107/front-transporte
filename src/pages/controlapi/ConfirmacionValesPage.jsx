@@ -172,6 +172,11 @@ export default function ConfirmacionValesPage() {
   const galones = selected ? Number(selected.api_cant_galones) : 0;
   const precio = facturaSel ? Number(facturaSel.precio) : 0;
   const total = galones * precio;
+  // Una factura puede tener saldo positivo pero no suficiente para este vale.
+  // No se permite confirmar en ese caso: primero se registra/selecciona la
+  // siguiente factura con saldo suficiente. Esto evita que el saldo sea negativo.
+  const saldoFactura = facturaSel ? Number(facturaSel.saldo) : 0;
+  const saldoSuficiente = Boolean(facturaSel) && saldoFactura >= galones;
 
   const placaValida = Boolean(camionSel && transportistaSel);
 
@@ -209,6 +214,7 @@ export default function ConfirmacionValesPage() {
     form.idPoliza &&
     form.idPiloto &&
     form.idFactura &&
+    saldoSuficiente &&
     !confirming;
 
   const confirmar = async () => {
@@ -567,6 +573,14 @@ export default function ConfirmacionValesPage() {
                 placeholder={facturaOptions.length ? 'Seleccione factura...' : 'Sin facturas activas con saldo'}
               />
             </div>
+
+            {facturaSel && !saldoSuficiente && (
+              <div className="alert alert-error" style={{ marginTop: 12 }}>
+                Esta factura tiene <b>{formatNumber(saldoFactura)} gal</b> disponibles y el vale requiere
+                {' '}<b>{formatNumber(galones)} gal</b>. La factura no puede quedar en negativo.
+                Registre o seleccione una nueva factura con saldo suficiente para continuar.
+              </div>
+            )}
 
             {!placaValida && (
               <div className="alert alert-error" style={{ marginTop: 12 }}>
