@@ -1181,6 +1181,37 @@ export function imprimirReporteTransportista(data, usuario = '') {
   imprimir(`Reporte por Transportista ${data.transportista?.nombre_comercial || ''}`, estilos, cuerpo);
 }
 
+/* ============ LIQUIDACION POR POLIZA (detalle de transportistas) ============ */
+// data: { poliza, filas, totales }. El navegador permite guardar esta impresión como PDF.
+export function imprimirLiquidacionPorPoliza(data, usuario = '') {
+  const estilos = `
+    @page { size: 11in 8.5in; margin: 0.45in; }
+    .cab { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #1f3d5c; padding-bottom:6px; }
+    .tit { color:#1f3d5c; font-weight:800; font-size:15px; }
+    .pol { font-size:14px; font-weight:800; margin:8px 0; }
+    .meta { font-size:9px; text-align:right; color:#333; }
+    table { width:100%; border-collapse:collapse; font-size:9px; }
+    th { background:#e5e7eb; border:1px solid #9ca3af; padding:4px; text-align:left; }
+    td { border:1px solid #d1d5db; padding:3px 4px; }
+    .n { text-align:right; } .neg { color:#c1121f; } thead { display:table-header-group; }
+    tfoot td { font-weight:800; background:#f3f4f6; } tr { page-break-inside:avoid; }
+  `;
+  const t = data.totales || {};
+  const filas = (data.filas || []).map((f, i) => `<tr>
+    <td class="n">${i + 1}</td><td>${esc(f.nit || '')}</td><td>${esc(f.transportista)}</td>
+    <td class="n">${Number(f.viajes || 0)}</td><td class="n">${formatNum(f.peso_qq)}</td>
+    <td class="n">${formatNum(f.flete)}</td><td class="n">${formatNum(f.anticipo)}</td>
+    <td class="n">${formatNum(f.diesel)}</td><td class="n">${formatNum(f.manejo)}</td>
+    <td class="n ${Number(f.liquido) < 0 ? 'neg' : ''}">${formatNum(f.liquido)}</td>
+  </tr>`).join('');
+  const cuerpo = `<div class="cab"><div style="display:flex;gap:8px;align-items:center"><img src="${logoAbsUrl()}" style="height:36px"/><div class="tit">SETRASA S.A.<br/><span style="font-size:11px">Resumen de Liquidación a Transportistas</span></div></div><div class="meta">Usuario: ${esc(usuario)} · Terminal: ${TERMINAL}<br/>Fecha: ${fechaHoraImpresion()}</div></div>
+    <div class="pol">PÓLIZA: ${esc(data.poliza?.nombre_poliza)}</div>
+    <table><thead><tr><th class="n">NO.</th><th>ID</th><th>NOMBRE PROPIETARIO</th><th class="n">VIAJES</th><th class="n">PESO qq</th><th class="n">FLETE</th><th class="n">ANTICIPO</th><th class="n">DIESEL</th><th class="n">MANEJO</th><th class="n">LÍQUIDO</th></tr></thead>
+    <tbody>${filas || '<tr><td colspan="10" style="text-align:center;padding:16px">Sin movimientos para esta póliza.</td></tr>'}</tbody>
+    <tfoot><tr><td class="n">${Number(t.transportistas || 0)}</td><td></td><td>TOTALES</td><td class="n">${Number(t.viajes || 0)}</td><td class="n">${formatNum(t.peso_qq)}</td><td class="n">${formatNum(t.flete)}</td><td class="n">${formatNum(t.anticipo)}</td><td class="n">${formatNum(t.diesel)}</td><td class="n">${formatNum(t.manejo)}</td><td class="n ${Number(t.liquido) < 0 ? 'neg' : ''}">${formatNum(t.liquido)}</td></tr></tfoot></table>`;
+  imprimir(`Deatalles de los transportistas ${data.poliza?.nombre_poliza || ''}`, estilos, cuerpo);
+}
+
 /* ====== RESUMEN DE PÓLIZAS ACTIVAS POR TRANSPORTISTA (horizontal) ====== */
 // Hoja HORIZONTAL. Si hay más pólizas de las que caben a lo ancho, se reparten
 // en varias hojas; cada hoja lleva su propio total por póliza y el total de las

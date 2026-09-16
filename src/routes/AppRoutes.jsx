@@ -73,6 +73,7 @@ import ReportePolizasPage from '../pages/reportes/ReportePolizasPage';
 import ReporteFacturasPage from '../pages/reportes/ReporteFacturasPage';
 import ReporteArrastrePolizasPage from '../pages/reportes/ReporteArrastrePolizasPage';
 import ReporteTransportistaPage from '../pages/reportes/ReporteTransportistaPage';
+import ReporteLiquidacionPorPolizaPage from '../pages/reportes/ReporteLiquidacionPorPolizaPage';
 import ReportePolizasTransportistasPage from '../pages/reportes/ReportePolizasTransportistasPage';
 import ReporteViajesPolizaPage from '../pages/reportes/ReporteViajesPolizaPage';
 
@@ -157,6 +158,7 @@ export function AppRoutes() {
           <Route path={ROUTES.reporteFacturas} element={<ReporteFacturasPage />} />
           <Route path={ROUTES.reporteArrastrePolizas} element={<ReporteArrastrePolizasPage />} />
           <Route path={ROUTES.reporteTransportista} element={<ReporteTransportistaPage />} />
+          <Route path={ROUTES.reporteLiquidacionPorPoliza} element={<ReporteLiquidacionPorPolizaPage />} />
           <Route path={ROUTES.reportePolizasTransportistas} element={<ReportePolizasTransportistasPage />} />
           <Route path={ROUTES.reporteViajesPoliza} element={<ReporteViajesPolizaPage />} />
 

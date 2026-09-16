@@ -74,6 +74,7 @@ export const MODULOS = {
   // Reportes nuevos por transportista: los ve quien registra viajes,
   // quien liquida y quien solo consulta.
   reporteTransportista: ['ADMIN', 'OPERA_VIAJES', 'OPERA_LIQUIDACION', 'CONSULTAS'],
+  liquidacionPorPoliza: ['ADMIN', 'OPERA_VIAJES', 'OPERA_LIQUIDACION', 'CONSULTAS'],
   polizasPorTransportista: ['ADMIN', 'OPERA_VIAJES', 'OPERA_LIQUIDACION', 'CONSULTAS'],
   viajesPorPoliza: TODOS,
   polizasPendientes: TODOS,
@@ -130,6 +131,7 @@ export const MODULO_POR_RUTA = {
   [ROUTES.reporteArrastreDiesel]: 'arrastreDiesel',
   [ROUTES.reporteArrastrePolizas]: 'arrastrePolizas',
   [ROUTES.reporteTransportista]: 'reporteTransportista',
+  [ROUTES.reporteLiquidacionPorPoliza]: 'liquidacionPorPoliza',
   [ROUTES.reportePolizasTransportistas]: 'polizasPorTransportista',
   [ROUTES.reporteViajesPoliza]: 'viajesPorPoliza',
   [ROUTES.reportePolizasPendientes]: 'polizasPendientes',

@@ -123,6 +123,9 @@ export const realApi = {
   async reportePolizasTransportistas() {
     return unwrap(await axiosClient.get('/reportes/polizas-transportistas'));
   },
+  async reporteLiquidacionPorPoliza(params) {
+    return unwrap(await axiosClient.get('/reportes/liquidacion-por-poliza', { params }));
+  },
 
   // Registro de Viajes: valida piezas vs saldo y calcula el valor (M2).
   async viajeValidar(body) {
