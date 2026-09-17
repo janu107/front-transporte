@@ -11,6 +11,10 @@
  *     Ya NO se captura Ubicación (predio) ni Surtidor/Bomba en el modal.
  *  3. CONFIRMAR: ejecuta sp_confirmar_despacho_api (id_bomba/id_producto salen de
  *     la factura elegida) y marca el vale como 'C' (Confirmado).
+ *     Si al vale no le alcanza el saldo de la factura elegida, se CRUZA: esa
+ *     factura se liquida con lo que le queda y el resto se cobra a la siguiente
+ *     factura activa de la misma bomba (dos vales con el mismo número). El
+ *     reparto se muestra en el modal antes de confirmar.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/layout/PageHeader';
@@ -171,12 +175,42 @@ export default function ConfirmacionValesPage() {
   // Cálculos para mostrar (galones del MATO, precio de la factura, total)
   const galones = selected ? Number(selected.api_cant_galones) : 0;
   const precio = facturaSel ? Number(facturaSel.precio) : 0;
-  const total = galones * precio;
-  // Una factura puede tener saldo positivo pero no suficiente para este vale.
-  // No se permite confirmar en ese caso: primero se registra/selecciona la
-  // siguiente factura con saldo suficiente. Esto evita que el saldo sea negativo.
   const saldoFactura = facturaSel ? Number(facturaSel.saldo) : 0;
   const saldoSuficiente = Boolean(facturaSel) && saldoFactura >= galones;
+
+  // CRUCE DE FACTURAS: cuando al vale no le alcanza el saldo de la factura
+  // elegida, esa factura se liquida con lo que le queda y el resto se cobra a la
+  // siguiente factura activa de la misma bomba. Se generan dos vales con el
+  // mismo número, uno por factura, y ninguna queda en negativo.
+  //
+  // El reparto lo hace sp_confirmar_despacho_api; aquí se repite su misma regla
+  // (la factura más antigua, del mismo producto y bomba, que cubra el resto)
+  // para que se vea ANTES de confirmar contra qué se va a cobrar.
+  const restoCruce = facturaSel && !saldoSuficiente
+    ? Number((galones - saldoFactura).toFixed(2))
+    : 0;
+  const facturaCruce = useMemo(() => {
+    if (!facturaSel || restoCruce <= 0) return null;
+    const antiguedad = (f) => {
+      const t = new Date(f.fecha).getTime();
+      return Number.isFinite(t) ? t : 0;
+    };
+    const candidatas = facturas.filter((f) => String(f.estado).toUpperCase() === 'ACTIVO'
+      && String(f.codigo) !== String(facturaSel.codigo)
+      && String(f.id_producto) === String(facturaSel.id_producto)
+      && String(f.id_bomba) === String(facturaSel.id_bomba)
+      && Number(f.saldo) >= restoCruce);
+    candidatas.sort((a, b) => antiguedad(a) - antiguedad(b) || Number(a.codigo) - Number(b.codigo));
+    return candidatas[0] || null;
+  }, [facturas, facturaSel, restoCruce]);
+
+  const hayCruce = Boolean(facturaSel) && !saldoSuficiente && Boolean(facturaCruce);
+  // Con cruce cada tramo se cobra al precio de SU factura, así que el total no
+  // es galones × un solo precio.
+  const precioCruce = hayCruce ? Number(facturaCruce.precio) : 0;
+  const totalFactura = hayCruce ? saldoFactura * precio : galones * precio;
+  const totalCruce = hayCruce ? restoCruce * precioCruce : 0;
+  const total = totalFactura + totalCruce;
 
   const placaValida = Boolean(camionSel && transportistaSel);
 
@@ -214,7 +248,8 @@ export default function ConfirmacionValesPage() {
     form.idPoliza &&
     form.idPiloto &&
     form.idFactura &&
-    saldoSuficiente &&
+    // Cabe en la factura elegida, o hay una segunda factura que cubre el resto.
+    (saldoSuficiente || hayCruce) &&
     !confirming;
 
   const confirmar = async () => {
@@ -242,12 +277,17 @@ export default function ConfirmacionValesPage() {
       const correoTxt = r.correo_enviado
         ? ` Correo enviado a ${r.correo || 'transportista'}.`
         : (r.correo_error ? ` (Correo NO enviado: ${r.correo_error})` : '');
+      // Si el vale se repartió entre dos facturas, se dice cómo quedó de verdad
+      // (leído de pro_detalle_facturas, no del reparto que se había previsto).
+      const cruceTxt = r.hubo_cruce && r.resumen_cobro
+        ? ` Cruce de facturas → ${r.resumen_cobro}.`
+        : '';
       // Si el cobro no quedó en la factura elegida hay que decirlo: el vale se
       // imprime con la factura real, y esa diferencia no puede pasar callada.
       if (r.aviso_factura) {
         notify('error', r.aviso_factura);
       } else {
-        notify('success', `${r.mensaje || 'Despacho confirmado.'}${correoTxt}`);
+        notify('success', `${r.mensaje || 'Despacho confirmado.'}${cruceTxt}${correoTxt}`);
       }
       // [v8 §4] Guarda el despacho confirmado para imprimir el vale generado.
       setUltimoConfirmado({ apiId, numero });
@@ -574,11 +614,33 @@ export default function ConfirmacionValesPage() {
               />
             </div>
 
-            {facturaSel && !saldoSuficiente && (
+            {/* Cruce: se puede confirmar, pero el reparto se muestra antes. */}
+            {hayCruce && (
+              <div className="alert alert-warning" style={{ marginTop: 12 }}>
+                <b>Cruce de facturas.</b> A la factura <b>{facturaSel.factura}</b> le quedan
+                {' '}<b>{formatNumber(saldoFactura)} gal</b> y el vale es de <b>{formatNumber(galones)} gal</b>,
+                así que se cobra a dos facturas y se generan <b>dos vales con el mismo número</b>:
+                <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                  <li>
+                    <b>{facturaSel.factura}</b>: {formatNumber(saldoFactura)} gal ·{' '}
+                    {formatCurrency(totalFactura)} — queda en 0 y se liquida.
+                  </li>
+                  <li>
+                    <b>{facturaCruce.factura}</b>: {formatNumber(restoCruce)} gal ·{' '}
+                    {formatCurrency(totalCruce)} — empieza a rebajarse (tiene{' '}
+                    {formatNumber(facturaCruce.saldo)} gal).
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            {/* Sin segunda factura no hay contra qué cobrar el resto. */}
+            {facturaSel && !saldoSuficiente && !facturaCruce && (
               <div className="alert alert-error" style={{ marginTop: 12 }}>
-                Esta factura tiene <b>{formatNumber(saldoFactura)} gal</b> disponibles y el vale requiere
-                {' '}<b>{formatNumber(galones)} gal</b>. La factura no puede quedar en negativo.
-                Registre o seleccione una nueva factura con saldo suficiente para continuar.
+                A la factura <b>{facturaSel.factura}</b> le quedan <b>{formatNumber(saldoFactura)} gal</b> y el
+                vale requiere <b>{formatNumber(galones)} gal</b>. No hay otra factura activa de esta bomba con
+                al menos <b>{formatNumber(restoCruce)} gal</b> para cobrar el resto: regístrela en
+                Mantenimientos → Facturas / Vales y vuelva a intentarlo.
               </div>
             )}
 
@@ -591,8 +653,19 @@ export default function ConfirmacionValesPage() {
 
             {/* Resumen galones / precio / total */}
             <div style={resumenStyle}>
-              <Resumen label="Galones" value={formatNumber(galones)} />
-              <Resumen label="Precio" value={formatCurrency(precio)} />
+              {/* Con cruce se muestran los dos tramos: suman los galones del vale. */}
+              <Resumen
+                label="Galones"
+                value={hayCruce
+                  ? `${formatNumber(saldoFactura)} + ${formatNumber(restoCruce)}`
+                  : formatNumber(galones)}
+              />
+              <Resumen
+                label="Precio"
+                value={hayCruce && precioCruce !== precio
+                  ? `${formatCurrency(precio)} + ${formatCurrency(precioCruce)}`
+                  : formatCurrency(precio)}
+              />
               <Resumen label="Total" value={formatCurrency(total)} strong />
             </div>
           </>
