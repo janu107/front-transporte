@@ -36,6 +36,22 @@ const FORM_VACIO = { idPoliza: '', idPiloto: '', idFactura: '' };
 // Normaliza una placa para comparar (mayúsculas, sin espacios ni guiones).
 const normPlaca = (s) => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
+// Los despachos de llave maestra no traen camión: el API escribe "LLAVE MAESTRA n"
+// unas veces en el nombre del piloto y otras en la placa (la bomba de Arizona,
+// llave 3, la manda en la placa). Por eso se revisan los dos campos y sin anclar
+// al inicio del texto.
+const TEXTO_LLAVE_MAESTRA = /LLAVE\s*MAESTRA/i;
+const esValeLlaveMaestra = (row) => TEXTO_LLAVE_MAESTRA.test(row?.api_nombre_piloto || '')
+  || TEXTO_LLAVE_MAESTRA.test(row?.api_placa || '');
+
+// "LLAVE MAESTRA 3" no es una placa. Si viene en ese campo, la casilla arranca
+// vacía: si se deja el texto puesto, no hay camión que coincida y la pantalla
+// parece trabada.
+const placaDeVale = (row) => {
+  const placa = String(row?.api_placa || '').trim();
+  return TEXTO_LLAVE_MAESTRA.test(placa) ? '' : placa;
+};
+
 export default function ConfirmacionValesPage() {
   // Datos del API y catálogos
   const [pendientes, setPendientes] = useState([]);
@@ -131,9 +147,10 @@ export default function ConfirmacionValesPage() {
     [polizas]
   );
 
-  // [M4.2] Si el vale viene de "LLAVE MAESTRA", la placa es editable a mano.
-  const esLlaveMaestra = /^\s*LLAVE\s*MAESTRA/i.test(selected?.api_nombre_piloto || '');
-  const placaEfectiva = esLlaveMaestra ? placaManual : (selected?.api_placa || '');
+  // [M4.2] Si el vale viene de "LLAVE MAESTRA" (en el nombre del piloto o en la
+  // placa), la placa se escribe a mano: ese despacho no trae camión.
+  const esLlaveMaestra = esValeLlaveMaestra(selected);
+  const placaEfectiva = esLlaveMaestra ? placaManual.trim() : (selected?.api_placa || '');
 
   // Camión que corresponde a la placa efectiva (del vale o la escrita a mano).
   const camionSel = useMemo(() => {
@@ -230,7 +247,7 @@ export default function ConfirmacionValesPage() {
   const seleccionarVale = (row) => {
     setSelected(row);
     setForm(FORM_VACIO);
-    setPlacaManual(row.api_placa || '');
+    setPlacaManual(placaDeVale(row));
     setMessage(null);
   };
 
@@ -583,7 +600,7 @@ export default function ConfirmacionValesPage() {
                     className={`form-control ${placaEfectiva && !camionSel ? 'is-invalid' : ''}`}
                     value={placaManual}
                     onChange={(e) => setPlacaManual(e.target.value)}
-                    placeholder="Escriba la placa..."
+                    placeholder="Escriba la placa del camión que cargó..."
                   />
                 </div>
               ) : (
@@ -591,8 +608,11 @@ export default function ConfirmacionValesPage() {
               )}
               <ReadOnlyField
                 label="Transportista"
-                value={placaValida ? transportistaSel.nombre_comercial : (camionSel ? '—' : 'Placa no registrada')}
-                invalid={!placaValida}
+                value={placaValida
+                  ? transportistaSel.nombre_comercial
+                  : (camionSel ? '—' : (placaEfectiva ? 'Placa no registrada' : 'Escriba la placa'))}
+                // Con la casilla vacía todavía no hay nada malo que señalar.
+                invalid={!placaValida && Boolean(placaEfectiva)}
               />
 
               <Select
@@ -602,7 +622,9 @@ export default function ConfirmacionValesPage() {
                 options={pilotoOptions}
                 disabled={!placaValida}
                 placeholder={
-                  !placaValida ? 'Valide la placa primero' : (pilotoOptions.length ? 'Seleccione licencia...' : 'El transportista no tiene pilotos')
+                  !placaValida
+                    ? (placaEfectiva ? 'Valide la placa primero' : 'Escriba la placa primero')
+                    : (pilotoOptions.length ? 'Seleccione licencia...' : 'El transportista no tiene pilotos')
                 }
               />
               <Select
@@ -644,7 +666,25 @@ export default function ConfirmacionValesPage() {
               </div>
             )}
 
-            {!placaValida && (
+            {/* En llave maestra el API no manda camión, así que el aviso no puede
+                decir "la placa del vale": no hay tal. Se habla de la que se
+                escribió (o de la que falta por escribir). */}
+            {!placaValida && esLlaveMaestra && !placaEfectiva && (
+              <div className="alert alert-warning" style={{ marginTop: 12 }}>
+                Vale de <b>LLAVE MAESTRA</b>: el API no manda el camión. Escriba arriba la placa
+                del que cargó para poder elegir piloto y confirmar.
+              </div>
+            )}
+
+            {!placaValida && esLlaveMaestra && placaEfectiva && (
+              <div className="alert alert-error" style={{ marginTop: 12 }}>
+                La placa <b>{placaEfectiva}</b> no está registrada en Camiones. Revise que esté
+                bien escrita; si el camión es nuevo, regístrelo en Mantenimientos → Camiones
+                (con su transportista y sus pilotos) y vuelva a abrir este vale.
+              </div>
+            )}
+
+            {!placaValida && !esLlaveMaestra && (
               <div className="alert alert-error" style={{ marginTop: 12 }}>
                 La placa del vale (<b>{selected.api_placa || 's/placa'}</b>) no está registrada en Camiones.
                 Regístrela en Mantenimientos → Camiones para poder confirmar este vale.
