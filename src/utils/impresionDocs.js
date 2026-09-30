@@ -814,11 +814,19 @@ export function imprimirValeCombustible(datos) {
     .tot-caja { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 11px; }
     .firma { margin-top: 10px; font-size: 10px; display: flex; align-items: flex-end; gap: 4px; }
     .firma .linea { flex: 1; border-bottom: 1px solid #000; height: 11px; }
+    /* Despacho vencido: va al pie, para que se lea junto a las firmas. */
+    .vencido {
+      margin-top: auto; text-align: center; font-size: 10px; font-weight: 800;
+      letter-spacing: .06em; border: 1px solid #000; padding: 3px 0;
+    }
   `;
   const p = partesFecha(datos.fecha);
   const impreso = partesFecha(new Date());
   const hora = new Date().toLocaleTimeString('es-GT', { hour12: false });
   const copias = ['ORIGINAL CLIENTE', 'DUPLICADO'];
+  // Vale de 0.00 galones: a la bomba se le venció el tiempo de despacho y no
+  // sirvió combustible. El vale se imprime igual, con la razón al pie.
+  const vencido = Number(datos.cantidad || 0) === 0;
 
   const vale = (etiqueta) => `
     <div class="vale">
@@ -879,6 +887,7 @@ export function imprimirValeCombustible(datos) {
 
       <div class="firma"><b>FIRMA AUT.:</b> <span class="linea"></span></div>
       <div class="firma"><b>RECIBI CONFORME:</b> <span class="linea"></span></div>
+      ${vencido ? '<div class="vencido">VENCIMIENTO TIEMPO DE DESPACHO</div>' : ''}
     </div>`;
   imprimir(`Vale de Combustible ${datos.numero || ''}`, estilos, `<div class="hoja">${copias.map(vale).join('')}</div>`);
 }

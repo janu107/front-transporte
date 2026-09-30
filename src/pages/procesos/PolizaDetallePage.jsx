@@ -26,7 +26,7 @@ import TablePager from '../../components/common/TablePager';
 import usePagination from '../../hooks/usePagination';
 import useAuth from '../../hooks/useAuth';
 import realApi from '../../api/realApi';
-import { esAdmin, puedeEditarPeso } from '../../utils/roles';
+import { esAdmin, puedeEditarPeso, puedeAnular, puedeCrear } from '../../utils/roles';
 import { lookup, formatDate, formatNumber, formatCurrency } from '../../utils/formatters';
 import { TIPO_VIAJE_OPTIONS } from '../../utils/constants';
 import { imprimirCartaPorte } from '../../utils/impresionDocs';
@@ -60,6 +60,11 @@ export default function PolizaDetallePage() {
   // Corregir el peso es una acción aparte: la tienen también OPERA_VIAJES y
   // OPERA_LIQUIDACION, aunque no puedan editar ni anular el envío.
   const editaPeso = puedeEditarPeso(user);
+  // Anular también es aparte: ADMIN y el rol ANULA_VIAJE, que entra únicamente
+  // a eso (no registra, no edita, no corrige pesos).
+  const anula = puedeAnular(user, 'detallePolizas');
+  // Quien no puede dar de alta tampoco debe ver "Nuevo viaje".
+  const registra = puedeCrear(user, 'detallePolizas');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -467,8 +472,8 @@ export default function PolizaDetallePage() {
       <PageHeader
         title="Registro de Viajes"
         description="Detalle de póliza / envíos. Registra viajes por póliza y controla el saldo de piezas."
-        actionLabel="+ Nuevo viaje"
-        onAction={abrirNuevo}
+        actionLabel={registra ? '+ Nuevo viaje' : undefined}
+        onAction={registra ? abrirNuevo : undefined}
       />
 
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
@@ -520,14 +525,13 @@ export default function PolizaDetallePage() {
                       {editaPeso && String(r.estado).toUpperCase() !== 'ANULADO' && (
                         <button style={accionBtn} title="Editar peso (recalcula el valor)" aria-label="Editar peso" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
                       )}
-                      {/* Editar y anular el envío: exclusivo de ADMIN. */}
+                      {/* Editar el envío: exclusivo de ADMIN. */}
                       {admin && (
-                        <>
-                          <button style={accionBtn} title="Editar viaje" aria-label="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
-                          {String(r.estado).toUpperCase() !== 'ANULADO' && (
-                            <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
-                          )}
-                        </>
+                        <button style={accionBtn} title="Editar viaje" aria-label="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
+                      )}
+                      {/* Anular: ADMIN y ANULA_VIAJE (para este última es su única acción). */}
+                      {anula && String(r.estado).toUpperCase() !== 'ANULADO' && (
+                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
                       )}
                     </td>
                   </tr>

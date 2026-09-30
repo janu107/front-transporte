@@ -73,4 +73,4 @@ export function puedeEliminar(user, ruta) {
 }
 
 export { rolesDe };
-export { esAdmin, puedeEditarPeso } from './permisos';
+export { esAdmin, puedeEditarPeso, puedeAnular, puedeCrear } from './permisos';

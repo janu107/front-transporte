@@ -12,6 +12,8 @@
  *   OPERA_VALES        consulta, crea y edita (vales de diesel y anticipos)
  *   OPERA_LIQUIDACION  consulta, crea y edita (liquidación de pólizas)
  *   CONSULTAS          solo consulta
+ *   ANULA_VIAJE        entra a Registro de Viajes SOLO para anular: no registra,
+ *                      no edita y no corrige pesos
  *
  * Un usuario puede tener varios roles: los permisos se suman.
  */
@@ -23,9 +25,26 @@ export const OPERACIONES_POR_ROL = {
   OPERA_VALES: ['SELECT', 'INSERT', 'UPDATE'],
   OPERA_LIQUIDACION: ['SELECT', 'INSERT', 'UPDATE'],
   CONSULTAS: ['SELECT'],
+  // Anular no es UPDATE en esta matriz: es una capacidad aparte (ROLES_ANULAN),
+  // porque quien anula no debe poder editar el resto del envío.
+  ANULA_VIAJE: ['SELECT'],
+};
+
+/**
+ * Roles que, sin ser ADMIN, pueden ANULAR registros de un módulo. Se lleva
+ * aparte de OPERACIONES_POR_ROL a propósito: anular no es "editar", y darles
+ * UPDATE les abriría también el formulario de edición.
+ */
+const ROLES_ANULAN = {
+  detallePolizas: ['ANULA_VIAJE'],
 };
 
 const TODOS = ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'OPERA_LIQUIDACION', 'CONSULTAS'];
+
+// Lo que ANULA_VIAJE necesita para abrir Registro de Viajes y anular: la pantalla,
+// los catalogos que muestra (poliza, placa, piloto, transportista, tarifa) y una
+// pantalla de inicio. Los reportes quedan fuera a proposito.
+const CON_ANULA = [...TODOS, 'ANULA_VIAJE'];
 
 /** Roles con acceso a cada módulo (una entrada por submenú). */
 export const MODULOS = {
@@ -42,18 +61,18 @@ export const MODULOS = {
   productos: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
   bombas: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
   // Todos leen las tarifas (el registro de viajes las necesita); solo ADMIN edita.
-  tarifaEmbarque: TODOS,
+  tarifaEmbarque: CON_ANULA,
 
   empresas: ['ADMIN'],
   parametros: ['ADMIN'],
 
-  transportistas: TODOS,
-  pilotos: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
-  camiones: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
-  polizas: TODOS,
+  transportistas: CON_ANULA,
+  pilotos: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS', 'ANULA_VIAJE'],
+  camiones: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS', 'ANULA_VIAJE'],
+  polizas: CON_ANULA,
   facturas: ['ADMIN', 'OPERA_LIQUIDACION'],
 
-  detallePolizas: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS'],
+  detallePolizas: ['ADMIN', 'OPERA_VIAJES', 'OPERA_VALES', 'CONSULTAS', 'ANULA_VIAJE'],
   // Corregir el peso de un envío (y recalcular su valor) es una operación
   // acotada: la tienen los roles que registran y liquidan viajes, aunque no
   // puedan editar el resto del envío.
@@ -83,7 +102,7 @@ export const MODULOS = {
   bitacoras: ['ADMIN'],
   historial: ['ADMIN', 'CONSULTAS'],
 
-  dashboard: TODOS,
+  dashboard: CON_ANULA,
 };
 
 /** Ruta del menú -> módulo de la matriz. */
@@ -205,6 +224,17 @@ export function puedeOperar(user, modulo, operacion) {
 /** ¿Es ADMIN? (control total: editar, anular y eliminar en cualquier módulo) */
 export function esAdmin(user) {
   return rolesDe(user).includes('ADMIN');
+}
+
+/**
+ * ¿Puede ANULAR registros de este módulo? ADMIN siempre; los demás solo si su
+ * rol está en ROLES_ANULAN. Es distinto de poder editar: ANULA_VIAJE anula
+ * envíos pero no los modifica ni registra nuevos.
+ */
+export function puedeAnular(user, modulo) {
+  if (esAdmin(user)) return true;
+  const roles = ROLES_ANULAN[modulo] || [];
+  return rolesDe(user).some((r) => roles.includes(r));
 }
 
 /** ¿Puede abrir esta ruta del menú? */

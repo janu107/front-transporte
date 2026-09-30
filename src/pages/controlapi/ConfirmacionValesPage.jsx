@@ -221,6 +221,12 @@ export default function ConfirmacionValesPage() {
     return candidatas[0] || null;
   }, [facturas, facturaSel, restoCruce]);
 
+  // 0.00 galones: a la bomba se le venció el tiempo de despacho y no sirvió
+  // combustible. El vale se genera igual, de constancia: no descuenta saldo de
+  // la factura y no dispara correo (el backend lo confirma sin pasar por
+  // combustible-api). El aviso queda impreso al pie del vale.
+  const esVencido = Boolean(selected) && galones === 0;
+
   const hayCruce = Boolean(facturaSel) && !saldoSuficiente && Boolean(facturaCruce);
   // Con cruce cada tramo se cobra al precio de SU factura, así que el total no
   // es galones × un solo precio.
@@ -635,6 +641,15 @@ export default function ConfirmacionValesPage() {
                 placeholder={facturaOptions.length ? 'Seleccione factura...' : 'Sin facturas activas con saldo'}
               />
             </div>
+
+            {/* Despacho vencido: se confirma, pero no cobra ni avisa por correo. */}
+            {esVencido && (
+              <div className="alert alert-warning" style={{ marginTop: 12 }}>
+                <b>Vencimiento tiempo de despacho.</b> Este despacho viene en <b>0.00 galones</b>:
+                el vale se genera para dejar constancia, no descuenta saldo de la factura y
+                no se envía correo al transportista. El aviso queda impreso al pie del vale.
+              </div>
+            )}
 
             {/* Cruce: se puede confirmar, pero el reparto se muestra antes. */}
             {hayCruce && (
