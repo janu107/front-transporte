@@ -39,6 +39,20 @@ const EMPTY = {
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
+// Factor kg->lb de la fórmula del valor, el mismo de viajes.service.js:
+// VALOR = peso(kg) × factor × valor de la tarifa de embarque.
+const FACTOR_KG_LB = 0.022046;
+
+// Fecha de hoy en AAAA-MM-DD para el input type="date". Se arma con el día
+// local, NO con toISOString(): en Guatemala (UTC-6) el ISO adelanta al día
+// siguiente después de las 18:00 y el envío quedaría fechado mañana.
+const hoyISO = () => {
+  const d = new Date();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mes}-${dia}`;
+};
+
 export default function PolizaDetallePage() {
   const { user } = useAuth();
   // Solo ADMIN puede editar o anular viajes; los demás roles registran e imprimen.
@@ -161,8 +175,16 @@ export default function PolizaDetallePage() {
   }, [camionSel, pilotos]);
 
   // ---- Calculados ----
-  // El valor lo calcula el backend (peso × 0.022046 × tarifa) vía validarEnvio.
-  const valorMostrar = calc ? calc.valor : (editing ? num(editing.valor) : 0);
+  // El valor de verdad lo calcula el servidor al guardar; validarEnvio lo trae
+  // onBlur. Mientras tanto se calcula aquí con la misma fórmula para que el
+  // campo muestre el monto al instante en vez de quedarse en Q 0.00.
+  const valorLocal = useMemo(() => {
+    const tar = tarifas.find((x) => String(x.codigo) === String(values.id_tarifa_embarque));
+    if (!tar) return 0;
+    return Number((num(values.peso) * FACTOR_KG_LB * Number(tar.valor || 0)).toFixed(2));
+  }, [tarifas, values.id_tarifa_embarque, values.peso]);
+
+  const valorMostrar = calc ? calc.valor : (valorLocal || (editing ? num(editing.valor) : 0));
 
   // [2026-08 §5] Viaje local: el número de envío se escribe a mano. En Carta de
   // Porte / Exportación se asigna el correlativo automático al guardar.
@@ -174,7 +196,7 @@ export default function PolizaDetallePage() {
     if (!pesoEdit) return 0;
     const tar = tarifas.find((x) => String(x.codigo) === String(pesoEdit.row.id_tarifa_embarque));
     const vt = tar ? Number(tar.valor || 0) : 0;
-    return Number((Number(pesoEdit.peso || 0) * 0.022046 * vt).toFixed(2));
+    return Number((Number(pesoEdit.peso || 0) * FACTOR_KG_LB * vt).toFixed(2));
   }, [pesoEdit, tarifas]);
 
   // El saldo es POR PÓLIZA Y PUNTO DE EMBARQUE: los puntos son tramos que
@@ -279,7 +301,9 @@ export default function PolizaDetallePage() {
   // Reinicia el formulario a "nuevo" (sin cerrar el modal). Se usa en abrir y en el botón Nuevo.
   const resetFormulario = () => {
     setEditing(null);
-    setValues(EMPTY);
+    // La fecha se pone aquí y no en EMPTY: si se pusiera en la constante, la
+    // pantalla abierta desde ayer seguiría proponiendo la fecha de ayer.
+    setValues({ ...EMPTY, fecha: hoyISO() });
     setErrors({});
     setResumen(null);
     setCalc(null); setCalcMsg(null);
@@ -325,11 +349,18 @@ export default function PolizaDetallePage() {
     else if (!transportistaSel) e.id_camion = 'La placa no tiene transportista válido';
     if (!values.id_piloto) e.id_piloto = 'Seleccione el piloto';
     if (!values.fecha) e.fecha = 'La fecha es obligatoria';
-    if (piezasLive < 0) e.cantidad_bultos_piezas = 'No puede ser negativo';
-    else if (resumen && piezasLive > piezasMax) {
+    // La tarifa es la que pone el precio: sin ella el viaje se graba en Q 0.00.
+    if (!values.id_tarifa_embarque) e.id_tarifa_embarque = 'Seleccione la tarifa de embarque';
+    if (values.cantidad_bultos_piezas === '' || values.cantidad_bultos_piezas === null) {
+      e.cantidad_bultos_piezas = 'Indique las piezas';
+    } else if (piezasLive <= 0) {
+      e.cantidad_bultos_piezas = 'Debe ser mayor que cero';
+    } else if (resumen && piezasLive > piezasMax) {
       e.cantidad_bultos_piezas = `Excede el saldo disponible (${formatNumber(piezasMax, 0)})`;
     }
-    if (num(values.peso) < 0) e.peso = 'No puede ser negativo';
+    // Sin peso el valor sale en cero, que era justo lo que se colaba.
+    if (values.peso === '' || values.peso === null) e.peso = 'Indique el peso';
+    else if (num(values.peso) <= 0) e.peso = 'Debe ser mayor que cero';
     return e;
   };
 
@@ -564,9 +595,11 @@ export default function PolizaDetallePage() {
           <SearchableSelect label="Póliza (ABIERTA)" name="id_poliza" required value={values.id_poliza}
             onChange={(v) => onChangePoliza(v)} options={polizaOptions} error={errors.id_poliza}
             placeholder={polizaOptions.length ? 'Escriba para buscar póliza...' : 'No hay pólizas abiertas'} />
-          <SearchableSelect label="Tarifa de embarque" name="id_tarifa_embarque" value={values.id_tarifa_embarque}
+          <SearchableSelect label="Tarifa de embarque" name="id_tarifa_embarque" required
+            value={values.id_tarifa_embarque}
             onChange={(v) => { setField('id_tarifa_embarque', v); setCalc(null); setCalcMsg(null); }}
-            options={tarifaOptions} placeholder="Buscar tarifa (código, origen, destino)..." />
+            options={tarifaOptions} error={errors.id_tarifa_embarque}
+            placeholder="Buscar tarifa (código, origen, destino)..." />
           <ReadOnly label="Pesos de la póliza"
             value={resumen ? `${formatNumber(resumen.peso_total)} · ${formatNumber(resumen.cantidad_piezas, 0)} pzs` : (resumenLoading ? 'Cargando...' : '—')} />
         </div>
@@ -603,9 +636,11 @@ export default function PolizaDetallePage() {
           )}
           <Input label="Fecha de envío" name="fecha" type="date" required value={values.fecha}
             onChange={(e) => setField('fecha', e.target.value)} error={errors.fecha} />
-          <Input label="No. de piezas" name="cantidad_bultos_piezas" type="number" min={0} value={values.cantidad_bultos_piezas}
+          <Input label="No. de piezas" name="cantidad_bultos_piezas" type="number" min={1} required
+            value={values.cantidad_bultos_piezas}
             onChange={(e) => setField('cantidad_bultos_piezas', e.target.value)} onBlur={validarEnvio} error={errors.cantidad_bultos_piezas} />
-          <Input label="Peso (kilogramos)" name="peso" type="number" min={0} step="0.01" value={values.peso}
+          <Input label="Peso (kilogramos)" name="peso" type="number" min={0} step="0.01" required
+            value={values.peso}
             onChange={(e) => setField('peso', e.target.value)} onBlur={validarEnvio} error={errors.peso} />
           <ReadOnly label="Valor" value={formatCurrency(valorMostrar)} strong />
           <Input className="col-span-2" label="Observaciones" name="observaciones" value={values.observaciones}
