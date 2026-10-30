@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * DetalleFacturasPage.jsx — DETALLE DE FACTURA (P14) sobre pro_detalle_facturas.
  * Alta manual de vales de combustible contra una factura ACTIVA:
@@ -235,14 +236,14 @@ export default function DetalleFacturasPage() {
                   <td data-label="Total" style={{ textAlign: 'right' }}>{formatCurrency(r.total)}</td>
                   <td data-label="Estado"><Badge value={r.estado || 'ACTIVO'} /></td>
                   <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
+                    <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}><Icon name="print" /></button>
                     {/* Editar y anular: solo ADMIN. La anulación además sigue
                         reservada a los vales manuales. */}
                     {admin && String(r.estado).toUpperCase() !== 'ANULADO' && (
-                      <button style={accionBtn} title="Editar vale" aria-label="Editar vale" onClick={() => abrirEditar(r)}>✏️</button>
+                      <button style={accionBtn} title="Editar vale" aria-label="Editar vale" onClick={() => abrirEditar(r)}><Icon name="edit" /></button>
                     )}
                     {admin && String(r.estado).toUpperCase() !== 'ANULADO' && String(r.origen).toUpperCase() === 'M' && (
-                      <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                      <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}><Icon name="block" /></button>
                     )}
                   </td>
                 </tr>
@@ -261,19 +262,19 @@ export default function DetalleFacturasPage() {
         footer={saved ? (
           <>
             <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirVale(saved.correlativo)}>Imprimir</Button>
-            <Button variant="primary" icon="➕" onClick={resetFormulario}>Nuevo</Button>
+            <Button variant="secondary" icon="print" onClick={() => imprimirVale(saved.correlativo)}>Imprimir</Button>
+            <Button variant="primary" icon="add" onClick={resetFormulario}>Nuevo</Button>
           </>
         ) : (
           <>
             <Button variant="secondary" onClick={cerrarModal} disabled={saving}>Cancelar</Button>
-            <Button variant="primary" icon="💾" onClick={guardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
+            <Button variant="primary" icon="save" onClick={guardar} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
           </>
         )}
       >
         {saved && (
           <div className="alert alert-success" style={{ marginTop: 0, marginBottom: 12 }}>
-            ✅ Vale guardado correctamente. Número asignado: <b>{saved.num_vale}</b>. Puede imprimir o presionar «Nuevo».
+            <Icon name="check" /> Vale guardado correctamente. Número asignado: <b>{saved.num_vale}</b>. Puede imprimir o presionar «Nuevo».
           </div>
         )}
         {editando && !saved && (

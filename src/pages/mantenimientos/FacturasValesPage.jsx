@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * FacturasValesPage.jsx — man_facturas_vales. Selects de producto y bomba.
  */
@@ -39,7 +40,7 @@ export default function FacturasValesPage() {
         return cuadra ? `${formatNumber(v)} gal` : (
           <span title={`Según la cuenta debería ser ${formatNumber(calc)} gal`}
             style={{ color: '#8d1019', fontWeight: 600 }}>
-            {formatNumber(v)} gal ⚠ ({formatNumber(calc)})
+            {formatNumber(v)} gal <Icon name="warning" /> ({formatNumber(calc)})
           </span>
         );
       },

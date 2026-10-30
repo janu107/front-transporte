@@ -6,17 +6,12 @@
  */
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { APP_NAME } from '../../utils/constants';
 import useAuth from '../../hooks/useAuth';
 import { menuPermitido } from '../../utils/roles';
 import Logo from '../common/Logo';
+import Icon from '../common/Icon';
 
-const tituloBtn = {
-  display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
-  background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left',
-};
-
-export function Sidebar({ open, onNavigate }) {
+export function Sidebar({ onNavigate, onClose }) {
   const { user } = useAuth();
   // Menú filtrado por la matriz de permisos: se ocultan los submenús que el rol
   // no puede abrir y los grupos que quedan sin opciones.
@@ -32,17 +27,18 @@ export function Sidebar({ open, onNavigate }) {
   });
 
   return (
-    <aside className={`sidebar ${open ? 'open' : ''}`}>
+    <aside id="app-sidebar" className="sidebar" aria-label="Menú principal">
       <div className="sidebar-brand">
-        <Logo height={38} />
+        <Logo className="sidebar-logo" />
         <div className="brand-text">
           SETRASA
-          <span>{APP_NAME}</span>
+          <span>Gestión de transporte</span>
         </div>
+        {onClose && <button className="sidebar-close" type="button" onClick={onClose} aria-label="Cerrar menú"><Icon name="close" /></button>}
       </div>
 
-      <nav className="sidebar-nav">
-        {grupos.map((group) => {
+      <nav className="sidebar-nav" aria-label="Módulos">
+        {grupos.map((group, index) => {
           const items = group.items; // ya vienen filtrados por permisos
           const colapsado = colapsados.has(group.title);
           return (
@@ -50,25 +46,28 @@ export function Sidebar({ open, onNavigate }) {
               <button
                 type="button"
                 className="nav-group-title"
-                style={tituloBtn}
                 onClick={() => toggle(group.title)}
                 aria-expanded={!colapsado}
+                aria-controls={`nav-group-${index}`}
                 title={colapsado ? 'Desplegar' : 'Contraer'}
               >
                 <span>{group.title}</span>
-                <span style={{ fontSize: 10, transition: 'transform .15s', transform: colapsado ? 'rotate(-90deg)' : 'none' }}>▾</span>
+                <Icon name="expand" size={16} className={colapsado ? 'group-chevron collapsed' : 'group-chevron'} />
               </button>
-              {!colapsado && items.map((item) => (
+              <div id={`nav-group-${index}`} hidden={colapsado}>
+              {items.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  title={item.label}
                   onClick={onNavigate}
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  <span className="nav-icon">{item.icon}</span>
+                  <Icon className="nav-icon" name={item.icon} size={20} />
                   <span>{item.label}</span>
                 </NavLink>
               ))}
+              </div>
             </div>
           );
         })}

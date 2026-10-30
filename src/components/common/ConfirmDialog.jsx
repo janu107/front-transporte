@@ -4,6 +4,7 @@
  */
 import Modal from './Modal';
 import Button from './Button';
+import Icon from './Icon';
 
 export function ConfirmDialog({
   isOpen,
@@ -13,7 +14,7 @@ export function ConfirmDialog({
   message = '¿Está seguro de realizar esta acción?',
   confirmText = 'Eliminar',
   confirmVariant = 'danger',
-  icon = '⚠️',
+  icon = 'warning',
 }) {
   return (
     <Modal
@@ -33,7 +34,7 @@ export function ConfirmDialog({
       }
     >
       <div style={{ textAlign: 'center' }}>
-        <div className="confirm-icon">{icon}</div>
+        <div className="confirm-icon"><Icon name={icon} size={34} /></div>
         <p className="confirm-text">{message}</p>
       </div>
     </Modal>

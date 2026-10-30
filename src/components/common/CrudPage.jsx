@@ -202,10 +202,10 @@ export function CrudPage({
         </div>
         {printable && (
           <>
-            <Button variant="secondary" icon="📊" onClick={exportar} disabled={loading || !filtered.length}>
+            <Button variant="secondary" icon="report" onClick={exportar} disabled={loading || !filtered.length}>
               Excel
             </Button>
-            <Button variant="secondary" icon="🖨️" onClick={imprimir} disabled={loading || !filtered.length}>
+            <Button variant="secondary" icon="print" onClick={imprimir} disabled={loading || !filtered.length}>
               Imprimir
             </Button>
           </>
@@ -225,7 +225,7 @@ export function CrudPage({
             onEdit={conEdicion ? () => openEdit(row) : undefined}
             // Eliminar/anular solo para quien tiene ese permiso (ADMIN).
             onDelete={conBorrado ? () => confirm.open(row) : undefined}
-            deleteIcon={deleteMode === 'anular' ? '🚫' : '🗑️'}
+            deleteIcon={deleteMode === 'anular' ? 'block' : 'delete'}
             deleteTitle={deleteMode === 'anular' ? 'Anular' : 'Eliminar'}
           />
         )}

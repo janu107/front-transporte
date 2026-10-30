@@ -96,9 +96,9 @@ export default function ReporteLiquidacionesV2Page() {
         <Select label="Estado" name="reporteLiqEstado" value={filtros.estado}
           onChange={(e) => setField('estado', e.target.value)} placeholder="Todos"
           options={[{ value: 'LIQUIDADO', label: 'Liquidado' }, { value: 'REVERTIDA', label: 'Revertida' }]} />
-        <Button variant="secondary" icon="🔍" onClick={consultar} disabled={loading}>{loading ? 'Consultando...' : 'Consultar'}</Button>
-        <Button variant="secondary" icon="📊" onClick={exportar} disabled={!items.length}>Exportar Excel</Button>
-        <Button variant="primary" icon="🖨️" onClick={imprimir} disabled={!items.length}>Exportar PDF</Button>
+        <Button variant="secondary" icon="search" onClick={consultar} disabled={loading}>{loading ? 'Consultando...' : 'Consultar'}</Button>
+        <Button variant="secondary" icon="report" onClick={exportar} disabled={!items.length}>Exportar Excel</Button>
+        <Button variant="primary" icon="print" onClick={imprimir} disabled={!items.length}>Exportar PDF</Button>
       </div>
 
       <div className="table-wrapper table-wrapper--cards"><div className="table-scroll"><table className="data-table">

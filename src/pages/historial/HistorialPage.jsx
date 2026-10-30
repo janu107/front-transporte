@@ -116,8 +116,8 @@ export default function HistorialPage() {
           <Input label="Búsqueda" name="q" value={f.q} placeholder="Texto a buscar..."
             onChange={(e) => setField('q', e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') buscar(); }} />
         </div>
-        <Button variant="primary" icon="🔍" onClick={buscar} disabled={loading}>{loading ? 'Buscando...' : 'Buscar'}</Button>
-        {filas.length > 0 && <Button variant="secondary" icon="🖨️" onClick={imprimir}>Imprimir</Button>}
+        <Button variant="primary" icon="search" onClick={buscar} disabled={loading}>{loading ? 'Buscando...' : 'Buscar'}</Button>
+        {filas.length > 0 && <Button variant="secondary" icon="print" onClick={imprimir}>Imprimir</Button>}
       </div>
 
       {dateCol && (

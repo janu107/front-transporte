@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * AnticipoProvisionPage.jsx — ANTICIPOS / PROVISIÓN (pro_anticipo_provision).
  * [M7] Cascada: Póliza (activa) → Placa → Transportista (auto, solo lectura) → Piloto.
@@ -225,7 +226,7 @@ export default function AnticipoProvisionPage() {
         <div style={{ flex: 1 }}>
           <SearchBar value={term} onChange={setTerm} placeholder="Buscar por número, descripción, póliza, transportista o placa..." />
         </div>
-        <Button variant="secondary" icon="🖨️" onClick={() => { setReimprF({ vale: '', placa: '' }); setReimprRes(null); setReimprOpen(true); }}>
+        <Button variant="secondary" icon="print" onClick={() => { setReimprF({ vale: '', placa: '' }); setReimprRes(null); setReimprOpen(true); }}>
           Reimpresión
         </Button>
       </div>
@@ -257,13 +258,13 @@ export default function AnticipoProvisionPage() {
                     <td data-label="Valor">{formatCurrency(r.valor)}</td>
                     <td data-label="Estado"><Badge value={r.estado} /></td>
                     <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}>🖨️</button>
+                      <button style={accionBtn} title="Imprimir vale" aria-label="Imprimir vale" onClick={() => imprimirVale(r.correlativo)}><Icon name="print" /></button>
                       {/* Editar y anular: exclusivo de ADMIN. */}
                       {admin && (
                         <>
-                          <button style={accionBtn} title="Editar" aria-label="Editar" onClick={() => abrirEditar(r)}>✏️</button>
+                          <button style={accionBtn} title="Editar" aria-label="Editar" onClick={() => abrirEditar(r)}><Icon name="edit" /></button>
                           {String(r.estado).toUpperCase() !== 'ANULADO' && (
-                            <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                            <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}><Icon name="block" /></button>
                           )}
                         </>
                       )}
@@ -285,13 +286,13 @@ export default function AnticipoProvisionPage() {
         footer={saved ? (
           <>
             <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirVale(saved.correlativo)}>Imprimir</Button>
-            <Button variant="primary" icon="➕" onClick={resetFormulario}>Nuevo</Button>
+            <Button variant="secondary" icon="print" onClick={() => imprimirVale(saved.correlativo)}>Imprimir</Button>
+            <Button variant="primary" icon="add" onClick={resetFormulario}>Nuevo</Button>
           </>
         ) : (
           <>
             <Button variant="secondary" onClick={cerrarModal} disabled={saving}>Cancelar</Button>
-            <Button variant="primary" icon="💾" onClick={guardar} disabled={saving}>
+            <Button variant="primary" icon="save" onClick={guardar} disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar'}
             </Button>
           </>
@@ -300,7 +301,7 @@ export default function AnticipoProvisionPage() {
         {/* [4.4] Confirmación con el correlativo (el modal no se cierra al guardar). */}
         {saved && (
           <div className="alert alert-success" style={{ marginTop: 0, marginBottom: 12 }}>
-            ✅ Anticipo guardado correctamente. Número de anticipo: <b>{saved.num_anticipo}</b>. Puede imprimir el vale o presionar «Nuevo».
+            <Icon name="check" /> Anticipo guardado correctamente. Número de anticipo: <b>{saved.num_anticipo}</b>. Puede imprimir el vale o presionar «Nuevo».
           </div>
         )}
 
@@ -359,7 +360,7 @@ export default function AnticipoProvisionPage() {
           <Input label="Placa" name="placa" value={reimprF.placa}
             onChange={(e) => setReimprF((p) => ({ ...p, placa: e.target.value }))}
             onKeyDown={(e) => { if (e.key === 'Enter') buscarReimpresion(); }} placeholder="Ej. 642BRY" />
-          <Button variant="primary" icon="🔍" onClick={buscarReimpresion} disabled={reimprLoading}>
+          <Button variant="primary" icon="search" onClick={buscarReimpresion} disabled={reimprLoading}>
             {reimprLoading ? 'Buscando...' : 'Buscar'}
           </Button>
         </div>
@@ -389,7 +390,7 @@ export default function AnticipoProvisionPage() {
                       <td style={{ textAlign: 'right' }}>{formatCurrency(r.total)}</td>
                       <td><Badge value={r.estado} /></td>
                       <td style={{ textAlign: 'right' }}>
-                        <button style={accionBtn} title="Reimprimir vale" onClick={() => imprimirValeAnticipo(r)}>🖨️</button>
+                        <button style={accionBtn} title="Reimprimir vale" onClick={() => imprimirValeAnticipo(r)}><Icon name="print" /></button>
                       </td>
                     </tr>
                   ))}

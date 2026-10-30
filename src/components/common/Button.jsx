@@ -5,6 +5,8 @@
  * loading: opcional — muestra un spinner y deshabilita el botón sin
  * cambiar su ancho (el contenido se mantiene en el layout, solo se oculta).
  */
+import Icon from './Icon';
+
 export function Button({
   children,
   variant = 'primary',
@@ -30,7 +32,7 @@ export function Button({
 
   return (
     <button type={type} className={classes} disabled={disabled || loading} aria-busy={loading || undefined} {...rest}>
-      {icon && <span className="btn-icon">{icon}</span>}
+      {icon && <span className="btn-icon">{typeof icon === 'string' ? <Icon name={icon} size={18} /> : icon}</span>}
       {children}
       {loading && <span className="btn-spinner" aria-hidden="true" />}
     </button>

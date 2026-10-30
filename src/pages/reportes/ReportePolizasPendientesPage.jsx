@@ -84,11 +84,11 @@ export default function ReportePolizasPendientesPage() {
             {e.label}
           </label>
         ))}
-        <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
+        <Button variant="primary" icon="search" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
         {data && data.polizas.length > 0 && (
           <>
-            <Button variant="secondary" icon="📊" onClick={exportar}>Exportar Excel</Button>
-            <Button variant="secondary" icon="🖨️" onClick={imprimir}>Imprimir</Button>
+            <Button variant="secondary" icon="report" onClick={exportar}>Exportar Excel</Button>
+            <Button variant="secondary" icon="print" onClick={imprimir}>Imprimir</Button>
           </>
         )}
       </div>

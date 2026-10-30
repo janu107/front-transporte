@@ -1,3 +1,4 @@
+import Icon from '../common/Icon';
 /**
  * RetarifarModal.jsx — [2026-08 §2]
  * Modal para "retarifar" una póliza: muestra las tarifas de embarque que han tenido
@@ -122,7 +123,7 @@ export default function RetarifarModal({ poliza, onClose }) {
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={saving}>Cerrar</Button>
-          <Button variant="primary" icon="🏷️" onClick={aplicar} disabled={!puedeAplicar}>
+          <Button variant="primary" icon="tag" onClick={aplicar} disabled={!puedeAplicar}>
             {saving ? 'Aplicando...'
               : seleccionada ? `Aplicar a ${formatNumber(seleccionada.num_envios, 0)} envío(s)` : 'Aplicar'}
           </Button>
@@ -132,7 +133,7 @@ export default function RetarifarModal({ poliza, onClose }) {
       {error && <div className="alert alert-error" style={{ marginTop: 0 }}>{error}</div>}
       {result && (
         <div className="alert alert-success" style={{ marginTop: 0 }}>
-          ✅ Se actualizaron <b>{formatNumber(result.actualizados, 0)}</b> envío(s).
+          <Icon name="check" /> Se actualizaron <b>{formatNumber(result.actualizados, 0)}</b> envío(s).
           Nuevo total de esos envíos: <b>{formatCurrency(result.total_valor)}</b>.
         </div>
       )}
@@ -151,7 +152,7 @@ export default function RetarifarModal({ poliza, onClose }) {
           value={fechaInicio} onChange={cambiarFecha(setFechaInicio)} />
         <Input label="Fecha final" name="fechaFinRetarifa" type="date" required
           min={fechaInicio || undefined} value={fechaFin} onChange={cambiarFecha(setFechaFin)} />
-        <Button variant="secondary" icon="🔍" onClick={consultar} disabled={loading || !rangoValido}>
+        <Button variant="secondary" icon="search" onClick={consultar} disabled={loading || !rangoValido}>
           {loading ? 'Consultando...' : 'Consultar tarifas'}
         </Button>
         {/* Vacío = todos los transportistas de la póliza. */}

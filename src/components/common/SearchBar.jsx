@@ -2,10 +2,12 @@
  * SearchBar.jsx
  * Caja de búsqueda con ícono. Controlada por props value/onChange.
  */
+import Icon from './Icon';
+
 export function SearchBar({ value, onChange, placeholder = 'Buscar...' }) {
   return (
     <div className="search-input">
-      <span className="search-icon" aria-hidden="true">🔍</span>
+      <span className="search-icon" aria-hidden="true"><Icon name="search" size={19} /></span>
       <input
         type="text"
         className="form-control"

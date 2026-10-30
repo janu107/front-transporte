@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * PolizasPage.jsx — man_poliza. Selects de empresa y producto.
  * La eliminación se maneja como anulación (cambia el estado a ANULADA).
@@ -73,13 +74,13 @@ export default function PolizasPage() {
             <button type="button" className="icon-btn" title="Carga masiva de viajes locales"
               aria-label="Carga masiva de viajes locales"
               onClick={() => setCargaRow(row)}>
-              📂
+              <Icon name="folder" />
             </button>
             {/* Retarifar cambia importes ya registrados: exclusivo de ADMIN. */}
             {admin && (
               <button type="button" className="icon-btn" title="Retarifar (recalcular valores de envíos)"
                 aria-label="Retarifar" onClick={() => setRetarifarRow(row)}>
-                🏷️
+                <Icon name="tag" />
               </button>
             )}
           </>

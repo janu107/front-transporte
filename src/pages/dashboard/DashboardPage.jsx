@@ -1,29 +1,31 @@
-/**
- * DashboardPage.jsx
- * Panel principal con tarjetas resumen (datos reales) y accesos rápidos.
- */
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import PageHeader from '../../components/layout/PageHeader';
 import BarChart from '../../components/common/BarChart';
+import Icon from '../../components/common/Icon';
 import realApi from '../../api/realApi';
 import { formatNumber, formatCurrency } from '../../utils/formatters';
 
-// Paleta de marca SETRASA: rojos y negros/carbón
 const STAT_DEFS = [
-  { key: 'usuarios', label: 'Usuarios activos', icon: '👤', color: '#c1121f', filter: (i) => i.estado === 'ACTIVO' },
-  { key: 'roles', label: 'Roles', icon: '🛡️', color: '#1a1a1a' },
-  { key: 'transportistas', label: 'Transportistas', icon: '🧑‍✈️', color: '#9d0e18' },
-  { key: 'pilotos', label: 'Pilotos', icon: '🪪', color: '#3a3a3a' },
-  { key: 'camiones', label: 'Camiones', icon: '🚛', color: '#e8323f' },
-  { key: 'polizas', label: 'Pólizas abiertas', icon: '📄', color: '#7f0d15', filter: (i) => i.estado === 'ABIERTA' },
-  { key: 'anticipoProvision', label: 'Anticipos activos', icon: '💰', color: '#262626', filter: (i) => i.estado !== 'ANULADA' },
-  { key: 'liquidaciones', label: 'Liquidaciones pendientes', icon: '✅', color: '#c1121f', filter: (i) => i.estado === 'PENDIENTE' },
+  { key: 'usuarios', label: 'Usuarios activos', icon: 'people', filter: (i) => i.estado === 'ACTIVO' },
+  { key: 'roles', label: 'Roles', icon: 'shield' },
+  { key: 'transportistas', label: 'Transportistas', icon: 'business' },
+  { key: 'pilotos', label: 'Pilotos', icon: 'badge' },
+  { key: 'camiones', label: 'Camiones', icon: 'truck' },
+  { key: 'polizas', label: 'Pólizas abiertas', icon: 'document', filter: (i) => i.estado === 'ABIERTA' },
+  { key: 'anticipoProvision', label: 'Anticipos activos', icon: 'wallet', filter: (i) => i.estado !== 'ANULADA' },
+  { key: 'liquidaciones', label: 'Liquidaciones pendientes', icon: 'receipt', filter: (i) => i.estado === 'PENDIENTE' },
 ];
+const FEATURED = ['transportistas', 'camiones', 'polizas', 'liquidaciones'];
+
+function ChartStatus({ loading, error, children }) {
+  if (loading) return <div className="chart-status" role="status"><span className="chart-loader" />Cargando información…</div>;
+  if (error) return <div className="chart-status chart-status-error" role="status"><Icon name="warning" size={24} /><p>{error}</p></div>;
+  return children;
+}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({});
-
-  // [v5 §5] Gráficas: última factura activa de diesel + última póliza activa.
+  const [statsLoading, setStatsLoading] = useState(true);
   const [diesel, setDiesel] = useState(null);
   const [dieselLoading, setDieselLoading] = useState(true);
   const [dieselError, setDieselError] = useState(null);
@@ -32,110 +34,92 @@ export default function DashboardPage() {
   const [polizaError, setPolizaError] = useState(null);
 
   useEffect(() => {
+    let active = true;
     (async () => {
-      const entries = await Promise.all(
-        STAT_DEFS.map(async (s) => {
-          try {
-            const list = await realApi.list(s.key);
-            const count = s.filter ? list.filter(s.filter).length : list.length;
-            return [s.key, count];
-          } catch {
-            return [s.key, '—'];
-          }
-        })
-      );
-      setStats(Object.fromEntries(entries));
+      const entries = await Promise.all(STAT_DEFS.map(async (stat) => {
+        try {
+          const list = await realApi.list(stat.key);
+          return [stat.key, stat.filter ? list.filter(stat.filter).length : list.length];
+        } catch { return [stat.key, null]; }
+      }));
+      if (active) { setStats(Object.fromEntries(entries)); setStatsLoading(false); }
     })();
-
     (async () => {
-      setDieselLoading(true);
-      try { setDiesel(await realApi.dashboardFacturaActivaDiesel()); }
-      catch (e) { setDieselError(e?.userMessage || 'No se pudo cargar la gráfica de diesel.'); }
-      finally { setDieselLoading(false); }
+      try { const result = await realApi.dashboardFacturaActivaDiesel(); if (active) setDiesel(result); }
+      catch (error) { if (active) setDieselError(error?.userMessage || 'No se pudo cargar la información de diésel.'); }
+      finally { if (active) setDieselLoading(false); }
     })();
-
     (async () => {
-      setPolizaLoading(true);
-      try { setPolizaViajes(await realApi.dashboardPolizaActivaViajes()); }
-      catch (e) { setPolizaError(e?.userMessage || 'No se pudo cargar la gráfica de viajes.'); }
-      finally { setPolizaLoading(false); }
+      try { const result = await realApi.dashboardPolizaActivaViajes(); if (active) setPolizaViajes(result); }
+      catch (error) { if (active) setPolizaError(error?.userMessage || 'No se pudo cargar la información de viajes.'); }
+      finally { if (active) setPolizaLoading(false); }
     })();
+    return () => { active = false; };
   }, []);
 
-  const dieselBars = (diesel?.transportistas || []).map((t) => ({
-    label: t.transportista, value: t.galones,
-    tooltip: `${t.transportista}: ${formatNumber(t.galones)} gal · ${t.cantidad_vales} vale(s) · ${formatCurrency(t.valor)}`,
+  const dieselBars = (diesel?.transportistas || []).map((item) => ({
+    label: item.transportista, value: item.galones,
+    tooltip: `${item.transportista}: ${formatNumber(item.galones)} gal · ${item.cantidad_vales} vale(s) · ${formatCurrency(item.valor)}`,
   }));
-  const viajesBars = (polizaViajes?.transportistas || []).map((t) => ({
-    label: t.transportista, value: t.cantidad_viajes,
-    tooltip: `${t.transportista}: ${t.cantidad_viajes} viaje(s) · ${formatNumber(t.peso_total)} kg · ${formatCurrency(t.valor_total)}`,
+  const viajesBars = (polizaViajes?.transportistas || []).map((item) => ({
+    label: item.transportista, value: item.cantidad_viajes,
+    tooltip: `${item.transportista}: ${item.cantidad_viajes} viaje(s) · ${formatNumber(item.peso_total)} kg · ${formatCurrency(item.valor_total)}`,
   }));
-
-  // [v7 §1] Los indicadores del resumen general también como gráfica (barras 3D),
-  // ordenados de mayor a menor. La etiqueta directa muestra el valor exacto.
-  const statsBars = STAT_DEFS
-    .map((s) => {
-      const n = Number(stats[s.key]);
-      return { label: `${s.icon} ${s.label}`, value: Number.isNaN(n) ? 0 : n, tooltip: `${s.label}: ${Number.isNaN(n) ? '—' : n}` };
-    })
-    .sort((a, b) => b.value - a.value);
+  const statsBars = STAT_DEFS.map((stat) => ({ label: stat.label, icon: stat.icon, value: stats[stat.key] }))
+    .sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
+  const unavailable = !statsLoading && STAT_DEFS.some((stat) => stats[stat.key] == null);
 
   return (
-    <div>
-      <PageHeader
-        title="Dashboard"
-        description="Resumen general del Sistema Administrativo de Transporte."
-      />
+    <div className="dashboard">
+      <PageHeader title="Dashboard" description="Una vista clara del estado de tu operación." />
+      <section className="stats-grid" aria-label="Indicadores principales" aria-busy={statsLoading}>
+        {FEATURED.map((key) => {
+          const stat = STAT_DEFS.find((item) => item.key === key);
+          return (
+            <article key={key} className="stat-card">
+              <div className="stat-top"><span className="stat-label">{stat.label}</span><Icon name={stat.icon} size={21} /></div>
+              <div className={`stat-value ${statsLoading ? 'stat-loading' : ''}`}>{statsLoading ? '—' : stats[key] == null ? '—' : formatNumber(stats[key], 0)}</div>
+              <span className="stat-caption">{statsLoading ? 'Cargando…' : stats[key] == null ? 'No disponible' : 'Registros actuales'}</span>
+            </article>
+          );
+        })}
+      </section>
 
-      {/* [v7 §1] Resumen general como gráfica de barras 3D */}
-      <div className="card" style={{ marginBottom: 8 }}>
-        <div className="card-body">
-          <h3 style={{ marginTop: 0, marginBottom: 10, fontSize: 14 }}>Resumen general</h3>
-          <BarChart data={statsBars} valueLabel={(v) => formatNumber(v, 0)}
-            emptyMessage="Cargando indicadores..." />
+      <section className="card overview-card" aria-labelledby="overview-title">
+        <div className="dashboard-card-header">
+          <div><h2 id="overview-title">Resumen general</h2><p>Distribución de los registros del sistema</p></div>
+          <span className="chart-legend"><span />Registros</span>
         </div>
-      </div>
+        <div className="overview-chart">
+          <ChartStatus loading={statsLoading}>
+            <BarChart data={statsBars} label="Registros por módulo" valueLabel={(value) => formatNumber(value, 0)} />
+          </ChartStatus>
+          {unavailable && <p className="dashboard-note" role="status">Algunos indicadores no están disponibles. Se muestran con un guion.</p>}
+        </div>
+      </section>
 
-      {/* [v5 §5 / v6 §1] Gráficas: última factura activa de diesel + última póliza activa */}
       <div className="dashboard-grid">
-        <div className="card">
-          <div className="card-body">
-            <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 14 }}>Despachos de diesel por transportista</h3>
-            {diesel?.factura && (
-              <p style={{ margin: '0 0 10px', fontSize: 11.5, color: '#6b7280' }}>
-                Factura {diesel.factura.num_factura} · comprados {formatNumber(diesel.factura.galones_comprados)} gal ·
-                saldo {formatNumber(diesel.factura.saldo)} gal · utilizados {formatNumber(diesel.factura.galones_utilizados)} gal
-              </p>
-            )}
-            {dieselLoading ? (
-              <p style={{ color: '#6b7280', fontSize: 13 }}>Cargando...</p>
-            ) : dieselError ? (
-              <p style={{ color: '#c1121f', fontSize: 13 }}>{dieselError}</p>
-            ) : (
-              <BarChart data={dieselBars} valueLabel={(v) => `${formatNumber(v)} gal`}
-                emptyMessage={diesel?.mensaje || 'No existe una factura activa de combustible para mostrar'} />
-            )}
+        <section className="card dashboard-chart-card" aria-labelledby="diesel-title">
+          <div className="dashboard-card-header">
+            <div className="chart-heading"><span className="chart-heading-icon"><Icon name="fuel" /></span><div><h2 id="diesel-title">Despachos de diésel</h2><p>Por transportista · última factura activa</p></div></div>
+            <span className="chart-unit">GALONES</span>
           </div>
-        </div>
+          {diesel?.factura && <div className="chart-context"><span>Factura <strong>{diesel.factura.num_factura}</strong></span><span>Comprados <strong>{formatNumber(diesel.factura.galones_comprados)} gal</strong></span><span>Saldo <strong>{formatNumber(diesel.factura.saldo)} gal</strong></span><span>Utilizados <strong>{formatNumber(diesel.factura.galones_utilizados)} gal</strong></span></div>}
+          <div className="dashboard-chart-body"><ChartStatus loading={dieselLoading} error={dieselError}>
+            <BarChart data={dieselBars} label="Galones de diésel por transportista" height={320} valueLabel={(value) => `${formatNumber(value)} gal`} emptyMessage={diesel?.mensaje || 'No hay una factura activa de combustible para mostrar.'} />
+          </ChartStatus></div>
+        </section>
 
-        <div className="card">
-          <div className="card-body">
-            <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 14 }}>Viajes por transportista (última póliza activa)</h3>
-            {polizaViajes?.poliza && (
-              <p style={{ margin: '0 0 10px', fontSize: 11.5, color: '#6b7280' }}>
-                Póliza {polizaViajes.poliza.nombre_poliza} · {polizaViajes.poliza.total_viajes} viaje(s) en total
-              </p>
-            )}
-            {polizaLoading ? (
-              <p style={{ color: '#6b7280', fontSize: 13 }}>Cargando...</p>
-            ) : polizaError ? (
-              <p style={{ color: '#c1121f', fontSize: 13 }}>{polizaError}</p>
-            ) : (
-              <BarChart data={viajesBars} valueLabel={(v) => `${v} viaje(s)`}
-                emptyMessage={polizaViajes?.mensaje || 'No existe una póliza activa para mostrar'} />
-            )}
+        <section className="card dashboard-chart-card" aria-labelledby="trips-title">
+          <div className="dashboard-card-header">
+            <div className="chart-heading"><span className="chart-heading-icon"><Icon name="truck" /></span><div><h2 id="trips-title">Viajes por transportista</h2><p>Última póliza activa</p></div></div>
+            <span className="chart-unit">VIAJES</span>
           </div>
-        </div>
+          {polizaViajes?.poliza && <div className="chart-context"><span>Póliza <strong>{polizaViajes.poliza.nombre_poliza}</strong></span><span>Total <strong>{formatNumber(polizaViajes.poliza.total_viajes, 0)} viajes</strong></span></div>}
+          <div className="dashboard-chart-body"><ChartStatus loading={polizaLoading} error={polizaError}>
+            <BarChart data={viajesBars} label="Viajes por transportista" height={320} valueLabel={(value) => `${formatNumber(value, 0)} viaje(s)`} emptyMessage={polizaViajes?.mensaje || 'No hay una póliza activa para mostrar.'} />
+          </ChartStatus></div>
+        </section>
       </div>
     </div>
   );

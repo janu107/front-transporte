@@ -98,7 +98,7 @@ export default function UsuarioRolPage() {
         <div style={{ flex: '1 1 300px', maxWidth: 420 }}>
           <SearchBar value={term} onChange={setTerm} placeholder="Buscar por usuario, nombre o rol..." />
         </div>
-        <Button variant="secondary" icon="🔄" onClick={cargar} disabled={loading}>Actualizar</Button>
+        <Button variant="secondary" icon="refresh" onClick={cargar} disabled={loading}>Actualizar</Button>
       </div>
 
       <div className="table-wrapper table-wrapper--cards"><div className="table-scroll">
@@ -129,7 +129,7 @@ export default function UsuarioRolPage() {
                 </td>
                 <td data-label="Estado"><Badge value={f.estado_usuario} /></td>
                 <td className="col-actions">
-                  <Button variant="secondary" size="sm" icon="🛡️" onClick={() => abrir(f)}>
+                  <Button variant="secondary" size="sm" icon="shield" onClick={() => abrir(f)}>
                     Asignar roles
                   </Button>
                 </td>
@@ -147,7 +147,7 @@ export default function UsuarioRolPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setEditando(null)} disabled={saving}>Cancelar</Button>
-            <Button variant="primary" icon="💾" onClick={guardar} disabled={saving}>
+            <Button variant="primary" icon="save" onClick={guardar} disabled={saving}>
               {saving ? 'Guardando...' : 'Guardar roles'}
             </Button>
           </>

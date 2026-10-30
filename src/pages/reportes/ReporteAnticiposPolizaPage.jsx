@@ -89,11 +89,11 @@ export default function ReporteAnticiposPolizaPage() {
               onChange={(v) => setField('id_poliza', v)} options={polizaOptions} placeholder="Escriba para buscar póliza..." />
           </div>
         )}
-        <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
+        <Button variant="primary" icon="search" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
         {data && data.grupos.length > 0 && (
           <>
-            <Button variant="secondary" icon="📊" onClick={exportar}>Exportar Excel</Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteAnticiposPoliza(data, user?.nombre || user?.usuario || '')}>Imprimir</Button>
+            <Button variant="secondary" icon="report" onClick={exportar}>Exportar Excel</Button>
+            <Button variant="secondary" icon="print" onClick={() => imprimirReporteAnticiposPoliza(data, user?.nombre || user?.usuario || '')}>Imprimir</Button>
           </>
         )}
       </div>

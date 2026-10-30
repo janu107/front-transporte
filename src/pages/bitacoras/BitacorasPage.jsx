@@ -72,7 +72,7 @@ export default function BitacorasPage() {
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <Button variant="secondary" onClick={handleClear}>Limpiar</Button>
-            <Button variant="primary" icon="🔍" onClick={handleSearch}>Buscar</Button>
+            <Button variant="primary" icon="search" onClick={handleSearch}>Buscar</Button>
           </div>
         </div>
       </div>

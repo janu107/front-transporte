@@ -39,8 +39,8 @@ export default function ReporteLiquidacionPorPolizaPage() {
     {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
     <div className="toolbar" style={{ alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 320 }}><SearchableSelect label="Póliza" name="id_poliza" value={idPoliza} onChange={(v) => { setIdPoliza(v); setData(null); }} options={opciones} required placeholder="Buscar póliza..." /></div>
-      <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
-      {data && <><Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.filas?.length}>Excel</Button><Button variant="secondary" icon="🖨️" onClick={() => imprimirLiquidacionPorPoliza(data, usuario)} disabled={!data.filas?.length}>Imprimir / PDF</Button></>}
+      <Button variant="primary" icon="search" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
+      {data && <><Button variant="secondary" icon="report" onClick={exportar} disabled={!data.filas?.length}>Excel</Button><Button variant="secondary" icon="print" onClick={() => imprimirLiquidacionPorPoliza(data, usuario)} disabled={!data.filas?.length}>Imprimir / PDF</Button></>}
     </div>
     {loading ? <div className="card"><div className="card-body">Generando reporte...</div></div>
       : !data ? <div className="card"><div className="card-body" style={{ color: '#6b7280' }}>Seleccione una póliza y presione «Generar».</div></div>

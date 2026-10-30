@@ -63,15 +63,15 @@ export default function ReportePolizasTransportistasPage() {
       {message && <div className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`}>{message.text}</div>}
 
       <div className="toolbar" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <Button variant="primary" icon="🔄" onClick={cargar} disabled={loading}>
+        <Button variant="primary" icon="refresh" onClick={cargar} disabled={loading}>
           {loading ? 'Generando...' : 'Actualizar'}
         </Button>
         {data && (
           <>
-            <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.filas?.length}>
+            <Button variant="secondary" icon="report" onClick={exportar} disabled={!data.filas?.length}>
               Excel
             </Button>
-            <Button variant="secondary" icon="🖨️"
+            <Button variant="secondary" icon="print"
               onClick={() => imprimirPolizasPorTransportista(data, usuario)}
               disabled={!data.filas?.length}>
               Imprimir

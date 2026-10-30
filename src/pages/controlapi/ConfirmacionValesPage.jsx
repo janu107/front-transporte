@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * ConfirmacionValesPage.jsx — CONTROL DEL API / Confirmación de Vales (Enlace MATO).
  *
@@ -406,7 +407,7 @@ export default function ConfirmacionValesPage() {
         <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span>Vale del MATO <b>{ultimoConfirmado.numero}</b> confirmado. Puede imprimir el vale generado.</span>
           <span style={{ display: 'flex', gap: 8 }}>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirValeGenerado(ultimoConfirmado.apiId)}>Imprimir vale</Button>
+            <Button variant="secondary" icon="print" onClick={() => imprimirValeGenerado(ultimoConfirmado.apiId)}>Imprimir vale</Button>
             <Button variant="secondary" onClick={() => setUltimoConfirmado(null)}>Cerrar</Button>
           </span>
         </div>
@@ -442,10 +443,10 @@ export default function ConfirmacionValesPage() {
               Actualizado {lastUpdate.toLocaleTimeString('es-GT')} · auto cada 3 min
             </span>
           )}
-          <Button variant="secondary" icon="🖨️" onClick={() => { setReimprF({ vale: '', placa: '' }); setReimprRes(null); setReimprOpen(true); }}>
+          <Button variant="secondary" icon="print" onClick={() => { setReimprF({ vale: '', placa: '' }); setReimprRes(null); setReimprOpen(true); }}>
             Reimpresión
           </Button>
-          <Button variant="secondary" icon="🔄" onClick={cargarPendientes}>
+          <Button variant="secondary" icon="refresh" onClick={cargarPendientes}>
             Actualizar
           </Button>
         </div>
@@ -551,7 +552,7 @@ export default function ConfirmacionValesPage() {
         footer={
           <>
             <Button variant="secondary" onClick={cerrarModal}>Cancelar</Button>
-            <Button variant="primary" icon="✅" onClick={confirmar} disabled={!puedeConfirmar}>
+            <Button variant="primary" icon="check" onClick={confirmar} disabled={!puedeConfirmar}>
               {confirming ? 'Confirmando...' : 'CONFIRMAR'}
             </Button>
           </>
@@ -742,7 +743,7 @@ export default function ConfirmacionValesPage() {
           <Input label="Placa" name="placa" value={reimprF.placa}
             onChange={(e) => setReimprF((p) => ({ ...p, placa: e.target.value }))}
             onKeyDown={(e) => { if (e.key === 'Enter') buscarReimpresion(); }} placeholder="Ej. 114BXQ" />
-          <Button variant="primary" icon="🔍" onClick={buscarReimpresion} disabled={reimprLoading}>
+          <Button variant="primary" icon="search" onClick={buscarReimpresion} disabled={reimprLoading}>
             {reimprLoading ? 'Buscando...' : 'Buscar'}
           </Button>
         </div>
@@ -773,7 +774,7 @@ export default function ConfirmacionValesPage() {
                       <td><Badge value={r.estado} /></td>
                       <td style={{ textAlign: 'right' }}>
                         <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}
-                          title="Reimprimir vale" onClick={() => imprimirValeCombustible(r)}>🖨️</button>
+                          title="Reimprimir vale" onClick={() => imprimirValeCombustible(r)}><Icon name="print" /></button>
                       </td>
                     </tr>
                   ))}

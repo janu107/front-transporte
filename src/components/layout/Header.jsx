@@ -8,6 +8,7 @@ import { MENU } from '../../data/menuItems';
 import useAuth from '../../hooks/useAuth';
 import { ROUTES } from '../../routes/routePaths';
 import { initials } from '../../utils/formatters';
+import Icon from '../common/Icon';
 
 function findSection(pathname) {
   for (const group of MENU) {
@@ -17,7 +18,7 @@ function findSection(pathname) {
   return { group: 'Principal', label: 'Inicio' };
 }
 
-export function Header({ onToggleSidebar }) {
+export function Header({ sidebarOpen, onToggleSidebar }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -31,13 +32,13 @@ export function Header({ onToggleSidebar }) {
   return (
     <header className="header">
       <div className="header-left">
-        <button type="button" className="hamburger" onClick={onToggleSidebar} aria-label="Menú">
-          ☰
+        <button type="button" className="hamburger" onClick={onToggleSidebar} aria-label="Abrir menú" aria-expanded={sidebarOpen} aria-controls={sidebarOpen ? 'app-sidebar' : undefined}>
+          <Icon name="menu" size={22} />
         </button>
         <div>
           <div className="header-title">{section.label}</div>
           <div className="header-breadcrumb">
-            {section.group} / {section.label}
+            {section.group}<Icon name="chevron" size={14} />{section.label}
           </div>
         </div>
       </div>
@@ -48,8 +49,8 @@ export function Header({ onToggleSidebar }) {
           <div className="user-role">{user?.rol || '-'}</div>
         </div>
         <div className="user-avatar">{initials(user?.nombre || 'U')}</div>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={handleLogout} title="Cerrar sesión">
-          Salir
+        <button type="button" className="btn btn-ghost btn-sm logout-button" onClick={handleLogout} title="Cerrar sesión" aria-label="Cerrar sesión">
+          <Icon name="logout" size={18} /><span>Salir</span>
         </button>
       </div>
     </header>

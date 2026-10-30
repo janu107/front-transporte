@@ -128,13 +128,13 @@ export default function ReporteArrastrePolizasPage() {
         <Input label="Hasta (opcional)" name="fecha_fin" type="date" value={f.fecha_fin}
           onChange={(e) => setField('fecha_fin', e.target.value)}
           title="Si la deja vacía se toma la fecha del último viaje de la póliza" />
-        <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
+        <Button variant="primary" icon="search" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
         {data && (
           <>
-            <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.grupos?.length}>
+            <Button variant="secondary" icon="report" onClick={exportar} disabled={!data.grupos?.length}>
               Exportar Excel
             </Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteArrastre(data, f, user?.nombre || user?.usuario || '')}>
+            <Button variant="secondary" icon="print" onClick={() => imprimirReporteArrastre(data, f, user?.nombre || user?.usuario || '')}>
               Imprimir
             </Button>
           </>

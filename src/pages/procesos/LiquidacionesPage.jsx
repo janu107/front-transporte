@@ -120,7 +120,7 @@ export default function LiquidacionesPage() {
       {confirmado && (
         <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span>Liquidación de <b>{confirmado.poliza}</b> confirmada. Puede imprimirla.</span>
-          <Button variant="secondary" icon="🖨️" onClick={imprimirConfirmada}>Imprimir liquidación</Button>
+          <Button variant="secondary" icon="print" onClick={imprimirConfirmada}>Imprimir liquidación</Button>
         </div>
       )}
 
@@ -136,13 +136,13 @@ export default function LiquidacionesPage() {
             placeholder={polizaOptions.length ? 'Seleccione póliza...' : 'No hay pólizas abiertas'}
           />
         </div>
-        <Button variant="secondary" icon="🔍" onClick={cargarResumen} disabled={!idPoliza || cargandoResumen}>
+        <Button variant="secondary" icon="search" onClick={cargarResumen} disabled={!idPoliza || cargandoResumen}>
           {cargandoResumen ? 'Cargando...' : 'Cargar resumen'}
         </Button>
         <div className="spacer" />
         <Button
           variant="primary"
-          icon="✅"
+          icon="check"
           onClick={() => setConfirmOpen(true)}
           disabled={!hayMovimientos || confirmando}
         >

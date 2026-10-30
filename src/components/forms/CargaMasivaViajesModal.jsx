@@ -117,7 +117,7 @@ export default function CargaMasivaViajesModal({ poliza, onClose, onCargado }) {
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={aplicando}>Salir</Button>
-          <Button variant="primary" icon="💾" onClick={aplicar} disabled={!puedeAplicar}>
+          <Button variant="primary" icon="save" onClick={aplicar} disabled={!puedeAplicar}>
             {aplicando ? 'Cargando...' : previa ? `Aplicar ${previa.validas} viaje(s)` : 'Aplicar'}
           </Button>
         </>
@@ -137,8 +137,8 @@ export default function CargaMasivaViajesModal({ poliza, onClose, onCargado }) {
         <div className="carga-acciones">
           <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" onChange={elegirArchivo}
             style={{ display: 'none' }} id="archivoCargaViajes" />
-          <Button variant="secondary" icon="📄" onClick={descargarPlantillaViajes}>Plantilla</Button>
-          <Button variant="primary" icon="📂" onClick={() => inputRef.current?.click()} disabled={leyendo || aplicando}>
+          <Button variant="secondary" icon="document" onClick={descargarPlantillaViajes}>Plantilla</Button>
+          <Button variant="primary" icon="folder" onClick={() => inputRef.current?.click()} disabled={leyendo || aplicando}>
             {leyendo ? 'Leyendo...' : 'Carga info.'}
           </Button>
         </div>

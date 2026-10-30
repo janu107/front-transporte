@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * UsuariosPage.jsx — adm_usuarios.
  * CRUD de usuarios con acciones extra: activar/inactivar y cambiar contraseña.
@@ -111,8 +112,8 @@ export default function UsuariosPage() {
         loading={loading}
         renderActions={(row) => (
           <div className="row-actions">
-            <button className="icon-btn edit" title="Editar" onClick={() => openEdit(row)}>✏️</button>
-            <button className="icon-btn" title="Cambiar contraseña" onClick={() => openPwd(row)}>🔑</button>
+            <button className="icon-btn edit" title="Editar" onClick={() => openEdit(row)}><Icon name="edit" /></button>
+            <button className="icon-btn" title="Cambiar contraseña" onClick={() => openPwd(row)}><Icon name="key" /></button>
             <button
               className="icon-btn"
               title={row.estado === 'ACTIVO' ? 'Inactivar' : 'Activar'}

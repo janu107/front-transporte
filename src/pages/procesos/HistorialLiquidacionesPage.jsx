@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * HistorialLiquidacionesPage.jsx — CONSULTA de liquidaciones (P16b), solo lectura.
  * Filtros (póliza, transportista, número, fecha) + botón Reimprimir liquidación.
@@ -126,10 +127,10 @@ export default function HistorialLiquidacionesPage() {
                   <td data-label="Estado"><Badge value={r.estado} /></td>
                   <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <button style={accionBtnHist} title="Reimprimir liquidación (resumen por transportista)" aria-label="Reimprimir liquidación"
-                      onClick={() => reimprimir(r.id_poliza, r.nombre_poliza)}>🖨️</button>
+                      onClick={() => reimprimir(r.id_poliza, r.nombre_poliza)}><Icon name="print" /></button>
                     {/* [2026-08 §9b] Reporte detallado de liquidación (igual al de la pantalla Liquidaciones). */}
                     <button style={accionBtnHist} title="Reporte detallado de liquidación (viajes + descuentos + totales)" aria-label="Reporte detallado de liquidación"
-                      onClick={() => imprimirReporteDetallado(r.id_poliza)}>📄</button>
+                      onClick={() => imprimirReporteDetallado(r.id_poliza)}><Icon name="document" /></button>
                   </td>
                 </tr>
               ))}

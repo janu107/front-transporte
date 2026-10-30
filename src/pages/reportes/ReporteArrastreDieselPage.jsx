@@ -95,10 +95,10 @@ export default function ReporteArrastreDieselPage() {
           <SearchableSelect label="Factura" name="factura" value={f.factura}
             onChange={(v) => setField('factura', v)} options={facturaOptions} placeholder="Todas las facturas" />
         </div>
-        <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
-        {data && <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.detalle?.length}>Exportar Excel</Button>}
+        <Button variant="primary" icon="search" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
+        {data && <Button variant="secondary" icon="report" onClick={exportar} disabled={!data.detalle?.length}>Exportar Excel</Button>}
         {/* El último parámetro oculta la columna Precio en el encabezado de factura. */}
-        {data && <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteDiesel(data, f, user?.nombre || user?.usuario || '', true)}>Imprimir</Button>}
+        {data && <Button variant="secondary" icon="print" onClick={() => imprimirReporteDiesel(data, f, user?.nombre || user?.usuario || '', true)}>Imprimir</Button>}
       </div>
 
       {/* Leyenda */}

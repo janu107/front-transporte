@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * PolizaDetallePage.jsx — REGISTRO DE VIAJES (Detalle de Póliza / Envíos).
  * Reproduce la ventana legacy "REGISTRO – VIAJES":
@@ -521,17 +522,17 @@ export default function PolizaDetallePage() {
                     <td data-label="Valor">{formatCurrency(r.valor)}</td>
                     <td data-label="Estado"><Badge value={r.estado} /></td>
                     <td className="col-actions" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button style={accionBtn} title="Imprimir Carta de Porte" aria-label="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}>🖨️</button>
+                      <button style={accionBtn} title="Imprimir Carta de Porte" aria-label="Imprimir Carta de Porte" onClick={() => imprimirCartaPorte(datosCarta(r))}><Icon name="print" /></button>
                       {editaPeso && String(r.estado).toUpperCase() !== 'ANULADO' && (
-                        <button style={accionBtn} title="Editar peso (recalcula el valor)" aria-label="Editar peso" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}>⚖️</button>
+                        <button style={accionBtn} title="Editar peso (recalcula el valor)" aria-label="Editar peso" onClick={() => setPesoEdit({ row: r, peso: r.peso ?? '' })}><Icon name="scale" /></button>
                       )}
                       {/* Editar el envío: exclusivo de ADMIN. */}
                       {admin && (
-                        <button style={accionBtn} title="Editar viaje" aria-label="Editar viaje" onClick={() => abrirEditar(r)}>✏️</button>
+                        <button style={accionBtn} title="Editar viaje" aria-label="Editar viaje" onClick={() => abrirEditar(r)}><Icon name="edit" /></button>
                       )}
                       {/* Anular: ADMIN y ANULA_VIAJE (para este última es su única acción). */}
                       {anula && String(r.estado).toUpperCase() !== 'ANULADO' && (
-                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}>🚫</button>
+                        <button style={accionBtn} title="Anular" aria-label="Anular" onClick={() => setConfirmRow(r)}><Icon name="block" /></button>
                       )}
                     </td>
                   </tr>
@@ -552,15 +553,15 @@ export default function PolizaDetallePage() {
         footer={saved ? (
           <>
             <Button variant="secondary" onClick={cerrarModal}>Cerrar</Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirCartaPorte(datosCarta(saved))}>Imprimir</Button>
+            <Button variant="secondary" icon="print" onClick={() => imprimirCartaPorte(datosCarta(saved))}>Imprimir</Button>
             {/* [v8 §7] Nuevo viaje conserva póliza/tarifa; Nueva póliza limpia todo. */}
-            <Button variant="secondary" icon="➕" onClick={nuevoViaje}>Nuevo viaje</Button>
-            <Button variant="primary" icon="🔄" onClick={resetFormulario}>Nueva póliza</Button>
+            <Button variant="secondary" icon="add" onClick={nuevoViaje}>Nuevo viaje</Button>
+            <Button variant="primary" icon="refresh" onClick={resetFormulario}>Nueva póliza</Button>
           </>
         ) : (
           <>
             <Button variant="secondary" onClick={cerrarModal} disabled={saving}>Cancelar</Button>
-            <Button variant="primary" icon="💾" onClick={guardar}
+            <Button variant="primary" icon="save" onClick={guardar}
               disabled={saving || limiteAlcanzado || excedeSaldo}
               title={limiteAlcanzado ? 'La póliza ya no tiene saldo de piezas'
                 : (excedeSaldo ? 'Las piezas superan el saldo disponible' : undefined)}>
@@ -572,7 +573,7 @@ export default function PolizaDetallePage() {
         {/* [4.4] Confirmación con el correlativo asignado (el modal no se cierra al guardar). */}
         {saved && (
           <div className="alert alert-success" style={{ marginTop: 0 }}>
-            ✅ Viaje guardado correctamente. Número de envío: <b>{saved.num_envio}</b>. Puede imprimir la carta o presionar «Nuevo».
+            <Icon name="check" /> Viaje guardado correctamente. Número de envío: <b>{saved.num_envio}</b>. Puede imprimir la carta o presionar «Nuevo».
           </div>
         )}
 
@@ -756,7 +757,7 @@ export default function PolizaDetallePage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setPesoEdit(null)} disabled={pesoSaving}>Cancelar</Button>
-            <Button variant="primary" icon="💾" onClick={guardarPeso} disabled={pesoSaving}>
+            <Button variant="primary" icon="save" onClick={guardarPeso} disabled={pesoSaving}>
               {pesoSaving ? 'Guardando...' : 'Guardar'}
             </Button>
           </>

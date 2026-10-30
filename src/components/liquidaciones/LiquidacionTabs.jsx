@@ -5,14 +5,15 @@
  */
 import { NavLink } from 'react-router-dom';
 import { ROUTES } from '../../routes/routePaths';
+import Icon from '../common/Icon';
 
 const TABS = [
-  { to: ROUTES.liquidacionGenerar, icon: '⚡', label: 'Generar' },
-  { to: ROUTES.liquidacionHistorialV2, icon: '📋', label: 'Historial' },
-  { to: ROUTES.liquidacionRevertir, icon: '↩️', label: 'Reversión' },
-  { to: ROUTES.liquidacionAbonos, icon: '⚠️', label: 'Sobregiros' },
-  { to: ROUTES.liquidacionReporteV2, icon: '📊', label: 'Reporte' },
-  { to: ROUTES.liquidacionReporteDoc, icon: '📄', label: 'Reporte de Liquidación' },
+  { to: ROUTES.liquidacionGenerar, icon: 'bolt', label: 'Generar' },
+  { to: ROUTES.liquidacionHistorialV2, icon: 'receipt', label: 'Historial' },
+  { to: ROUTES.liquidacionRevertir, icon: 'undo', label: 'Reversión' },
+  { to: ROUTES.liquidacionAbonos, icon: 'warning', label: 'Sobregiros' },
+  { to: ROUTES.liquidacionReporteV2, icon: 'report', label: 'Reporte' },
+  { to: ROUTES.liquidacionReporteDoc, icon: 'document', label: 'Reporte de Liquidación' },
 ];
 
 export default function LiquidacionTabs() {
@@ -21,7 +22,7 @@ export default function LiquidacionTabs() {
       {TABS.map((t) => (
         <NavLink key={t.to} to={t.to}
           className={({ isActive }) => `liq-tab ${isActive ? 'active' : ''}`}>
-          <span aria-hidden="true">{t.icon}</span>
+          <Icon name={t.icon} size={18} />
           <span>{t.label}</span>
         </NavLink>
       ))}

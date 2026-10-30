@@ -4,7 +4,7 @@
  */
 import Button from '../common/Button';
 
-export function PageHeader({ title, description, actionLabel, onAction, actionIcon = '➕' }) {
+export function PageHeader({ title, description, actionLabel, onAction, actionIcon = 'add' }) {
   return (
     <div className="page-header">
       <div>

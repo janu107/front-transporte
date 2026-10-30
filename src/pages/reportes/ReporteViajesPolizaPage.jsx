@@ -108,13 +108,13 @@ export default function ReporteViajesPolizaPage() {
             placeholder={polizaId ? 'Todos los de la póliza' : 'Seleccione una póliza primero'}
             disabled={!polizaId} />
         </div>
-        <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
+        <Button variant="primary" icon="search" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
         {data && (
           <>
-            <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.grupos?.length}>
+            <Button variant="secondary" icon="report" onClick={exportar} disabled={!data.grupos?.length}>
               Exportar Excel
             </Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteViajesPoliza(data, user?.nombre || user?.usuario || '')}>
+            <Button variant="secondary" icon="print" onClick={() => imprimirReporteViajesPoliza(data, user?.nombre || user?.usuario || '')}>
               Imprimir
             </Button>
           </>

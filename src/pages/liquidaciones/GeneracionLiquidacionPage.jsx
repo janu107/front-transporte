@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 /**
  * GeneracionLiquidacionPage.jsx
  * Panel de generación de liquidaciones: a la izquierda los parámetros (póliza y
@@ -88,7 +89,7 @@ export default function GeneracionLiquidacionPage() {
         {/* ---------------- Parámetros ---------------- */}
         <aside className="card liq-panel">
           <div className="card-body">
-            <h3 className="liq-panel-title">📁 Parámetros</h3>
+            <h3 className="liq-panel-title"><Icon name="folder" /> Parámetros</h3>
 
             <Select label="Póliza a liquidar" name="idPolizaLiquidacion"
               value={idPoliza} options={options}
@@ -103,7 +104,7 @@ export default function GeneracionLiquidacionPage() {
                   className={`liq-toggle-btn ${aplicaSobregiro ? 'active' : ''}`}
                   aria-pressed={aplicaSobregiro}
                   onClick={() => setAplicaSobregiro(true)}>
-                  ✅ Sí, aplicar
+                  <Icon name="check" /> Sí, aplicar
                 </button>
                 <button type="button"
                   className={`liq-toggle-btn ${!aplicaSobregiro ? 'active' : ''}`}
@@ -116,7 +117,7 @@ export default function GeneracionLiquidacionPage() {
 
             {sobregiroPendiente > 0 && (
               <div className="liq-aviso">
-                ⚠️ Sobregiro pendiente: <b>{formatCurrency(sobregiroPendiente)}</b>
+                <Icon name="warning" /> Sobregiro pendiente: <b>{formatCurrency(sobregiroPendiente)}</b>
                 <div className="liq-aviso-nota">
                   {aplicaSobregiro
                     ? 'Se descontará en esta liquidación.'
@@ -125,7 +126,7 @@ export default function GeneracionLiquidacionPage() {
               </div>
             )}
 
-            <Button variant="primary" icon="⚡" block onClick={() => setConfirmOpen(true)}
+            <Button variant="primary" icon="bolt" block onClick={() => setConfirmOpen(true)}
               disabled={!filas.length || generando || calculando}>
               {generando ? 'Generando...' : 'Generar Liquidación'}
             </Button>
@@ -136,7 +137,7 @@ export default function GeneracionLiquidacionPage() {
         <section className="card liq-panel">
           <div className="card-body">
             <div className="liq-panel-head">
-              <h3 className="liq-panel-title">🚛 Transportistas</h3>
+              <h3 className="liq-panel-title"><Icon name="truck" /> Transportistas</h3>
               {filas.length > 0 && (
                 <span className="liq-conteo">
                   {filas.length} {filas.length === 1 ? 'transportista' : 'transportistas'}
@@ -165,7 +166,7 @@ export default function GeneracionLiquidacionPage() {
                           onClick={() => setExpandido(abierto ? null : key)}>
                           <span className="liq-item-info">
                             <span className="liq-item-nombre">
-                              🚚 {row.nombre || '—'}
+                              <Icon name="truck" /> {row.nombre || '—'}
                               {aplicaSobregiro && sobregiro > 0 && (
                                 <span className="liq-chip-sob">↓ Sob. {formatCurrency(sobregiro)}</span>
                               )}

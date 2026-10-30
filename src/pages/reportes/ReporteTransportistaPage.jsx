@@ -91,10 +91,10 @@ export default function ReporteTransportistaPage() {
         </div>
         {data && (
           <>
-            <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.filas?.length}>
+            <Button variant="secondary" icon="report" onClick={exportar} disabled={!data.filas?.length}>
               Excel
             </Button>
-            <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteTransportista(data, usuario)}>
+            <Button variant="secondary" icon="print" onClick={() => imprimirReporteTransportista(data, usuario)}>
               Imprimir
             </Button>
           </>

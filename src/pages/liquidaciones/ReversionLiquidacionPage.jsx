@@ -65,7 +65,7 @@ export default function ReversionLiquidacionPage() {
           <SearchBar value={buscar} onChange={setBuscar}
             placeholder="Número, póliza o transportista..." />
         </div>
-        <Button variant="secondary" icon="🔍" onClick={() => cargar(buscar)} disabled={loading}>
+        <Button variant="secondary" icon="search" onClick={() => cargar(buscar)} disabled={loading}>
           {loading ? 'Buscando...' : 'Buscar'}
         </Button>
       </div>

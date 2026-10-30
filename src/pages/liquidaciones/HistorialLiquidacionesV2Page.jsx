@@ -1,3 +1,4 @@
+import Icon from '../../components/common/Icon';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import PageHeader from '../../components/layout/PageHeader';
 import Button from '../../components/common/Button';
@@ -128,9 +129,9 @@ export default function HistorialLiquidacionesV2Page() {
         <Button variant="secondary" onClick={() => cargar()}>Aplicar filtros</Button>
         <Button variant="secondary" onClick={() => { setFiltros(VACIO); cargar(VACIO); }}>Limpiar</Button>
         {/* [V9 §6] Exporta el historial tal como se ve. */}
-        <Button variant="secondary" icon="📊" onClick={exportar} disabled={!items.length}>Excel</Button>
+        <Button variant="secondary" icon="report" onClick={exportar} disabled={!items.length}>Excel</Button>
         {/* Reporte de resumen por liquidación de transportista (usa los filtros de arriba). */}
-        <Button variant="primary" icon="📊" onClick={imprimirResumen} disabled={imprimiendo || !items.length}>
+        <Button variant="primary" icon="report" onClick={imprimirResumen} disabled={imprimiendo || !items.length}>
           {imprimiendo ? 'Generando...' : 'Resumen por transportista'}
         </Button>
       </div>
@@ -159,7 +160,7 @@ export default function HistorialLiquidacionesV2Page() {
               </button></td>
               {/* Reporte de liquidaciones: documento imprimible por transportista. */}
               <td><button type="button" style={linkButton} title="Imprimir liquidación a transportistas"
-                onClick={() => imprimirLiquidacion(row.id_liquidacion)}>🖨️ Imprimir</button></td>
+                onClick={() => imprimirLiquidacion(row.id_liquidacion)}><Icon name="print" /> Imprimir</button></td>
             </tr>
             {expandida && <tr><td colSpan={9} style={{ padding: 14, background: '#f8fafc' }}>
               {Number(row.revertida) && row.motivo_reversion && <div className="alert alert-error" style={{ marginTop: 0 }}>

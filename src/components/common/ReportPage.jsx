@@ -98,10 +98,10 @@ export function ReportPage({
           </select>
         )}
         <div className="spacer" />
-        <Button variant="secondary" icon="📊" onClick={exportar} disabled={loading || !!error || !filtradoEstado.length}>
+        <Button variant="secondary" icon="report" onClick={exportar} disabled={loading || !!error || !filtradoEstado.length}>
           Exportar Excel
         </Button>
-        <Button variant="secondary" icon="🖨️" onClick={imprimir} disabled={loading || !!error}>Imprimir</Button>
+        <Button variant="secondary" icon="print" onClick={imprimir} disabled={loading || !!error}>Imprimir</Button>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}

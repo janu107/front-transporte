@@ -82,8 +82,8 @@ export default function AbonosSobregirosPage() {
           <SearchBar value={term} onChange={setTerm}
             placeholder="Buscar por transportista, NIT, liquidación o póliza..." />
         </div>
-        <Button variant="secondary" icon="🔄" onClick={cargar} disabled={loading}>Actualizar</Button>
-        <Button variant="secondary" icon="📊" onClick={exportar} disabled={!detalleFiltrado.length}>
+        <Button variant="secondary" icon="refresh" onClick={cargar} disabled={loading}>Actualizar</Button>
+        <Button variant="secondary" icon="report" onClick={exportar} disabled={!detalleFiltrado.length}>
           Exportar Excel
         </Button>
       </div>

@@ -89,7 +89,7 @@ export default function ReporteLiquidacionPage() {
             onChange={(e) => setBusqueda(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') cargar(busqueda); }} />
         </div>
-        <Button variant="secondary" icon="🔍" onClick={() => cargar(busqueda)} disabled={cargando}>
+        <Button variant="secondary" icon="search" onClick={() => cargar(busqueda)} disabled={cargando}>
           {cargando ? 'Buscando...' : 'Buscar'}
         </Button>
         <div style={{ minWidth: 300, flex: '1 1 320px' }}>
@@ -98,7 +98,7 @@ export default function ReporteLiquidacionPage() {
             onChange={(v) => { setIdLiquidacion(v); setReporte(null); setMessage(null); }}
             placeholder={options.length ? 'Seleccione la liquidación...' : 'No hay liquidaciones registradas'} />
         </div>
-        <Button variant="primary" icon="📄" onClick={() => generar()} disabled={!idLiquidacion || generando}>
+        <Button variant="primary" icon="document" onClick={() => generar()} disabled={!idLiquidacion || generando}>
           {generando ? 'Generando...' : 'Generar reporte'}
         </Button>
       </div>
@@ -142,7 +142,7 @@ export default function ReporteLiquidacionPage() {
                   <td data-label="Total a pagar" style={{ textAlign: 'right' }}>{formatCurrency(l.total)}</td>
                   <td data-label="Estado"><Badge value={Number(l.revertida) ? 'REVERTIDA' : 'LIQUIDADO'} /></td>
                   <td className="col-actions">
-                    <Button variant="secondary" size="sm" icon="📄"
+                    <Button variant="secondary" size="sm" icon="document"
                       onClick={() => { setIdLiquidacion(l.id_liquidacion); generar(l.id_liquidacion); }}>
                       Generar
                     </Button>

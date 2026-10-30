@@ -1,5 +1,5 @@
 /* =====================================================================
-   global.css — Sistema de diseño SETRASA (claridad iOS, marca en rojo)
+   global.css — Sistema de diseño SETRASA (superficies neutras, marca en rojo)
    Tokens, tipografía, superficies y utilidades base.
 
    Breakpoints usados en todo el proyecto (documentados aquí, no hay
@@ -17,8 +17,8 @@
   --brand-red: #c1121f;
   --brand-red-dark: #9d0e18;
   --brand-red-light: #e8323f;
-  --brand-black: #181818;
-  --brand-charcoal: #262626;
+  --brand-black: #1c1e22;
+  --brand-charcoal: #30343b;
 
   /* ----- Compat (nombres antiguos remapeados a la marca) ----- */
   --color-azul-oscuro: #1a1a1a;   /* títulos / texto oscuro (negro de marca) */
@@ -30,22 +30,23 @@
   /* ----- Primario / acentos ----- */
   --primary: #c1121f;
   --primary-hover: #9d0e18;
-  --primary-container: #fde3e5;
-  --on-primary-container: #5c0a10;
+  --primary-container: #f8ecee;
+  --on-primary-container: #8c2832;
+  --chart-bar: #b94a55;
   --accent: #c1121f;
   --accent-hover: #9d0e18;
 
-  --color-bg: #f2f2f7;
+  --color-bg: #f6f7f9;
   --surface: #ffffff;
   --surface-1: #ffffff;
-  --surface-2: #f7f7fa;
-  --surface-3: #eeeef2;
+  --surface-2: #f8f9fb;
+  --surface-3: #eef0f3;
   --color-surface: #ffffff;
-  --color-border: #e4e4ea;
-  --outline: #d8d8e0;
+  --color-border: #e5e7eb;
+  --outline: #d5d8df;
 
-  --color-text: #1c1c1e;
-  --color-text-muted: #6c6c72;
+  --color-text: #252830;
+  --color-text-muted: #66707e;
 
   /* ----- Estados (badges semánticos) ----- */
   --estado-activo: #1fa855;
@@ -62,9 +63,9 @@
   --success: #1fa855;
 
   /* ----- Layout ----- */
-  --sidebar-width: 268px;
+  --sidebar-width: 256px;
   --sidebar-width-collapsed: 76px;
-  --header-height: 62px;
+  --header-height: 72px;
   --container-max: 1440px;
 
   /* ----- Espaciado (escala 4px) ----- */
@@ -87,17 +88,13 @@
   --fs-2xl: 23px;
   --fs-display: 28px;
 
-  /* ----- Radios -----
-     Controles (botones/inputs) usan un rectángulo muy redondeado, NO
-     pill completo — es la diferencia deliberada frente al Material
-     anterior y lo que da la sensación de control nativo tipo iOS.
-     Los badges/chips sí son pill (son etiquetas, no controles). */
-  --radius-xs: 8px;
-  --radius-sm: 10px;
-  --radius-control: 13px;
-  --radius: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 26px;
+  /* ----- Radios ----- */
+  --radius-xs: 5px;
+  --radius-sm: 7px;
+  --radius-control: 8px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
   --radius-pill: 999px;
 
   /* ----- Elevaciones (sutiles, una sola sombra difusa + una de contacto) ----- */
@@ -143,6 +140,7 @@
   --color-azul-oscuro: #f2f2f4;
 
   --primary-container: #4a1218;
+  --chart-bar: #e68c96;
   --on-primary-container: #ffd9dc;
 
   --elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
@@ -181,21 +179,6 @@ h1, h2, h3, h4 {
 
 img { max-width: 100%; }
 
-/* Ícono Material Symbols (reservado para uso futuro; hoy los íconos son emoji) */
-.msi {
-  font-family: 'Material Symbols Rounded';
-  font-weight: normal;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: normal;
-  display: inline-flex;
-  vertical-align: middle;
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
-  user-select: none;
-}
-
 /* Scrollbar moderno */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -229,10 +212,8 @@ img { max-width: 100%; }
   background: var(--surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  box-shadow: var(--elev-1);
-  transition: box-shadow var(--dur) var(--ease);
+  box-shadow: none;
 }
-.card:hover { box-shadow: var(--elev-2); }
 .card-body { padding: var(--space-6); }
 @media (max-width: 480px) {
   .card-body { padding: var(--space-4); }

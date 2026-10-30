@@ -114,9 +114,9 @@ export default function ReporteDieselPage() {
         </div>
         <Input label="Desde" name="fecha_ini" type="date" value={f.fecha_ini} onChange={(e) => setField('fecha_ini', e.target.value)} />
         <Input label="Hasta" name="fecha_fin" type="date" value={f.fecha_fin} onChange={(e) => setField('fecha_fin', e.target.value)} />
-        <Button variant="primary" icon="🔍" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
-        {data && <Button variant="secondary" icon="📊" onClick={exportar} disabled={!data.detalle?.length}>Exportar Excel</Button>}
-        {data && <Button variant="secondary" icon="🖨️" onClick={() => imprimirReporteDiesel(data, f, user?.nombre || user?.usuario || '')}>Imprimir</Button>}
+        <Button variant="primary" icon="search" onClick={generar} disabled={loading}>{loading ? 'Generando...' : 'Generar'}</Button>
+        {data && <Button variant="secondary" icon="report" onClick={exportar} disabled={!data.detalle?.length}>Exportar Excel</Button>}
+        {data && <Button variant="secondary" icon="print" onClick={() => imprimirReporteDiesel(data, f, user?.nombre || user?.usuario || '')}>Imprimir</Button>}
       </div>
 
       {/* Leyenda */}
