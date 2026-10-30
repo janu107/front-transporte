@@ -30,6 +30,29 @@ function partesFecha(fecha) {
   if (Number.isNaN(d.getTime())) return { dia: '--', mes: '--', anio: '----', mesNombre: '' };
   return { dia: String(d.getDate()).padStart(2, '0'), mes: String(d.getMonth() + 1).padStart(2, '0'), anio: d.getFullYear(), mesNombre: MESES[d.getMonth()] };
 }
+/**
+ * Fecha de documento en DD/MM/AAAA, el mismo formato que muestra la pantalla.
+ *
+ * Una columna DATE llega del servidor como "2026-07-28T00:00:00.000Z". Antes
+ * cada reporte le cortaba los primeros 10 caracteres y la imprimía en ISO
+ * ("2026-07-28"), mientras la pantalla la pasaba por new Date y la leía en hora
+ * de Guatemala (UTC-6), que la retrocede al día anterior. De ahí que el mismo
+ * viaje se viera 27/07 en pantalla y 28/07 impreso.
+ *
+ * Aquí la fecha se trata como un día del calendario, no como un instante: se
+ * toman sus propios componentes y ninguna zona horaria la mueve.
+ */
+function fechaDMA(value) {
+  if (!value) return '';
+  const iso = String(value).slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    const [anio, mes, dia] = iso.split('-');
+    return `${dia}/${mes}/${anio}`;
+  }
+  const p = partesFecha(value);
+  return `${p.dia}/${p.mes}/${p.anio}`;
+}
+
 function fechaEnLetras(fecha, ciudad = 'ESCUINTLA') {
   const p = partesFecha(fecha);
   return `${ciudad}, ${p.dia} de ${p.mesNombre} del ${p.anio}`;
@@ -86,9 +109,9 @@ function imprimir(titulo, estilos, cuerpo) {
       </div>
       <div class="preview-body"><iframe class="preview-frame" title="${esc(titulo)}"></iframe></div>
       <div class="preview-footer">
-        <button type="button" class="btn btn-secondary preview-tab">🡕 Abrir en otra pestaña</button>
+        <button type="button" class="btn btn-secondary preview-tab">Abrir en otra pestaña</button>
         <button type="button" class="btn btn-secondary preview-cancel">Cerrar vista</button>
-        <button type="button" class="btn btn-primary preview-print">🖨️ Imprimir</button>
+        <button type="button" class="btn btn-primary preview-print">Imprimir</button>
       </div>
     </div>`;
 
@@ -298,16 +321,9 @@ export function imprimirReporteLiquidacionesV2(datos, filtros = {}, usuario = ''
     .revertida { color:#777;text-decoration:line-through; }
     tfoot td { font-weight:700;border:0;padding-top:6px; }
   `;
-  const fecha = (value) => {
-    if (!value) return '';
-    const iso = String(value).slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
-      const [anio, mes, dia] = iso.split('-');
-      return `${dia}/${mes}/${anio}`;
-    }
-    const p = partesFecha(value);
-    return `${p.dia}/${p.mes}/${p.anio}`;
-  };
+  // Esta era la única copia que ya formateaba bien; ahora vive en fechaDMA y la
+  // usan todos los reportes.
+  const fecha = fechaDMA;
   const filas = (datos?.items || []).map((r) => `<tr class="${Number(r.revertida) ? 'revertida' : ''}">
     <td>${esc(r.num_liquidacion)}</td><td>${esc(fecha(r.fecha_liquidacion))}</td>
     <td>${esc(r.nombre_comercial)}</td><td>${esc(r.nombre_poliza)}</td>
@@ -355,8 +371,8 @@ export function imprimirReporteArrastre(data, filtros = {}, usuario = '') {
   const r = data.resumen || {};
   // El período se toma del rango que devolvió el servidor; los filtros del
   // formulario pueden venir vacíos porque las fechas ya son opcionales.
-  const ini = data.rango?.fecha_inicio || filtros.fecha_inicio || '';
-  const fin = data.rango?.fecha_fin || filtros.fecha_fin || '';
+  const ini = fechaDMA(data.rango?.fecha_inicio || filtros.fecha_inicio);
+  const fin = fechaDMA(data.rango?.fecha_fin || filtros.fecha_fin);
   const gruposHtml = (data.grupos || []).map((g) => `
     <div class="grp-tit">${esc(g.descripcion)}</div>
     <table>
@@ -364,7 +380,7 @@ export function imprimirReporteArrastre(data, filtros = {}, usuario = '') {
         <th class="n">Bultos</th><th class="n">Saldo bultos</th>
         <th class="n">Peso qq</th><th class="n">Peso kg</th><th class="n">Saldo kg</th></tr></thead>
       <tbody>${g.filas.map((f) => `<tr>
-          <td>${esc(f.num_envio)}</td><td>${esc(f.fecha ? String(f.fecha).slice(0, 10) : '')}</td>
+          <td>${esc(f.num_envio)}</td><td>${esc(fechaDMA(f.fecha))}</td>
           <td>${esc(f.piloto)}</td><td>${esc(f.placa)}</td>
           <td class="n">${f.piezas}</td><td class="n">${formatNum(f.saldo_bultos)}</td>
           <td class="n">${f.peso_qq}</td><td class="n">${formatNum(f.peso_kg)}</td><td class="n">${formatNum(f.saldo_kg)}</td></tr>`).join('')}</tbody>
@@ -422,7 +438,7 @@ export function imprimirReporteViajesPoliza(data, usuario = '') {
       <thead><tr><th>C. Porte</th><th>Fecha</th><th>Piloto</th><th>Placa</th>
         <th class="n">Peso qq</th><th class="n">Peso kg</th><th class="n">Total pagado</th><th>Destino</th></tr></thead>
       <tbody>${g.filas.map((f) => `<tr>
-          <td>${esc(f.num_envio)}</td><td>${esc(f.fecha ? String(f.fecha).slice(0, 10) : '')}</td>
+          <td>${esc(f.num_envio)}</td><td>${esc(fechaDMA(f.fecha))}</td>
           <td>${esc(f.piloto)}</td><td>${esc(f.placa)}</td>
           <td class="n">${f.peso_qq}</td><td class="n">${formatNum(f.peso_kg)}</td>
           <td class="n">${q(f.valor)}</td><td>${esc(f.destino)}</td></tr>`).join('')}</tbody>
@@ -479,7 +495,7 @@ export function imprimirReporteAnticiposPoliza(data, usuario = '') {
         ${arrastre ? '<th>Póliza</th>' : ''}<th class="n">Anticipo</th><th>Motivo</th></tr></thead>
       <tbody>${g.anticipos.map((a) => `<tr>
           <td>${esc(a.num_anticipo)}</td><td>${esc(a.placa)}</td>
-          <td>${esc(a.fecha ? String(a.fecha).slice(0, 10) : '')}</td><td>${esc(a.piloto)}</td>
+          <td>${esc(fechaDMA(a.fecha))}</td><td>${esc(a.piloto)}</td>
           ${arrastre ? `<td>${esc(a.poliza)}</td>` : ''}
           <td class="n">${q(a.valor)}</td><td>${esc(a.motivo)}</td></tr>`).join('')}
         <tr class="sub"><td colspan="${cols}">Total x Transportista:</td><td class="n">${q(g.total)}</td><td></td></tr>
@@ -532,7 +548,7 @@ export function imprimirReporteDiesel(data, filtros = {}, usuario = '', ocultarP
     const filas = dets.map((d) => {
       const liq = d.estado_poliza === 'LIQUIDADA';
       return `<tr class="${liq ? 'liq' : ''}">
-        <td>${esc(d.num_vale)}</td><td>${esc(d.fecha_vale ? String(d.fecha_vale).slice(0, 10) : '')}</td>
+        <td>${esc(d.num_vale)}</td><td>${esc(fechaDMA(d.fecha_vale))}</td>
         <td>${esc(d.transportista)}</td><td>${esc(d.placa)}</td><td>${esc(d.poliza)}</td>
         <td><span class="badge" style="background:${liq ? '#888' : '#15803d'}">${liq ? 'LIQ' : 'ACT'}</span></td>
         <td class="n">${Number(d.galones).toFixed(2)}</td><td class="n">${q(d.valor)}</td></tr>`;
@@ -543,7 +559,7 @@ export function imprimirReporteDiesel(data, filtros = {}, usuario = '', ocultarP
         ${ocultarPrecio ? '' : '<th class="n">Precio</th>'}
         <th class="n">Saldo</th><th>Estado</th><th class="n">Despachados</th><th class="n">Total</th>
       </tr>
-      <tr><td>${esc(f.num_factura)}</td><td>${esc(f.producto)}</td><td>${esc(f.fecha_factura ? String(f.fecha_factura).slice(0, 10) : '')}</td>
+      <tr><td>${esc(f.num_factura)}</td><td>${esc(f.producto)}</td><td>${esc(fechaDMA(f.fecha_factura))}</td>
         <td class="n">${Number(f.galones_comprados).toFixed(2)}</td>
         ${ocultarPrecio ? '' : `<td class="n">${q(f.precio_galon)}</td>`}
         <td class="n">${Number(f.saldo).toFixed(2)}</td><td>${esc(f.estado_factura)}</td>
@@ -626,7 +642,7 @@ export function imprimirLiquidacion(datos, usuarioActual = '', terminal = 'WEB')
         <thead><tr><th>C. Porte</th><th>Fecha</th><th>Piloto</th><th>Placa</th>
           <th class="n">Peso qq</th><th class="n">Total pago</th><th>Embarque</th><th>Destino</th></tr></thead>
         <tbody>${(t.viajes || []).map((v) => `<tr>
-          <td>${esc(v.c_porte)}</td><td>${esc(v.fecha ? String(v.fecha).slice(0, 10) : '')}</td>
+          <td>${esc(v.c_porte)}</td><td>${esc(fechaDMA(v.fecha))}</td>
           <td>${esc(v.piloto)}</td><td>${esc(v.placa)}</td>
           <td class="n">${formatNum(v.peso_qq)}</td><td class="n">${q(v.total_pago)}</td>
           <td>${esc(v.embarque)}</td><td>${esc(v.destino)}</td></tr>`).join('')
@@ -636,24 +652,24 @@ export function imprimirLiquidacion(datos, usuarioActual = '', terminal = 'WEB')
 
     const antHtml = seccionDescuento('DESCUENTO DE ANTICIPOS', t.anticipos, [
       { label: 'No.', get: (f) => esc(f.num) },
-      { label: 'Fecha', get: (f) => esc(f.fecha ? String(f.fecha).slice(0, 10) : '') },
+      { label: 'Fecha', get: (f) => esc(fechaDMA(f.fecha)) },
       { label: 'Descripción', get: (f) => esc(f.descripcion) },
       { label: 'Valor', n: true, get: (f) => q(f.valor) },
     ]);
     const combHtml = seccionDescuento('DESCUENTO DE COMBUSTIBLE', t.combustible, [
       { label: 'Vale', get: (f) => esc(f.num_vale) },
-      { label: 'Fecha', get: (f) => esc(f.fecha ? String(f.fecha).slice(0, 10) : '') },
+      { label: 'Fecha', get: (f) => esc(fechaDMA(f.fecha)) },
       { label: 'Galones', n: true, get: (f) => formatNum(f.galones) },
       { label: 'Q/galón', n: true, get: (f) => q(f.valor_galon) },
       { label: 'Subtotal', n: true, get: (f) => q(f.subtotal) },
     ]);
     const admHtml = seccionDescuento('DESCUENTOS ADMINISTRATIVOS', t.administrativos, [
-      { label: 'Fecha', get: (f) => esc(f.fecha ? String(f.fecha).slice(0, 10) : '') },
+      { label: 'Fecha', get: (f) => esc(fechaDMA(f.fecha)) },
       { label: 'Descripción', get: (f) => esc(f.descripcion) },
       { label: 'Valor', n: true, get: (f) => q(f.valor) },
     ]);
     const aceHtml = seccionDescuento('DESCUENTO DE ACEITE', t.aceite, [
-      { label: 'Fecha', get: (f) => esc(f.fecha ? String(f.fecha).slice(0, 10) : '') },
+      { label: 'Fecha', get: (f) => esc(fechaDMA(f.fecha)) },
       { label: 'Descripción', get: (f) => esc(f.descripcion) },
       { label: 'Valor', n: true, get: (f) => q(f.valor) },
     ]);
@@ -666,7 +682,7 @@ export function imprimirLiquidacion(datos, usuarioActual = '', terminal = 'WEB')
         </div>
       </div>
       <div class="meta">
-        Póliza: <b>${esc(datos.poliza?.nombre_poliza)}</b> · Fecha: ${esc(fecha ? String(fecha).slice(0, 10) : '')}<br/>
+        Póliza: <b>${esc(datos.poliza?.nombre_poliza)}</b> · Fecha: ${esc(fechaDMA(fecha))}<br/>
         Usuario: ${esc(usuario)} · Terminal: ${esc(terminal)} · Impreso: ${fechaHoraImpresion()}
       </div>
       <div class="tname">TRANSPORTISTA: ${esc(t.nit)} ${esc(t.nombre)}</div>
@@ -732,7 +748,7 @@ export function imprimirLiquidacionResumen(datos, terminal = 'WEB') {
       </div>
       <div class="meta">
         Póliza: <b>${esc(datos.poliza)}</b><br/>
-        Fecha: ${esc(datos.fecha ? String(datos.fecha).slice(0, 10) : '')}<br/>
+        Fecha: ${esc(fechaDMA(datos.fecha))}<br/>
         Usuario: ${esc(datos.usuario || '')} · Terminal: ${terminal}<br/>
         Impreso: ${fechaHoraImpresion()}
       </div>

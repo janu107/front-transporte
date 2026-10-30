@@ -24,9 +24,26 @@ export function formatNumber(value, decimals = 2) {
   }).format(n);
 }
 
-/** Devuelve una fecha en formato local (YYYY-MM-DD -> DD/MM/YYYY). */
+/**
+ * Devuelve una fecha en formato local (AAAA-MM-DD -> DD/MM/AAAA).
+ *
+ * Una fecha de documento (columna DATE) es un día del calendario, no un
+ * instante. El servidor la manda como "2026-07-28" o "2026-07-28T00:00:00.000Z",
+ * y al pasarla por new Date se vuelve un instante que, leído en hora de
+ * Guatemala (UTC-6), retrocede al día anterior: el viaje del 28 se veía 27.
+ *
+ * Por eso, cuando el valor NO trae una hora propia (o trae medianoche UTC
+ * exacta, que es como se serializa una columna DATE), se formatea con sus
+ * propios componentes y ninguna zona horaria lo mueve. Los valores con hora de
+ * verdad (fecha_hora_graba y demás) siguen convirtiéndose a hora local, que es
+ * lo correcto para un instante.
+ */
+const DIA_DE_CALENDARIO = /^(\d{4})-(\d{2})-(\d{2})(?:[T ]00:00:00(?:\.000)?Z?)?$/;
+
 export function formatDate(value) {
   if (!value) return '-';
+  const m = typeof value === 'string' ? value.match(DIA_DE_CALENDARIO) : null;
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleDateString('es-GT', { year: 'numeric', month: '2-digit', day: '2-digit' });
